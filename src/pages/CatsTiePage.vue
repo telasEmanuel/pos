@@ -20,11 +20,14 @@ interface Producto {
   producto?: {
     id?: number;
     nombre: string;
+    medida_ind?: string;
+    medida?: string;
   };
   precio: number;
   precio_tap: number;
   cantidad: number;
   medida_ind: string;
+  medida?: string;
   cantidadPedido: number;
 }
 
@@ -122,7 +125,7 @@ const summaryItems = computed(() => {
       productoId: pId,
       nombre: p.producto?.nombre,
       cantidadPedido: p.cantidadPedido,
-      medida: p.medida_ind,
+      medida: p.medida_ind || p.medida || p.producto?.medida_ind || p.producto?.medida || '',
       precio: p.precio,
       precio_tap: p.precio_tap,
       isCurrent: true,
@@ -244,7 +247,8 @@ const enviarPedido = async () => {
         productoId: Number(p.productoId),
         nombre: p.nombre || 'Producto',
         cantidad: p.cantidadPedido,
-        medida: p.medida || 'Unidad',
+        medida: p.medida || '',
+        precio_unitario: esPrecioTap.value ? Number(p.precio_tap ?? 0) : Number(p.precio ?? 0),
       })),
       estado: 'pendiente' as const,
       total: totalPedido.value,

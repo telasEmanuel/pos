@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue';
+import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import api from 'src/api/axios';
 import { useQuasar, date } from 'quasar';
 import ReceiptPrinter from 'src/components/ReceiptPrinter.vue';
@@ -11,7 +11,7 @@ interface DetalleVenta {
   producto_id: number;
   cantidad: number;
   precio_unitario: number;
-  medida?: string; // Unit type (metros, UNID, etc.)
+  medida?: string;
   producto?: {
     nombre: string;
   };
@@ -27,12 +27,41 @@ interface Venta {
   detallesVenta: DetalleVenta[];
 }
 
+interface CorteResponse {
+  ventas: Venta[];
+  stats: {
+    efectivo: number;
+    tarjeta: number;
+    transferencia: number;
+    usd: number;
+    granTotal: number;
+  };
+}
+
 const $q = useQuasar();
 const ventas = ref<Venta[]>([]);
+const stats = ref({
+  efectivo: 0,
+  tarjeta: 0,
+  transferencia: 0,
+  usd: 0,
+  granTotal: 0
+});
 const loading = ref(true);
 const productosMap = ref<Map<number, string>>(new Map());
 const receiptPrinter = ref<InstanceType<typeof ReceiptPrinter> | null>(null);
 const lastReceipt = ref<ReceiptData | null>(null);
+
+// Date selection
+const today = date.formatDate(Date.now(), 'YYYY/MM/DD');
+const dateRange = ref<string | { from: string; to: string }>(today);
+
+const displayDate = computed(() => {
+  if (typeof dateRange.value === 'string') {
+    return dateRange.value;
+  }
+  return `${dateRange.value.from} - ${dateRange.value.to}`;
+});
 
 const formatCurrency = (amount: number | string | undefined | null) => {
   if (amount === undefined || amount === null) return '$0.00';
@@ -52,7 +81,10 @@ const formatTime = (dateString: string | undefined | null) => {
   return date.formatDate(dateString, 'HH:mm A');
 };
 
-const todayDate = computed(() => date.formatDate(Date.now(), 'DD/MM/YYYY'));
+const formatDateLong = (dateString: string | undefined | null) => {
+  if (!dateString) return '';
+  return date.formatDate(dateString, 'DD/MM/YYYY');
+};
 
 const parseDetailedPaymentComment = (rawComment: string | null): {
   comments: string;
@@ -70,7 +102,7 @@ const parseDetailedPaymentComment = (rawComment: string | null): {
   const parseAmount = (regex: RegExp): number => {
     const match = detailText.match(regex);
     if (!match || !match[1]) return 0;
-    const value = Number(match[1]);
+    const value = parseFloat(match[1]);
     return Number.isFinite(value) ? value : 0;
   };
 
@@ -105,28 +137,41 @@ const buildLastReceiptFromVenta = (venta: Venta): ReceiptData => {
     cliente: (venta.cliente || 'Cliente General').trim(),
     productos: (venta.detallesVenta || []).map((detalle) => ({
       cantidad: Number(detalle.cantidad || 0),
-      medida: detalle.medida || 'UNID',
+      medida: detalle.medida || '',
       nombre: getProductoNombre(detalle.producto_id),
       precio_unitario: Number(detalle.precio_unitario || 0),
     })),
     total: Number(venta.total || 0),
     metodoPago: String(venta.metodo_pago || 'EFECTIVO').toUpperCase(),
     fecha: venta.fecha_venta,
+    ticketId: venta.id,
     ...(parsed.comments ? { comentarios: parsed.comments } : {}),
     ...(parsed.pagoDetalle ? { pagoDetalle: parsed.pagoDetalle } : {}),
   };
 };
 
 const updateLastReceipt = () => {
-  const latestSale = ventasHoy.value[0];
+  const latestSale = ventas.value[0];
   lastReceipt.value = latestSale ? buildLastReceiptFromVenta(latestSale) : null;
 };
 
 const loadVentas = async () => {
   loading.value = true;
   try {
-    const { data } = await api.get<Venta[]>('ventas');
-    ventas.value = data;
+    let inicio, fin;
+    if (typeof dateRange.value === 'string') {
+      inicio = fin = dateRange.value.replace(/\//g, '-');
+    } else {
+      inicio = dateRange.value.from.replace(/\//g, '-');
+      fin = dateRange.value.to.replace(/\//g, '-');
+    }
+
+    const { data } = await api.get<CorteResponse>('ventas/rango', {
+      params: { inicio, fin }
+    });
+
+    ventas.value = data.ventas;
+    stats.value = data.stats;
     updateLastReceipt();
   } catch (error) {
     console.error(error);
@@ -140,21 +185,12 @@ const loadVentas = async () => {
   }
 };
 
-interface InventarioItem {
-  producto_id?: number;
-  producto?: {
-    id?: number;
-    nombre?: string;
-  };
-}
-
 const loadProductos = async () => {
   try {
     const res = await api.get('inventarios');
     const items = Array.isArray(res.data) ? res.data : (res.data.items ?? []);
 
-    // Build a map of producto_id -> nombre
-    items.forEach((item: InventarioItem) => {
+    items.forEach((item: { producto_id?: number; producto?: { id?: number; nombre?: string } }) => {
       const productoId = item.producto_id ?? item.producto?.id;
       const nombre = item.producto?.nombre;
       if (productoId && nombre) {
@@ -171,86 +207,6 @@ const getProductoNombre = (productoId: number): string => {
   return productosMap.value.get(productoId) || `Producto #${productoId}`;
 };
 
-// --- Computed Properties for "Corte del Día" ---
-
-const ventasHoy = computed(() => {
-  const today = new Date();
-  const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-  const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-
-  return ventas.value.filter(v => {
-    const vDate = new Date(v.fecha_venta);
-    return vDate >= startOfDay && vDate <= endOfDay;
-  }).sort((a, b) => new Date(b.fecha_venta).getTime() - new Date(a.fecha_venta).getTime()); // Newest first
-});
-
-// Breakdown specific payment methods
-const stats = computed(() => {
-  let efectivo = 0;
-  let tarjeta = 0;
-  let transferencia = 0;
-  let usd = 0;
-  let granTotal = 0; // Calculated total from components
-
-  ventasHoy.value.forEach(v => {
-    const comment = v.comentarios || '';
-    const total = Number(v.total);
-    const metodo = (v.metodo_pago || '').toUpperCase();
-
-    // Check for detailed payment info in comments (from PaymentModal)
-    if (comment.includes('[Detalle Pago:')) {
-      const parseAmount = (regex: RegExp): number => {
-        const match = comment.match(regex);
-        if (match && match[1]) {
-          return parseFloat(match[1]);
-        }
-        return 0;
-      };
-
-      const pPesos = parseAmount(/Pesos:\s*\$([\d.]+)/);
-      const pUSD = parseAmount(/USD:\s*([\d.]+)/);
-      const pTasa = parseAmount(/\(Tasa:\s*([\d.]+)\)/) || 0; // Parse rate associated with USD
-      const pTarjeta = parseAmount(/Tarjeta:\s*\$([\d.]+)/);
-      const pTransf = parseAmount(/Transf:\s*\$([\d.]+)/);
-
-      efectivo += pPesos;
-      usd += pUSD;
-      tarjeta += pTarjeta;
-      transferencia += pTransf;
-
-      // Add to Grand Total
-      const usdValueInPesos = pUSD * pTasa;
-      granTotal += pPesos + pTarjeta + pTransf + usdValueInPesos;
-
-      return;
-    }
-
-    // Standard fallback if no details found
-    granTotal += total;
-    if (metodo === 'EFECTIVO') {
-      efectivo += total;
-    } else if (metodo === 'TARJETA') {
-      tarjeta += total;
-    } else if (metodo === 'TRANSFERENCIA') {
-      transferencia += total;
-    } else {
-      // MIXTO/OTROS without detailed comments
-      transferencia += total;
-    }
-  });
-
-  return { efectivo, tarjeta, transferencia, usd, granTotal };
-});
-
-const totalIngresos = computed(() => stats.value.granTotal);
-
-const totalTransacciones = computed(() => ventasHoy.value.length);
-
-onMounted(() => {
-  void loadVentas();
-  void loadProductos();
-});
-
 const printLastReceipt = () => {
   if (!lastReceipt.value) {
     $q.notify({
@@ -260,7 +216,6 @@ const printLastReceipt = () => {
     });
     return;
   }
-
   receiptPrinter.value?.print();
 };
 
@@ -278,60 +233,30 @@ const generateDailyReportHTML = () => {
     <head>
       <meta charset="UTF-8" />
       <style>
-        html, body {
-          width: 58mm;
-          margin: 0;
-          padding: 0;
-        }
-
-        @page {
-          size: 58mm auto;
-          margin: 0;
-        }
-
-        body {
-          font-family: monospace;
-          font-size: 13px;
-          max-width: 58mm;
-          padding: 8px;
-          box-sizing: border-box;
-        }
-
+        html, body { width: 58mm; margin: 0; padding: 0; }
+        @page { size: 58mm auto; margin: 0; }
+        body { font-family: monospace; font-size: 13px; max-width: 58mm; padding: 8px; box-sizing: border-box; }
         .center { text-align: center; }
         .line { border-top: 1px dashed #000; margin: 6px 0; }
-        .row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin: 3px 0;
-        }
+        .row { display: flex; justify-content: space-between; align-items: center; margin: 3px 0; }
         .label { font-weight: bold; }
         .value { text-align: right; }
-        .title {
-          font-size: 16px;
-          font-weight: bold;
-        }
+        .title { font-size: 16px; font-weight: bold; }
       </style>
     </head>
     <body>
-      <div class="center title">REPORTE DEL DÍA</div>
-      <div class="center">${todayDate.value}</div>
-
+      <div class="center title">CORTE DE CAJA</div>
+      <div class="center">${displayDate.value}</div>
       <div class="line"></div>
-
-      <div class="row"><span class="label">Ingreso Total:</span><span class="value">${formatMoney(totalIngresos.value)}</span></div>
-      <div class="row"><span class="label">Transacciones:</span><span class="value">${totalTransacciones.value}</span></div>
-
+      <div class="row"><span class="label">Ingreso Total:</span><span class="value">${formatMoney(stats.value.granTotal)}</span></div>
+      <div class="row"><span class="label">Transacciones:</span><span class="value">${ventas.value.length}</span></div>
       <div class="line"></div>
-
       <div class="row"><span class="label">Efectivo:</span><span class="value">${formatMoney(stats.value.efectivo)}</span></div>
       <div class="row"><span class="label">Tarjeta:</span><span class="value">${formatMoney(stats.value.tarjeta)}</span></div>
       <div class="row"><span class="label">Transferencia:</span><span class="value">${formatMoney(stats.value.transferencia)}</span></div>
       <div class="row"><span class="label">Dólares:</span><span class="value">USD ${formatNumber(stats.value.usd)}</span></div>
-
       <div class="line"></div>
       <div class="center">Generado: ${new Date().toLocaleString()}</div>
-
       <br><br><br>
     </body>
   </html>
@@ -341,12 +266,10 @@ const generateDailyReportHTML = () => {
 const printDailyReport = async () => {
   try {
     const html = generateDailyReportHTML();
-
     if (window.pos?.printTicket) {
       await window.pos.printTicket(html);
       return;
     }
-
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(html);
@@ -354,21 +277,20 @@ const printDailyReport = async () => {
       printWindow.print();
       return;
     }
-
-    $q.notify({
-      message: 'No se pudo abrir la ventana de impresión',
-      color: 'negative',
-      icon: 'error'
-    });
   } catch (error) {
     console.error('Error imprimiendo reporte del día:', error);
-    $q.notify({
-      message: 'Error al imprimir el reporte del día',
-      color: 'negative',
-      icon: 'error'
-    });
   }
 };
+
+watch(dateRange, () => {
+  void loadVentas();
+});
+
+onMounted(() => {
+  void loadVentas();
+  void loadProductos();
+});
+
 </script>
 
 <template>
@@ -377,13 +299,24 @@ const printDailyReport = async () => {
     <div class="row items-center justify-between q-mb-lg header-section">
       <div>
         <h1 class="text-h4 text-weight-bolder text-grey-9 q-my-none">Corte de Caja</h1>
-        <div class="text-subtitle1 text-grey-7">
-          Resumen de ventas del día: <span class="text-weight-bold text-primary">{{ todayDate }}</span>
+        <div class="row items-center q-mt-sm">
+          <div class="text-subtitle1 text-grey-7 q-mr-md">
+            Periodo: <span class="text-weight-bold text-primary">{{ displayDate }}</span>
+          </div>
+          <q-btn icon="event" round flat color="primary" dense>
+            <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+              <q-date v-model="dateRange" range mask="YYYY/MM/DD">
+                <div class="row items-center justify-end q-gutter-sm">
+                  <q-btn label="Cerrar" color="primary" flat v-close-popup />
+                </div>
+              </q-date>
+            </q-popup-proxy>
+          </q-btn>
         </div>
       </div>
       <div class="row q-gutter-sm">
         <q-btn icon="print" flat round color="orange-8" @click="printDailyReport">
-          <q-tooltip>Imprimir Reporte del Día</q-tooltip>
+          <q-tooltip>Imprimir Reporte</q-tooltip>
         </q-btn>
         <q-btn icon="print" flat round color="primary" @click="printLastReceipt" :disable="!lastReceipt">
           <q-tooltip>Imprimir Último Recibo</q-tooltip>
@@ -404,7 +337,7 @@ const printDailyReport = async () => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">Ingreso Total</div>
-            <div class="kpi-value">{{ formatCurrency(totalIngresos) }}</div>
+            <div class="kpi-value">{{ formatCurrency(stats.granTotal) }}</div>
           </div>
         </div>
       </div>
@@ -417,7 +350,7 @@ const printDailyReport = async () => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label text-grey-6">Transacciones</div>
-            <div class="kpi-value">{{ totalTransacciones }}</div>
+            <div class="kpi-value">{{ ventas.length }}</div>
           </div>
         </div>
       </div>
@@ -461,24 +394,25 @@ const printDailyReport = async () => {
 
     <!-- Sales List -->
     <div class="sales-section">
-      <h2 class="text-h5 text-weight-bold q-mb-md text-grey-8">Movimientos del Día</h2>
+      <h2 class="text-h5 text-weight-bold q-mb-md text-grey-8">Movimientos del Periodo</h2>
 
       <div v-if="loading" class="row justify-center q-py-lg">
         <q-spinner-dots size="3rem" color="primary" />
       </div>
 
-      <div v-else-if="ventasHoy.length === 0" class="empty-state text-center q-py-xl">
+      <div v-else-if="ventas.length === 0" class="empty-state text-center q-py-xl">
         <q-icon name="point_of_sale" size="4rem" color="grey-4" />
-        <p class="text-grey-5 q-mt-md text-h6">No se han registrado ventas hoy.</p>
+        <p class="text-grey-5 q-mt-md text-h6">No se registraron movimientos en este periodo.</p>
       </div>
 
       <q-list v-else separator class="sales-list bg-white shadow-1 rounded-borders">
-        <q-expansion-item v-for="venta in ventasHoy" :key="venta.id" group="sales" class="sale-item"
+        <q-expansion-item v-for="venta in ventas" :key="venta.id" group="sales" class="sale-item"
           expand-icon-class="hidden">
           <template v-slot:header="{ expanded }">
             <div class="row full-width items-center q-py-xs">
               <div class="col-auto q-mr-md">
                 <div class="time-badge">{{ formatTime(venta.fecha_venta) }}</div>
+                <div class="text-caption text-grey-5 q-mt-xs">{{ formatDateLong(venta.fecha_venta) }}</div>
               </div>
               <div class="col">
                 <div class="text-weight-bold text-grey-9">{{ venta.cliente || 'Cliente General' }}</div>
@@ -495,7 +429,6 @@ const printDailyReport = async () => {
                   <div class="text-weight-bolder text-primary text-body1">{{ formatCurrency(venta.total) }}</div>
                   <div class="text-caption text-grey-5">#{{ venta.id }}</div>
                 </div>
-                <!-- Manual Arrow Icon -->
                 <q-icon :name="expanded ? 'expand_less' : 'expand_more'" size="sm" color="grey-6" />
               </div>
             </div>
@@ -507,7 +440,7 @@ const printDailyReport = async () => {
               <div v-for="detalle in venta.detallesVenta" :key="detalle.id"
                 class="row justify-between q-mb-xs text-body2">
                 <div>
-                  <span class="text-weight-bold">{{ detalle.cantidad }}</span>
+                  <span class="text-weight-bold">{{ formatNumber(detalle.cantidad) }}</span>
                   <span v-if="detalle.medida"> {{ detalle.medida }}</span> x {{
                     getProductoNombre(detalle.producto_id) }}
                 </div>

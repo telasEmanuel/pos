@@ -7,6 +7,7 @@ export interface ProductoPedido {
   nombre: string;
   cantidad: number | string;
   medida: string;
+  precio_unitario: number;
 }
 
 export interface DetallePedidoBackend {
@@ -16,6 +17,7 @@ export interface DetallePedidoBackend {
   nombre: string;
   cantidad: number | string;
   medida: string;
+  precio_unitario: number;
 }
 
 export interface PedidoBackend {
@@ -47,6 +49,7 @@ const transformarPedidoBackend = (pedidoBackend: PedidoBackend): Pedido => {
         cantidad:
           typeof detalle.cantidad === 'string' ? parseFloat(detalle.cantidad) : detalle.cantidad,
         medida: detalle.medida,
+        precio_unitario: Number(detalle.precio_unitario || 0),
       }))
     : [];
 
@@ -70,17 +73,15 @@ export const usePedidosStore = defineStore('pedidos', () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await api.post('pedidos', {
+      const payload = {
         ...pedido,
         fecha: new Date().toISOString(),
-      });
+      };
+      const response = await api.post('pedidos', payload);
       pedidos.value.push(response.data);
       return response.data;
     } catch (err: unknown) {
       error.value = 'Error al crear el pedido';
-      // Mostrar detalle de la respuesta del servidor si está disponible
-      const maybe = err as { response?: { data?: unknown } };
-      console.error('Error agregando pedido:', err, maybe.response?.data ?? null);
       throw err;
     } finally {
       loading.value = false;

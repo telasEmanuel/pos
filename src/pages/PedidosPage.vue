@@ -3,7 +3,7 @@ import { useQuasar } from 'quasar';
 import { socket } from 'src/boot/socket';
 import { onMounted, onUnmounted, ref } from 'vue';
 import api from 'src/api/axios';
-import { usePedidosStore, type Pedido, type PedidoBackend } from 'src/stores/pedidos-store';
+import { usePedidosStore, type Pedido, type PedidoBackend, type ProductoPedido } from 'src/stores/pedidos-store';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from 'src/stores/auth';
 import PaymentModal from 'src/components/PaymentModal.vue';
@@ -11,6 +11,23 @@ import ReceiptPrinter from 'src/components/ReceiptPrinter.vue';
 import type { PaymentBreakdown, ReceiptData } from 'src/components/types';
 
 import { useRouter } from 'vue-router';
+
+interface InventarioItem {
+  id: number;
+  bodega_id: number;
+  producto_id?: number;
+  producto?: {
+    id?: number;
+    nombre: string;
+    precio?: number;
+    medida_ind?: string;
+    medida?: string;
+  };
+  cantidad?: number;
+  precio?: number;
+  medida_ind?: string;
+  medida?: string;
+}
 
 const $q = useQuasar();
 const router = useRouter();
@@ -24,6 +41,54 @@ const showPagoModal = ref(false);
 const pedidoParaCompletar = ref<Pedido | null>(null);
 const receiptPrinter = ref<InstanceType<typeof ReceiptPrinter> | null>(null);
 const currentReceipt = ref<ReceiptData | null>(null);
+const inventarioMap = ref<Record<number, string>>({});
+const nombreMap = ref<Record<string, string>>({});
+
+const cargarInventario = async () => {
+  try {
+    const res = await api.get('inventarios');
+    const items = (Array.isArray(res.data) ? res.data : (res.data.items ?? [])) as InventarioItem[];
+
+    // Limpiar mapas
+    inventarioMap.value = {};
+    nombreMap.value = {};
+
+    items.forEach((p) => {
+      // Capturar todos los IDs posibles
+      const invId = p.id;
+      const prodId = p.producto_id ?? p.producto?.id;
+      const nombre = (p.producto?.nombre || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      const medida = p.medida_ind || p.medida || p.producto?.medida_ind || p.producto?.medida || '';
+
+      if (medida) {
+        // Mapear por ID de inventario
+        if (invId) inventarioMap.value[Number(invId)] = medida;
+        // Mapear por ID de producto
+        if (prodId) inventarioMap.value[Number(prodId)] = medida;
+        // Mapear por nombre normalizado
+        if (nombre) nombreMap.value[nombre] = medida;
+      }
+    });
+    console.log(`--- MAPAS CARGADOS --- IDs Mapeados: ${Object.keys(inventarioMap.value).length}, Nombres: ${Object.keys(nombreMap.value).length}`);
+  } catch (error) {
+    console.error('Error cargando inventario:', error);
+  }
+};
+
+const getMedidaPara = (prod: ProductoPedido) => {
+  const current = (prod.medida || '').toString().trim().toUpperCase();
+  // Si ya tiene una medida real, usarla
+  const dirtyUnits = ['', 'UNID', 'X', 'U', 'PZA', 'UNIDAD', 'ORDEN'];
+  const isDirty = dirtyUnits.includes(current);
+
+  if (!isDirty) return (prod.medida || '').toString().trim();
+
+  const id = Number(prod.productoId);
+  const cleanName = (prod.nombre || '').toString().replace(/\s+/g, ' ').trim().toLowerCase();
+
+  const recovery = inventarioMap.value[id] || nombreMap.value[cleanName];
+  return recovery || (prod.medida || '').toString().trim();
+};
 
 const cargarPedidos = async () => {
   cargando.value = true;
@@ -88,11 +153,11 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
 
   try {
     const detallesVenta = (pedido.productos || []).map((p) => {
-      const cantidad = typeof p.cantidad === 'string' ? parseFloat(p.cantidad) : Number(p.cantidad);
       return {
         producto_id: Number(p.productoId),
-        cantidad,
-        precio_unitario: 0,
+        cantidad: typeof p.cantidad === 'string' ? parseFloat(p.cantidad) : Number(p.cantidad),
+        medida: getMedidaPara(p),
+        precio_unitario: Number(p.precio_unitario || 0),
       };
     });
 
@@ -102,20 +167,17 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
         : pedido.total
           ? parseFloat(String(pedido.total))
           : 0;
-    const totalCantidad = detallesVenta.reduce((s, d) => s + (Number(d.cantidad) || 0), 0);
-    if (total > 0 && totalCantidad > 0) {
-      const precioPorUnidad = total / totalCantidad;
-      detallesVenta.forEach((d) => {
-        d.precio_unitario = parseFloat(precioPorUnidad.toFixed(2));
-      });
-    }
 
-    const productosParaRecibo = (pedido.productos || []).map((p, idx) => ({
-      cantidad: typeof p.cantidad === 'string' ? parseFloat(p.cantidad) : Number(p.cantidad),
-      medida: p.medida,
-      nombre: p.nombre,
-      precio_unitario: Number(detallesVenta[idx]?.precio_unitario ?? 0),
-    }));
+    const productosParaRecibo = (pedido.productos || []).map((p, idx) => {
+      const finalUnit = getMedidaPara(p);
+      console.log(`📦 RECIBO: "${p.nombre}" -> Unidad Final: "${finalUnit}"`);
+      return {
+        cantidad: typeof p.cantidad === 'string' ? parseFloat(p.cantidad) : Number(p.cantidad),
+        medida: finalUnit,
+        nombre: p.nombre,
+        precio_unitario: Number(detallesVenta[idx]?.precio_unitario ?? 0),
+      };
+    });
 
     const payload = {
       cliente: pedido.comprador,
@@ -141,6 +203,11 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
         fecha: new Date().toISOString(),
         ...(data.comentarios ? { comentarios: data.comentarios } : {}),
         ...(vuelto > 0 ? { cambio: Number(vuelto.toFixed(2)) } : {}),
+        ticketId: response.data?.id || pedido.id || 0,
+        atendidoPor: JSON.parse(sessionStorage.getItem('auth_user') || '{}').username || 'MOSTRADOR',
+        subtotal: Number(total),
+        iva: 0,
+        descuento: 0,
       };
 
       setTimeout(() => {
@@ -226,7 +293,8 @@ const pedidosCancelados = () => {
 onMounted(() => {
   datos.value = authStore.user;
 
-  // Cargar pedidos existentes
+  // Cargar pedidos existentes e inventario para unidades
+  void cargarInventario();
   void cargarPedidos();
 
   // Escuchar nuevos pedidos por socket
@@ -304,7 +372,7 @@ onUnmounted(() => {
               <h4>Productos:</h4>
               <ul>
                 <li v-for="(prod, idx) in pedido.productos" :key="idx">
-                  <strong>{{ prod.nombre }}</strong>: {{ prod.cantidad }} {{ prod.medida }}
+                  <strong>{{ prod.nombre }}</strong>: {{ prod.cantidad }} {{ getMedidaPara(prod) }}
                 </li>
               </ul>
             </div>
@@ -342,7 +410,7 @@ onUnmounted(() => {
               <h4>Productos:</h4>
               <ul>
                 <li v-for="(prod, idx) in pedido.productos" :key="idx">
-                  <strong>{{ prod.nombre }}</strong>: {{ prod.cantidad }} {{ prod.medida }}
+                  <strong>{{ prod.nombre }}</strong>: {{ prod.cantidad }} {{ getMedidaPara(prod) }}
                 </li>
               </ul>
             </div>
@@ -369,7 +437,7 @@ onUnmounted(() => {
               <h4>Productos:</h4>
               <ul>
                 <li v-for="(prod, idx) in pedido.productos" :key="idx">
-                  <strong>{{ prod.nombre }}</strong>: {{ prod.cantidad }} {{ prod.medida }}
+                  <strong>{{ prod.nombre }}</strong>: {{ prod.cantidad }} {{ getMedidaPara(prod) }}
                 </li>
               </ul>
             </div>

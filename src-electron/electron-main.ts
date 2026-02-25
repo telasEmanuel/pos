@@ -1,13 +1,13 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import os from 'os';
-import { fileURLToPath } from 'url';
+//import { fileURLToPath } from 'url';
 import { execFile } from 'child_process';
 
 // needed in case process is undefined under Linux
 const platform = process.platform || os.platform();
 
-const currentDir = fileURLToPath(new URL('.', import.meta.url));
+const currentDir = __dirname;
 
 // Para que las notificaciones funcionen en Windows, necesitamos un ID de modelo de usuario
 if (process.platform === 'win32') {
@@ -42,7 +42,13 @@ async function getPreferredPrinterName(): Promise<string> {
   const list = printers ?? [];
   const thermalPrinter = list.find((p) => {
     const n = p.name.toLowerCase();
-    return n.includes('pos') || n.includes('thermal') || n.includes('ticket') || n.includes('tm-t20') || n.includes('xprinter');
+    return (
+      n.includes('pos') ||
+      n.includes('thermal') ||
+      n.includes('ticket') ||
+      n.includes('tm-t20') ||
+      n.includes('xprinter')
+    );
   });
   return thermalPrinter?.name || list[0]?.name || '';
 }
@@ -170,18 +176,18 @@ async function createWindow() {
 /*ipcMain.handle('print-ticket', async (event, html: string) => {
   const win = new BrowserWindow({ show: false })
   await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
-  
+
   // Obtener lista de impresoras
   const printers = await win.webContents.getPrintersAsync()
   console.log('Impresoras disponibles:', printers)
-  
+
   // Buscar impresora térmica (ajusta el nombre según tu impresora)
-  const thermalPrinter = printers.find(p => 
-    p.name.toLowerCase().includes('pos') || 
+  const thermalPrinter = printers.find(p =>
+    p.name.toLowerCase().includes('pos') ||
     p.name.toLowerCase().includes('thermal') ||
     p.name.toLowerCase().includes('ticket')
   )
-  
+
   const options = {
     silent: true,
     deviceName: thermalPrinter?.name || printers[0]?.name || '',
@@ -199,31 +205,37 @@ ipcMain.handle('print-ticket', async (event, html: string) => {
   const win = new BrowserWindow({
     show: false,
     webPreferences: {
-      nodeIntegration: false
-    }
-  })
+      nodeIntegration: false,
+    },
+  });
 
-  await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
-  const printers = await win.webContents.getPrintersAsync()
+  await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+  const printers = await win.webContents.getPrintersAsync();
   const thermalPrinter = printers.find((p) => {
-    const n = p.name.toLowerCase()
-    return n.includes('pos') || n.includes('thermal') || n.includes('ticket') || n.includes('tm-t20') || n.includes('xprinter')
-  })
-  
+    const n = p.name.toLowerCase();
+    return (
+      n.includes('pos') ||
+      n.includes('thermal') ||
+      n.includes('ticket') ||
+      n.includes('tm-t20') ||
+      n.includes('xprinter')
+    );
+  });
+
   // Configuración de impresión para tickets térmicos 58mm
   const options: Parameters<typeof win.webContents.print>[0] = {
     silent: true, // Imprimir sin diálogo
     margins: {
-      marginType: 'none' as const
+      marginType: 'none' as const,
     },
     pageSize: {
       width: 58000, // 58mm en micrones
-      height: 200000 // Largo suficiente para ticket
+      height: 200000, // Largo suficiente para ticket
     },
     printBackground: true,
     scaleFactor: 100,
-    deviceName: thermalPrinter?.name || printers[0]?.name || ''
-  }
+    deviceName: thermalPrinter?.name || printers[0]?.name || '',
+  };
 
   try {
     // print() no es async, pero necesitamos dar tiempo para que se procese
@@ -231,20 +243,20 @@ ipcMain.handle('print-ticket', async (event, html: string) => {
       // Cerrar la ventana después de que se complete la impresión
       setTimeout(() => {
         if (!win.isDestroyed()) {
-          win.close()
+          win.close();
         }
-      }, 1000)
-    })
-    
-    return { success: true }
+      }, 1000);
+    });
+
+    return { success: true };
   } catch (error) {
-    console.error('Error printing:', error)
+    console.error('Error printing:', error);
     if (!win.isDestroyed()) {
-      win.close()
+      win.close();
     }
-    throw error
+    throw error;
   }
-})
+});
 
 ipcMain.handle('open-cash-drawer', async () => {
   if (process.platform !== 'win32') {
@@ -284,7 +296,7 @@ ipcMain.handle('print-ticket', async (event, html: string) => {
   })
 
   await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
-  
+
   // Configuración de impresión para tickets de 80mm
   const options = {
     silent: true, // Imprimir sin diálogo

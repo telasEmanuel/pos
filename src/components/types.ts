@@ -24,4 +24,9 @@ export interface ReceiptData {
   cambio?: number;
   ahorroTapicero?: number;
   pagoDetalle?: PaymentBreakdown;
+  ticketId?: string | number;
+  atendidoPor?: string;
+  subtotal?: number;
+  iva?: number;
+  descuento?: number;
 }

@@ -36,6 +36,9 @@ const login = async () => {
         case 'vendedor':
           await router.push('/select');
           break;
+        case 'visor':
+          await router.push('/select');
+          break;
         case 'admin':
           try {
             const adminUrl = (import.meta.env.VITE_ADMIN_URL as string)

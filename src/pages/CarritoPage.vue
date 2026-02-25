@@ -29,11 +29,14 @@ interface InventarioItem {
     nombre: string;
     precio?: number;
     precio_tap?: number;
+    medida_ind?: string;
+    medida?: string;
   };
   cantidad?: number | undefined;
   precio?: number;
   precio_tap?: number;
   medida_ind?: string;
+  medida?: string;
 }
 
 interface ItemCarrito {
@@ -91,7 +94,7 @@ const buscar = async (valor: string) => {
         nombre: p.producto?.nombre || 'Producto',
         precio: Number(p.precio ?? p.producto?.precio ?? 0),
         precio_tap: Number(p.precio_tap ?? p.producto?.precio_tap ?? 0),
-        medida_ind: p.medida_ind || 'X',
+        medida_ind: p.medida_ind || p.medida || p.producto?.medida_ind || p.producto?.medida || '',
         cantidad: Number(p.cantidad ?? 0),
       }))
       .slice(0, 12);
@@ -131,7 +134,7 @@ const agregarAlCarrito = (p: Producto) => {
       bodega_id: p.bodega_id ?? 1, // Default to bodega 1
       nombre: p.nombre || 'Producto',
       cantidad: 0.5,
-      medida: p.medida_ind || 'UNID',
+      medida: p.medida_ind || '',
       stock: stockDisponible,
       precio: Number(p.precio ?? 0),
       precio_tap: Number(p.precio_tap ?? 0),
@@ -185,18 +188,27 @@ const enviar = async (extra: { comprador?: string } = {}) => {
   }
   enviando.value = true;
   try {
-    const pedido = {
-      comprador: (extra.comprador ?? cliente.value ?? '').trim(),
-      productos: carrito.value.map((i) => ({
-        productoId: i.productoId,
+    const compradorFinal = (extra.comprador ?? cliente.value ?? '').trim();
+    if (!compradorFinal) {
+      throw new Error('El nombre del cliente es requerido');
+    }
+
+    const productos = carrito.value.map((i) => (
+      {
+        productoId: Number(i.productoId),
         nombre: i.nombre,
-        cantidad: i.cantidad,
+        cantidad: Number(i.cantidad),
         medida: i.medida,
-      })),
+        precio_unitario: Number(esPrecioTap.value ? i.precio_tap ?? 0 : i.precio ?? 0),
+      }
+    ));
+
+    const pedido = {
+      comprador: compradorFinal,
+      productos,
       estado: 'pendiente' as const,
     };
-    // Log payload for debugging server errors
-    //console.log('Enviando pedido payload:', pedido)
+
     const creado = await pedidosStore.agregarPedido(pedido);
 
     // Notificar por socket para que otros clientes muestren la notificación
@@ -207,19 +219,20 @@ const enviar = async (extra: { comprador?: string } = {}) => {
     sessionStorage.removeItem(import.meta.env.VITE_STORAGE_KEY);
     return creado;
   } catch (err: unknown) {
-    const maybe = err as { response?: { data?: unknown }; message?: string };
-    console.error('Error creando pedido', err, maybe.response?.data ?? null);
-    const data = maybe.response?.data;
+    const apiErr = err as { response?: { data?: unknown }; message?: string };
+
+    const data = apiErr.response?.data;
     let serverError: string | undefined;
-    if (
-      typeof data === 'object' &&
-      data !== null &&
-      'error' in data &&
-      typeof (data as Record<string, unknown>).error === 'string'
-    ) {
-      serverError = (data as Record<string, unknown>).error as string;
+
+    if (typeof data === 'object' && data !== null) {
+      if ('error' in data && typeof (data as Record<string, unknown>).error === 'string') {
+        serverError = (data as Record<string, unknown>).error as string;
+      } else if ('message' in data && typeof (data as Record<string, unknown>).message === 'string') {
+        serverError = (data as Record<string, unknown>).message as string;
+      }
     }
-    const msg = serverError ?? maybe.message ?? 'Error al crear pedido';
+
+    const msg = serverError ?? apiErr.message ?? 'Error al crear pedido';
     $q.notify({ message: String(msg), color: 'negative' });
   } finally {
     enviando.value = false;
@@ -249,14 +262,17 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
     $q.notify({ message: 'Nombre de cliente inválido', color: 'warning' });
     return;
   }
-  
+
   // IMPORTANTE: Capturar los datos del carrito ANTES de que se limpien
-  const productosParaRecibo = carrito.value.map(i => ({
-    cantidad: i.cantidad,
-    medida: i.medida,
-    nombre: i.nombre,
-    precio_unitario: esPrecioTap.value ? Number(i.precio_tap ?? 0) : Number(i.precio ?? 0)
-  }));
+  const productosParaRecibo = carrito.value.map(i => {
+    console.log(`🔍 Mapeando producto para recibo: ${i.nombre}, Cant: ${i.cantidad}, Medida: "${i.medida}"`);
+    return {
+      cantidad: i.cantidad,
+      medida: i.medida,
+      nombre: i.nombre,
+      precio_unitario: esPrecioTap.value ? Number(i.precio_tap ?? 0) : Number(i.precio ?? 0)
+    };
+  });
 
   const ahorroTapicero = esPrecioTap.value
     ? carrito.value.reduce((acc, i) => {
@@ -266,17 +282,18 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
       return acc + ahorroUnitario * Number(i.cantidad ?? 0);
     }, 0)
     : 0;
-  
+
   const totalParaRecibo = Number(total.value); // Capturar ANTES de limpiar
-  
+
   console.log('📦 Productos capturados para el recibo:', productosParaRecibo);
   console.log('💰 Total capturado:', totalParaRecibo);
-  
+
   // Construir detallesVenta a partir del carrito antes de enviarlo
   // CRITICAL: Use precio_tap when toggle is active, otherwise use precio
   const detallesVenta = carrito.value.map((i) => ({
     producto_id: Number(i.productoId),
     cantidad: Number(i.cantidad),
+    medida: i.medida,
     precio_unitario: esPrecioTap.value ? Number(i.precio_tap ?? 0) : Number(i.precio ?? 0),
   }));
 
@@ -315,8 +332,13 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
         ...(comentarios.value ? { comentarios: comentarios.value } : {}),
         ...(vuelto > 0 ? { cambio: vuelto } : {}),
         ...(ahorroTapicero > 0 ? { ahorroTapicero: Number(ahorroTapicero.toFixed(2)) } : {}),
+        ticketId: resp.data?.id || creado.id || 0,
+        atendidoPor: JSON.parse(sessionStorage.getItem('auth_user') || '{}').username || 'MOSTRADOR',
+        subtotal: totalParaRecibo,
+        iva: 0,
+        descuento: 0,
       };
-      
+
       console.log('📋 Datos del recibo:', reciboDatos);
       currentReceipt.value = reciboDatos;
 
@@ -575,7 +597,7 @@ onMounted(() => {
 
     <PaymentModal v-if="showPagoModal" :show="true" :total="total" :clientName="cliente" :initialComments="comentarios"
       @close="showPagoModal = false" @confirm="confirmarPago" />
-    
+
     <!-- Receipt Printer Component (hidden, only for printing) -->
     <ReceiptPrinter ref="receiptPrinter" :data="currentReceipt" />
   </main>

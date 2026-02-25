@@ -14,6 +14,8 @@ interface Producto {
     id?: number;
     nombre: string;
     categoria_id: number;
+    medida_ind?: string;
+    medida?: string;
   };
   categoria_id?: number;
   categoriaId?: number;
@@ -21,6 +23,7 @@ interface Producto {
   cantidad: number;
   medida_gru: string;
   medida_ind: string;
+  medida?: string;
   precio: number;
   precio_tap: number;
   // New fields for card design
@@ -95,6 +98,11 @@ const formatNumber = (val: number | string | undefined | null) => {
   });
 };
 
+const round = (val: number, decimals = 2) => {
+  const multiplier = Math.pow(10, decimals);
+  return Math.round(val * multiplier) / multiplier;
+};
+
 const formatPrice = (val: number | string | undefined | null) => {
   if (val === null || val === undefined) return '$0.00';
   return `$${Number(val).toLocaleString('en-US', {
@@ -135,54 +143,75 @@ const handlePan = (details: PanDetails) => {
 
 const handleClose = () => {
   const isEditing = !!editOrderId.value;
-  $q.dialog({
-    title: isEditing ? 'Cancelar Edición' : 'Limpiar Pedido',
-    message: isEditing
-      ? '¿Estás seguro de que deseas cancelar la edición? Se perderán los cambios.'
-      : '¿Estás seguro de que deseas vaciar el carrito y limpiar los datos?',
-    cancel: true,
-    persistent: true
-  }).onOk(() => {
+  // Usar confirmación estándar si el diálogo de Quasar falla por alguna razón de contexto
+  if (confirm(isEditing ? '¿Cancelar la edición del pedido?' : '¿Deseas vaciar el pedido seleccionado?')) {
     isRestoring.value = true;
     sessionStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem('edit_order_id');
     editOrderId.value = null;
     cartFromStorage.value = [];
-    productos.value.forEach((p) => { p.cantidadPedido = 0; });
+    // Resetear todas las cantidades locales
+    productos.value.forEach(p => { p.cantidadPedido = 0; });
     productos.value = [...productos.value];
+
     nombreCliente.value = '';
     esPrecioTap.value = false;
     showAllSelected.value = false;
+
     setTimeout(() => { isRestoring.value = false; }, 200);
     $q.notify({
-      message: isEditing ? 'Edición cancelada' : 'Pedido limpiado',
-      color: 'info'
+      message: isEditing ? 'Edición cancelada' : 'Pedido borrado',
+      color: 'info',
+      icon: 'close'
     });
-  });
+  }
 };
 
-const removeItem = (pId: number) => {
-  const prod = productos.value.find(p => Number(p.producto_id ?? p.producto?.id) === pId);
+const removeItem = (pIdArg: number | string) => {
+  const targetId = Number(pIdArg);
+  const prod = productos.value.find(p => {
+    const currentId = Number(p.producto_id ?? p.producto?.id);
+    return currentId === targetId;
+  });
   if (prod) {
     prod.cantidadPedido = 0;
+    productos.value = [...productos.value];
   }
-  cartFromStorage.value = cartFromStorage.value.filter(item => item.productoId !== pId);
+  cartFromStorage.value = cartFromStorage.value.filter(item => Number(item.productoId) !== targetId);
   guardarTemporal();
 };
 
-const updateItemQty = (pId: number, delta: number) => {
-  const prod = productos.value.find(p => Number(p.producto_id ?? p.producto?.id) === pId);
+const updateItemQty = (pIdArg: number | string, delta: number) => {
+  const targetId = Number(pIdArg);
+  const prod = productos.value.find(p => {
+    const currentId = Number(p.producto_id ?? p.producto?.id);
+    return currentId === targetId;
+  });
+
   if (prod) {
-    const newVal = Math.max(0, Math.min(Number(prod.cantidad), prod.cantidadPedido + delta));
-    prod.cantidadPedido = newVal;
+    if (delta > 0) {
+      incrementarCantidad(prod);
+    } else {
+      decrementarCantidad(prod);
+    }
+    productos.value = [...productos.value];
   } else {
-    const item = cartFromStorage.value.find(s => s.productoId === pId);
+    const item = cartFromStorage.value.find(s => Number(s.productoId) === targetId);
     if (item) {
-      item.cantidadPedido = Math.max(0, item.cantidadPedido + delta);
+      const step = Math.abs(delta);
+      if (delta > 0) {
+        const max = Number(item.stock ?? 999999);
+        const restante = max - item.cantidadPedido;
+        const actualStep = (restante <= 0.6 && step === 0.5) ? 0.1 : step;
+        item.cantidadPedido = round(Math.min(max, item.cantidadPedido + actualStep));
+      } else {
+        const actualStep = (item.cantidadPedido <= 0.61 && step === 0.5) ? 0.1 : step;
+        item.cantidadPedido = round(Math.max(0, item.cantidadPedido - actualStep));
+      }
       cartFromStorage.value = [...cartFromStorage.value];
-      guardarTemporal();
     }
   }
+  guardarTemporal();
 };
 
 const cargarProductos = async () => {
@@ -264,7 +293,7 @@ const summaryItems = computed(() => {
       productoId: pId,
       nombre: p.producto?.nombre,
       cantidadPedido: p.cantidadPedido,
-      medida: p.medida_ind,
+      medida: p.medida_ind || p.medida || p.producto?.medida_ind || p.producto?.medida || '',
       precio: p.precio,
       precio_tap: p.precio_tap,
       isCurrent: true,
@@ -276,15 +305,17 @@ const summaryItems = computed(() => {
 });
 
 const incrementarCantidad = (prod: ProductoConCantidad) => {
-  const max = prod.cantidad;
-  if (prod.cantidadPedido < max) {
-    prod.cantidadPedido = prod.cantidadPedido + 0.5;
+  const restante = Number(prod.cantidad) - prod.cantidadPedido;
+  if (restante > 0) {
+    const step = restante <= 0.6 ? 0.1 : 0.5;
+    prod.cantidadPedido = round(Math.min(Number(prod.cantidad), prod.cantidadPedido + step));
   }
 };
 
 const decrementarCantidad = (prod: ProductoConCantidad) => {
   if (prod.cantidadPedido > 0) {
-    prod.cantidadPedido = prod.cantidadPedido - 0.5;
+    const step = prod.cantidadPedido <= 0.61 ? 0.1 : 0.5;
+    prod.cantidadPedido = round(Math.max(0, prod.cantidadPedido - step));
   }
 };
 
@@ -317,7 +348,8 @@ const enviarPedido = async () => {
       productoId: p.productoId,
       nombre: p.nombre || 'Producto',
       cantidad: p.cantidadPedido,
-      medida: p.medida || 'Unidad',
+      medida: p.medida || '',
+      precio_unitario: esPrecioTap.value ? Number(p.precio_tap ?? 0) : Number(p.precio ?? 0),
     }));
 
     const pedido = {
@@ -553,7 +585,8 @@ watch(
               <div v-if="editOrderId" class="edit-pill">EDITANDO PEDIDO #{{ editOrderId }}</div>
               <div v-else class="summary-title text-weight-bold">RESUMEN DEL PEDIDO</div>
             </div>
-            <q-btn icon="close" flat round dense color="grey-7" @click.stop="handleClose">
+            <q-btn icon="close" flat round dense color="grey-7" size="md" @click.stop="handleClose" @mousedown.stop
+              @touchstart.stop>
               <q-tooltip>{{ editOrderId ? 'Cancelar Edición' : 'Limpiar Pedido' }}</q-tooltip>
             </q-btn>
           </div>
@@ -572,32 +605,40 @@ watch(
               <q-toggle v-model="esPrecioTap" label="Precio Tapicero" color="brown" dense class="text-weight-medium" />
               <q-btn v-if="summaryItems.length > 0" :label="showAllSelected ? 'Ocultar Lista' : 'Ver Productos'"
                 :icon="showAllSelected ? 'expand_less' : 'list'" flat dense no-caps size="sm" color="primary"
-                @click="showAllSelected = !showAllSelected" />
+                @click.stop="showAllSelected = !showAllSelected" @mousedown.stop @touchstart.stop />
             </div>
           </div>
 
           <!-- Selection List -->
-          <div v-if="showAllSelected" class="order-items-list q-pa-sm scroll">
-            <div v-for="p in summaryItems" :key="p.productoId" class="order-item q-mb-xs">
-              <div class="item-main row items-center justify-between no-wrap">
-                <div class="item-info col">
-                  <div class="item-name text-weight-bold">{{ p.nombre }}</div>
-                  <div class="item-meta text-caption text-grey-7" v-if="!p.isCurrent">Otra categoría</div>
-                </div>
-                <div class="item-qty-zone row items-center no-wrap">
-                  <div class="qty-control row items-center no-wrap">
-                    <q-btn icon="remove" flat round dense size="xs" color="primary"
-                      @click="updateItemQty(p.productoId, -0.5)" />
-                    <span class="qty-val text-weight-bolder q-px-xs">{{ p.cantidadPedido }}</span>
-                    <q-btn icon="add" flat round dense size="xs" color="primary"
-                      @click="updateItemQty(p.productoId, 0.5)" />
+          <div v-if="showAllSelected" class="order-items-list q-px-sm q-pb-sm scroll">
+            <q-list separator dense>
+              <q-item v-for="p in summaryItems" :key="p.productoId" class="q-my-xs q-pa-sm bg-white"
+                style="border-radius: 12px; border: 1px solid #f1f5f9;">
+                <q-item-section>
+                  <q-item-label class="text-weight-bold" style="font-size: 0.95rem;">{{ p.nombre }}</q-item-label>
+                  <q-item-label caption v-if="!p.isCurrent" class="text-grey-7">Otra categoría</q-item-label>
+                </q-item-section>
+
+                <q-item-section side>
+                  <div class="row items-center no-wrap">
+                    <div class="qty-control row items-center no-wrap bg-grey-2 q-pa-xs rounded-borders"
+                      style="border-radius: 8px;">
+                      <q-btn icon="remove" flat round dense size="md" color="primary"
+                        @click.stop="updateItemQty(p.productoId, -0.5)" @mousedown.stop @touchstart.stop />
+                      <span class="qty-val text-weight-bolder q-px-sm"
+                        style="min-width: 50px; text-align: center; font-size: 1.1rem;">{{ p.cantidadPedido }}</span>
+                      <q-btn icon="add" flat round dense size="md" color="primary"
+                        @click.stop="updateItemQty(p.productoId, 0.5)" @mousedown.stop @touchstart.stop />
+                    </div>
+                    <span class="unit-label q-ml-md text-caption text-weight-medium" style="min-width: 45px;">{{
+                      p.medida
+                      }}</span>
+                    <q-btn icon="delete" flat round dense color="negative" size="md"
+                      @click.stop="removeItem(p.productoId)" @mousedown.stop @touchstart.stop class="q-ml-sm" />
                   </div>
-                  <span class="unit-label q-ml-xs text-caption text-weight-medium">{{ p.medida }}</span>
-                  <q-btn icon="delete" flat round dense color="negative" size="xs" @click="removeItem(p.productoId)"
-                    class="q-ml-xs" />
-                </div>
-              </div>
-            </div>
+                </q-item-section>
+              </q-item>
+            </q-list>
           </div>
 
           <!-- Total & Actions -->
@@ -633,11 +674,11 @@ watch(
             </div>
 
             <div class="card-body">
-              <!-- Badge for Rolls/Group Measure -->
+              <!-- Badge for Rolls/Group Measure
               <div v-if="prod.rollos !== prod.cantidad" class="badge-group">
                 <span class="badge-icon">📦</span>
                 <span class="badge-text">{{ formatNumber(prod.rollos) }} {{ prod.medida_gru }}</span>
-              </div>
+              </div> -->
 
               <!-- Main Quantity Display -->
               <div class="stat-main">
@@ -662,7 +703,7 @@ watch(
                   -
                 </button>
                 <input type="number" v-model.number="prod.cantidadPedido" inputmode="decimal" min="0" step="any"
-                  :max="prod.cantidad" class="qty-input" :disabled="prod.cantidad == 0" />
+                  :max="prod.cantidad" class="qty-input" :disabled="prod.cantidad < prod.cantidadPedido" />
                 <button @click="incrementarCantidad(prod)" class="btn-qty"
                   :disabled="prod.cantidadPedido >= prod.cantidad">
                   +

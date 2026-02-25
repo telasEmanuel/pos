@@ -6,6 +6,9 @@ import { socket } from 'src/boot/socket'
 import { useQuasar } from 'quasar'
 import { usePedidosStore, type Pedido, type PedidoBackend } from 'src/stores/pedidos-store'
 import { storeToRefs } from 'pinia'
+import InventoryManagerModal from 'src/components/InventoryManagerModal.vue';
+
+const showInventoryManager = ref(false);
 
 const $q = useQuasar()
 const pedidosStore = usePedidosStore()
@@ -171,6 +174,17 @@ onUnmounted(() => {
             </q-item-section>
           </q-item>
 
+          <q-item clickable @click="showInventoryManager = true">
+            <q-item-section avatar>
+              <q-icon name="inventory" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Gestión de Inventario</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <InventoryManagerModal :show="showInventoryManager" @close="showInventoryManager = false" />
+
           <q-item clickable @click="cerrarSesion">
             <q-item-section avatar>
               <q-icon name="logout" />
@@ -217,6 +231,82 @@ onUnmounted(() => {
               <q-item-label>Pedidos</q-item-label>
             </q-item-section>
           </q-item>
+
+          <!--<q-item clickable @click="showInventoryManager = true">
+            <q-item-section avatar>
+              <q-icon name="inventory" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Gestión de Inventario</q-item-label>
+            </q-item-section>
+          </q-item>-->
+
+          <q-item clickable @click="cerrarSesion">
+            <q-item-section avatar>
+              <q-icon name="logout" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Cerrar sesión</q-item-label>
+            </q-item-section>
+          </q-item>
+        </div>
+
+        <div v-if="datos?.email === 'visor'">
+          <q-item clickable to="/select">
+            <q-item-section avatar>
+              <q-icon name="home" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Inicio</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable to="/tienda">
+            <q-item-section avatar>
+              <q-icon name="store" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Categorías Tienda</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable to="/bodega">
+            <q-item-section avatar>
+              <q-icon name="warehouse" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Categorías Bodega</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable to="/corte">
+            <q-item-section avatar>
+              <q-icon name="point_of_sale" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Corte de Caja</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable to="/reporte">
+            <q-item-section avatar>
+              <q-icon name="table_rows" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Reporte de Existencias</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable @click="showInventoryManager = true">
+            <q-item-section avatar>
+              <q-icon name="inventory" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Gestión de Inventario</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <InventoryManagerModal :show="showInventoryManager" @close="showInventoryManager = false" />
 
           <q-item clickable @click="cerrarSesion">
             <q-item-section avatar>

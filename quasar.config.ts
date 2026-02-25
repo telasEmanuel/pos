@@ -28,6 +28,7 @@ export default defineConfig((/* ctx */) => {
 
       'roboto-font', // optional, you are not bound to it
       'material-icons', // optional, you are not bound to it
+      'material-symbols-outlined',
     ],
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#build
@@ -68,11 +69,11 @@ export default defineConfig((/* ctx */) => {
           {
             vueTsc: true,
             eslint: {
-              lintCommand: 'eslint -c ./eslint.config.js "./src*/**/*.{ts,js,mjs,cjs,vue}"',
+              lintCommand: 'eslint -c ./eslint.config.mjs "./src*/**/*.{ts,js,mjs,cjs,vue}"',
               useFlatConfig: true,
             },
+            server: false,
           },
-          { server: false },
         ],
       ],
     },
@@ -166,7 +167,9 @@ export default defineConfig((/* ctx */) => {
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/developing-electron-apps/configuring-electron
     electron: {
-      // extendElectronMainConf (esbuildConf) {},
+      extendElectronMainConf(esbuildConf) {
+        esbuildConf.format = 'cjs';
+      },
       // extendElectronPreloadConf (esbuildConf) {},
       // extendPackageJson (json) {},
       // Electron preload scripts (if any) from /src-electron, WITHOUT file extension

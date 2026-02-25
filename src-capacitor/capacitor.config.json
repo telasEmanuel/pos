@@ -1,5 +1,1 @@
-{
-  "appId": "com.telasemanuel.app",
-  "appName": "Telas Emanuel App",
-  "webDir": "www"
-}
+{"appId":"com.telasemanuel.app","appName":"Telas Emanuel App","webDir":"www","server":{}}

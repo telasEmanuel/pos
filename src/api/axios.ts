@@ -21,17 +21,41 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
-    const err = error instanceof Error ? error : new Error(String(error));
     if (typeof error === 'object' && error !== null && 'response' in error) {
-      const apiError = error as { response?: { status?: number } };
-      if (apiError.response?.status === 401) {
+      const apiError = error as {
+        response?: { status?: number; data?: unknown; statusText?: string };
+        config?: { method?: string; url?: string; data?: unknown };
+        message?: string;
+      };
+      const status = apiError.response?.status;
+      const responseData = apiError.response?.data;
+      const method = apiError.config?.method?.toUpperCase();
+      const url = apiError.config?.url;
+      const requestData = apiError.config?.data;
+
+      console.error(`\n${'='.repeat(60)}\n🔴 API ERROR ${status}\n${'='.repeat(60)}`);
+      console.error(`📍 ${method} ${url}`);
+      console.error(`📤 Request:`, requestData ? JSON.parse(requestData as string) : 'No data');
+      console.error(`📥 Response:`, responseData);
+      console.error(`${'='.repeat(60)}\n`);
+
+      if (status === 401) {
         const authStore = useAuthStore();
         authStore.logout();
         // Optionally redirect to login
         // window.location.href = '/'
       }
+
+      // Return the actual error object with full context
+      if (error instanceof Error) {
+        return Promise.reject(error);
+      }
+      return Promise.reject(new Error(JSON.stringify(error)));
     }
-    return Promise.reject(err);
+    if (error instanceof Error) {
+      return Promise.reject(error);
+    }
+    return Promise.reject(new Error(JSON.stringify(error)));
   },
 );
 
