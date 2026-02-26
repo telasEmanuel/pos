@@ -537,7 +537,8 @@ onMounted(() => {
                     -
                   </button>
                   <input type="number" class="qty-input" v-model.number="item.cantidad"
-                    @change="actualizarCantidad(item.productoId, item.cantidad)" min="0.5" step="0.5" :max="item.stock" />
+                    @change="actualizarCantidad(item.productoId, item.cantidad)" min="0.5" step="0.5"
+                    :max="item.stock" />
                   <span class="item-medida">{{ item.medida }}</span>
                   <button class="qty-btn" @click="actualizarCantidad(item.productoId, item.cantidad + 0.5)"
                     :disabled="item.cantidad >= item.stock">
