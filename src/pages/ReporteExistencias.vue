@@ -28,7 +28,7 @@ const filter = ref('');
 const showInventoryManager = ref(false);
 const itemToEdit = ref<InventarioItem | null>(null);
 
-const columns: { name: string; align: 'left' | 'center' | 'right'; label: string; field: string | ((row: InventarioItem) => unknown); sortable?: boolean }[] = [
+const columns: { name: string; align: 'left' | 'center' | 'right'; label: string; field: string | ((row: InventarioItem) => string | number); sortable?: boolean }[] = [
   { name: 'nombre', align: 'left', label: 'Producto', field: (row: InventarioItem) => row.producto?.nombre || 'Sin nombre', sortable: true },
   { name: 'cantidad', align: 'center', label: 'Existencia', field: 'cantidad', sortable: true },
   { name: 'inv_min', align: 'center', label: 'Mínimo', field: (row: InventarioItem) => row.inv_min ?? row.producto?.inv_min ?? 0, sortable: true },
@@ -125,7 +125,7 @@ onMounted(() => {
     </q-table>
 
     <InventoryManagerModal :show="showInventoryManager" :initial-item="itemToEdit"
-      @close="() => { showInventoryManager = false; itemToEdit = null }" @updated="cargarInventario" />
+      @close="() => { showInventoryManager = false; itemToEdit = null }" @updated="() => { void cargarInventario() }" />
   </q-page>
 </template>
 

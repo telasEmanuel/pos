@@ -49,6 +49,7 @@ const stats = ref({
 });
 const loading = ref(true);
 const productosMap = ref<Map<number, string>>(new Map());
+const medidasMap = ref<Map<number, string>>(new Map());
 const receiptPrinter = ref<InstanceType<typeof ReceiptPrinter> | null>(null);
 const lastReceipt = ref<ReceiptData | null>(null);
 
@@ -137,7 +138,7 @@ const buildLastReceiptFromVenta = (venta: Venta): ReceiptData => {
     cliente: (venta.cliente || 'Cliente General').trim(),
     productos: (venta.detallesVenta || []).map((detalle) => ({
       cantidad: Number(detalle.cantidad || 0),
-      medida: detalle.medida || '',
+      medida: (detalle.medida || getProductoMedida(detalle.producto_id)).trim(),
       nombre: getProductoNombre(detalle.producto_id),
       precio_unitario: Number(detalle.precio_unitario || 0),
     })),
@@ -190,11 +191,13 @@ const loadProductos = async () => {
     const res = await api.get('inventarios');
     const items = Array.isArray(res.data) ? res.data : (res.data.items ?? []);
 
-    items.forEach((item: { producto_id?: number; producto?: { id?: number; nombre?: string } }) => {
+    items.forEach((item: { producto_id?: number; producto?: { id?: number; nombre?: string; medida?: string; medida_ind?: string }; medida?: string; medida_ind?: string }) => {
       const productoId = item.producto_id ?? item.producto?.id;
       const nombre = item.producto?.nombre;
+      const medida = item.medida || item.medida_ind || item.producto?.medida || item.producto?.medida_ind || 'pieza';
       if (productoId && nombre) {
         productosMap.value.set(productoId, nombre);
+        medidasMap.value.set(productoId, medida.trim());
       }
     });
     updateLastReceipt();
@@ -205,6 +208,10 @@ const loadProductos = async () => {
 
 const getProductoNombre = (productoId: number): string => {
   return productosMap.value.get(productoId) || `Producto #${productoId}`;
+};
+
+const getProductoMedida = (productoId: number): string => {
+  return medidasMap.value.get(productoId) || 'pieza';
 };
 
 const printLastReceipt = () => {
@@ -441,7 +448,7 @@ onMounted(() => {
                 class="row justify-between q-mb-xs text-body2">
                 <div>
                   <span class="text-weight-bold">{{ formatNumber(detalle.cantidad) }}</span>
-                  <span v-if="detalle.medida"> {{ detalle.medida }}</span> x {{
+                  {{ detalle.medida || getProductoMedida(detalle.producto_id) }} x {{
                     getProductoNombre(detalle.producto_id) }}
                 </div>
                 <div class="text-grey-7">

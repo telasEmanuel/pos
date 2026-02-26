@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import api from 'src/api/axios';
-import { usePedidosStore } from 'src/stores/pedidos-store';
+import { usePedidosStore, type Pedido } from 'src/stores/pedidos-store';
 import { useQuasar } from 'quasar';
 import { useAuthStore } from 'src/stores/auth';
 import { socket } from 'src/boot/socket';
@@ -241,7 +241,7 @@ const enviarPedido = async () => {
   if (!hayProductosSeleccionados.value || !nombreCliente.value.trim()) return;
   enviandoPedido.value = true;
   try {
-    const pedido = {
+    const pedido: Omit<Pedido, 'id' | 'fecha'> = {
       comprador: nombreCliente.value.trim(),
       productos: summaryItems.value.map((p) => ({
         productoId: Number(p.productoId),

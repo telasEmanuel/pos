@@ -162,16 +162,23 @@ const paymentLinesHTML = (data: ReceiptData) => {
 }
 
 const generateReceiptHTML = (data: ReceiptData) => {
-  const products = data.productos.map(p => `
-    <tr class="product-name-row">
-      <td colspan="4"><b>${escapeHTML(p.nombre)}</b></td>
+  const products = data.productos.map(p => {
+    const qty = toSafeNumber(p.cantidad)
+    const price = toSafeNumber(p.precio_unitario ?? 0)
+    const importe = qty * price
+    const qtyStr = formatQty(p.cantidad)
+    const medida = p.medida ? ` ${p.medida}` : ''
+    const cantidadConMedida = `${qtyStr}${medida}`
+    const nombre = escapeHTML(p.nombre)
+    const importeStr = toMoney(importe)
+    return `
+    <tr>
+      <td style="width: 15%;">${cantidadConMedida}</td>
+      <td style="width: 55%;">${nombre}</td>
+      <td style="width: 30%; text-align: right;">${importeStr}</td>
     </tr>
-    <tr class="qty-row">
-      <td>Cant: ${formatQty(p.cantidad)} ${escapeHTML(p.medida ?? '')}</td>
-      <td></td>
-      <td></td>
-    </tr>
-  `).join('')
+  `
+  }).join('')
 
   return `
   <html>
@@ -179,19 +186,19 @@ const generateReceiptHTML = (data: ReceiptData) => {
       <meta charset="UTF-8" />
       <style>
         html, body {
-          width: 58mm;
+          width: 70mm;
           margin: 0;
           padding: 0;
           color: #000 !important;
         }
         @page {
-          size: 58mm auto;
+          size: 70mm auto;
           margin: 0;
         }
         body {
           font-family: monospace;
           font-size: 11px;
-          max-width: 58mm;
+          max-width: 70mm;
           overflow: hidden;
           line-height: 1.2;
           color: #000 !important;
@@ -214,10 +221,25 @@ const generateReceiptHTML = (data: ReceiptData) => {
         th {
           text-align: left;
           font-weight: 900;
-          border-bottom: 2px double #000;
-          padding: 2px 0;
+          border-bottom: 1.5px dashed #000;
+          padding: 3px 4px 3px 0;
+          word-break: break-word;
         }
-        td { padding: 1px 0; vertical-align: top; font-weight: 700; }
+        td {
+          padding: 2px 4px 2px 0;
+          vertical-align: top;
+          font-weight: 700;
+          word-break: break-word;
+          overflow-wrap: break-word;
+        }
+        td:first-child, th:first-child {
+          text-align: left;
+          padding-right: 6px;
+        }
+        td:nth-child(2), th:nth-child(2) {
+          padding-left: 2px;
+          padding-right: 4px;
+        }
         .col-right { text-align: right; }
 
         .totals-table td { padding: 1px 0; font-weight: 900; }
@@ -244,25 +266,22 @@ const generateReceiptHTML = (data: ReceiptData) => {
       <div class="line"></div>
 
       <div style="font-weight: 700;">Fecha: ${formatReceiptDate(data.fecha)}</div>
-      <div style="font-weight: 700;">Ticket: <b>${data.ticketId || '000000'}</b></div>
+      <div style="font-weight: 700;">Ticket: <b>${data.ticketId || '0'}</b></div>
       <div style="font-weight: 700;">Método de Pago: ${escapeHTML(data.metodoPago || 'NO ESPECIFICADO')}</div>
       <div style="font-weight: 700;">Cliente: ${escapeHTML(data.cliente || 'PÚBLICO EN GENERAL')}</div>
 
       <div class="double-line"></div>
-      <div style="font-weight:900; font-size: 12px;">DESCRIPCIÓN</div>
       <table>
         <colgroup>
-          <col style="width: 20%" />
-          <col style="width: 20%" />
-          <col style="width: 30%" />
+          <col style="width: 25%" />
+          <col style="width: 45%" />
           <col style="width: 30%" />
         </colgroup>
         <thead>
           <tr>
-            <th>CANT</th>
-            <th>UNI</th>
-            <th class="col-right">PRECIO U.</th>
-            <th class="col-right">IMPORTE</th>
+            <th style="width: 25%;">CANT</th>
+            <th style="width: 45%;">DESCRIPCIÓN</th>
+            <th style="width: 30%; text-align: right;">IMPORTE</th>
           </tr>
         </thead>
         <tbody>

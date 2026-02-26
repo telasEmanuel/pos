@@ -126,7 +126,7 @@ const buscar = async (valor: string) => {
         nombre: p.producto?.nombre || 'Producto',
         precio: Number(p.precio ?? p.producto?.precio ?? 0),
         precio_tap: Number(p.precio_tap ?? p.producto?.precio_tap ?? 0),
-        medida_ind: p.medida_ind || 'X',
+        medida_ind: (p.medida || p.medida_ind || p.producto?.medida || p.producto?.medida_ind || 'pieza').trim(),
         cantidad: Number(p.cantidad ?? 0),
       }))
       .slice(0, 12);
@@ -166,7 +166,7 @@ const agregarAlCarrito = (p: Producto) => {
       bodega_id: p.bodega_id ?? 1, // Default to bodega 1
       nombre: p.nombre || 'Producto',
       cantidad: 0.5,
-      medida: p.medida_ind || '',
+      medida: (p.medida_ind || 'pieza').trim(),
       stock: stockDisponible,
       precio: parseDecimal(p.precio ?? 0),
       precio_tap: parseDecimal(p.precio_tap ?? 0),
@@ -322,6 +322,7 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
   const detallesVenta = carrito.value.map((i) => ({
     producto_id: Number(i.productoId),
     cantidad: Number(i.cantidad),
+    medida: i.medida || 'pieza',
     precio_unitario: esPrecioTap.value ? Number(i.precio_tap ?? 0) : Number(i.precio ?? 0),
   }));
 
