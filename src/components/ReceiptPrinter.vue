@@ -155,12 +155,12 @@ const paymentLinesHTML = (data: ReceiptData) => {
 
   if (data.metodoPago === 'TARJETA') {
     const amount = detail.tarjeta > 0 ? detail.tarjeta : detail.totalPagado
-    return `<div>Pago con tarjeta: ${toMoney(amount)}</div>`
+    return `<div>Pagó con: ${toMoney(amount)}</div>`
   }
 
   if (data.metodoPago === 'TRANSFERENCIA') {
     const amount = detail.transferencia > 0 ? detail.transferencia : detail.totalPagado
-    return `<div>Pago con transferencia: ${toMoney(amount)}</div>`
+    return `<div>Pagó con: ${toMoney(amount)}</div>`
   }
 
   if (data.metodoPago === 'MIXTO') {
@@ -319,20 +319,13 @@ const generateReceiptHTML = (data: ReceiptData) => {
         </colgroup>
         <tbody>
           <tr>
-            <td class="totals-label">SubTotal:</td>
-            <td class="col-right">${toMoney(data.subtotal || data.total)}</td>
+            <td colspan="2" style="text-align: right; font-weight: 900;">${paymentLinesHTML(data)}</td>
           </tr>
           <tr>
-            <td class="totals-label">Descuento:</td>
-            <td class="col-right">${toMoney(data.descuento || 0)}</td>
+            <td colspan="2" style="text-align: right; font-weight: 900;">Cambio: ${toMoney(data.cambio || 0)}</td>
           </tr>
           <tr>
-            <td class="totals-label">I.V.A:</td>
-            <td class="col-right">${toMoney(data.iva || 0)}</td>
-          </tr>
-          <tr style="font-weight:bold">
-            <td class="totals-label">TOTAL:</td>
-            <td class="col-right">${toMoney(data.total)}</td>
+            <td colspan="2" style="text-align: right; font-weight: 900;">TOTAL: ${toMoney(data.total)}</td>
           </tr>
         </tbody>
       </table>
@@ -340,11 +333,20 @@ const generateReceiptHTML = (data: ReceiptData) => {
       <br/>
       <div class="center">${formatAmountInLetters(data.total)}</div>
 
+      ${data.ahorroTapicero && data.ahorroTapicero > 0 ? `
+      <div class="double-line"></div>
+      <div style="text-align: center; font-weight: 900; font-size: 13px; color: #000; margin: 8px 0;">
+        ¡USTED SE AHORRÓ!
+      </div>
+      <div style="text-align: center; font-weight: 900; font-size: 16px; color: #000; margin: 4px 0;">
+        ${toMoney(data.ahorroTapicero)}
+      </div>
+      ` : ''}
+
       <div class="footer">
         <div>Le atendió: ${escapeHTML(data.atendidoPor || 'MOSTRADOR')}</div>
         <br/>
         <div class="center">
-          ${paymentLinesHTML(data)}
           ${formatCommentsHTML(data.comentarios)}
           <br/>
           <!--<div>El ticket pertenece a factura diaria</div>

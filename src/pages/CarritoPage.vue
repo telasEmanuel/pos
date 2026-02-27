@@ -374,8 +374,20 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
       // Trigger print
       setTimeout(() => {
         if (receiptPrinter.value) {
-          console.log('🖨️ Llamando a print()...')
-          receiptPrinter.value.print()
+          // Cambia este valor a 1 cuando quieras volver a imprimir solo un ticket
+          const ticketCopies = 2;
+
+          const printCopies = async () => {
+            for (let copy = 0; copy < ticketCopies; copy += 1) {
+              console.log(`🖨️ Imprimiendo ticket ${copy + 1}/${ticketCopies}...`)
+              await receiptPrinter.value?.print()
+              if (copy < ticketCopies - 1) {
+                await new Promise((resolve) => setTimeout(resolve, 300))
+              }
+            }
+          }
+
+          void printCopies()
         } else {
           console.error('❌ ReceiptPrinter no está disponible')
         }

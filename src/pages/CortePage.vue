@@ -235,36 +235,148 @@ const printVenta = async (venta: Venta) => {
 const formatMoney = (amount: number) => `$${Number(amount || 0).toFixed(2)}`;
 
 const generateDailyReportHTML = () => {
+  const fechaGeneracion = new Date();
+  const dia = String(fechaGeneracion.getDate()).padStart(2, '0');
+  const mes = String(fechaGeneracion.getMonth() + 1).padStart(2, '0');
+  const anio = fechaGeneracion.getFullYear();
+  const horas = String(fechaGeneracion.getHours()).padStart(2, '0');
+  const minutos = String(fechaGeneracion.getMinutes()).padStart(2, '0');
+  const fechaFormateada = `${dia}/${mes}/${anio} ${horas}:${minutos}`;
+
   return `
   <html>
     <head>
       <meta charset="UTF-8" />
       <style>
-        html, body { width: 58mm; margin: 0; padding: 0; }
-        @page { size: 58mm auto; margin: 0; }
-        body { font-family: monospace; font-size: 13px; max-width: 58mm; padding: 8px; box-sizing: border-box; }
+        html, body {
+          width: 70mm;
+          margin: 0;
+          padding: 0;
+          color: #000 !important;
+        }
+        @page {
+          size: 70mm auto;
+          margin: 0;
+        }
+        body {
+          font-family: Consolas, 'Courier New', monospace;
+          font-size: 12px;
+          max-width: 70mm;
+          overflow: hidden;
+          line-height: 1.3;
+          color: #000 !important;
+          -webkit-print-color-adjust: exact;
+        }
         .center { text-align: center; }
-        .line { border-top: 1px dashed #000; margin: 6px 0; }
-        .row { display: flex; justify-content: space-between; align-items: center; margin: 3px 0; }
-        .label { font-weight: bold; }
-        .value { text-align: right; }
-        .title { font-size: 16px; font-weight: bold; }
+        .right { text-align: right; }
+        .line { border-top: 1.5px dashed #000; margin: 4px 0; }
+        .double-line { border-top: 1.5px double #000; margin: 4px 0; }
+
+        .header-section { margin-bottom: 8px; }
+        .header-title { font-size: 15px; font-weight: 900; letter-spacing: 0.5px; }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          table-layout: fixed;
+          color: #000 !important;
+        }
+
+        .totals-table td { padding: 1px 0; font-weight: 900; }
+        .totals-label { text-align: right; padding-right: 8px; font-weight: 900; }
+        .col-right { text-align: right; }
+
+        .footer { margin-top: 10px; font-size: 11px; font-weight: 700; }
+
+        b, strong { font-weight: 900 !important; }
       </style>
     </head>
+
     <body>
-      <div class="center title">CORTE DE CAJA</div>
-      <div class="center">${displayDate.value}</div>
+      <div class="header-section center">
+        <div class="header-title">TELAS EMANUEL</div>
+        <div style="font-weight: 700;">AV. JOSÉ LÓPEZ PORTILLO SM 94</div>
+        <div style="font-weight: 700;">MZA 101, LT 11, CANCUN, Q. ROO</div>
+        <div style="font-weight: 700;">C.P. 77517 RFC LOGS851027BL5</div>
+        <div style="font-weight: 700;">Tel: 998 702 2579</div>
+        <br/>
+      </div>
+
       <div class="line"></div>
-      <div class="row"><span class="label">Ingreso Total:</span><span class="value">${formatMoney(stats.value.granTotal)}</span></div>
-      <div class="row"><span class="label">Transacciones:</span><span class="value">${ventas.value.length}</span></div>
+
+      <div style="font-weight: 700;">Fecha: ${fechaFormateada}</div>
+      <div style="font-weight: 900; font-size: 14px; text-align: center; margin: 8px 0;">
+        *** CORTE DE CAJA ***
+      </div>
+      <div style="font-weight: 700;">Periodo: ${displayDate.value}</div>
+
+      <div class="double-line"></div>
+
+      <table class="totals-table">
+        <colgroup>
+          <col style="width: 60%" />
+          <col style="width: 40%" />
+        </colgroup>
+        <tbody>
+          <tr>
+            <td class="totals-label">Transacciones:</td>
+            <td class="col-right">${ventas.value.length}</td>
+          </tr>
+        </tbody>
+      </table>
+
       <div class="line"></div>
-      <div class="row"><span class="label">Efectivo:</span><span class="value">${formatMoney(stats.value.efectivo)}</span></div>
-      <div class="row"><span class="label">Tarjeta:</span><span class="value">${formatMoney(stats.value.tarjeta)}</span></div>
-      <div class="row"><span class="label">Transferencia:</span><span class="value">${formatMoney(stats.value.transferencia)}</span></div>
-      <div class="row"><span class="label">Dólares:</span><span class="value">USD ${formatNumber(stats.value.usd)}</span></div>
+      <div style="font-weight: 900; text-align: center; margin: 6px 0;">DESGLOSE POR MÉTODO</div>
       <div class="line"></div>
-      <div class="center">Generado: ${new Date().toLocaleString()}</div>
-      <br><br><br>
+
+      <table class="totals-table">
+        <colgroup>
+          <col style="width: 60%" />
+          <col style="width: 40%" />
+        </colgroup>
+        <tbody>
+          <tr>
+            <td class="totals-label">Efectivo:</td>
+            <td class="col-right">${formatMoney(stats.value.efectivo)}</td>
+          </tr>
+          <tr>
+            <td class="totals-label">Tarjeta:</td>
+            <td class="col-right">${formatMoney(stats.value.tarjeta)}</td>
+          </tr>
+          <tr>
+            <td class="totals-label">Transferencia:</td>
+            <td class="col-right">${formatMoney(stats.value.transferencia)}</td>
+          </tr>
+          <tr>
+            <td class="totals-label">Dólares (USD):</td>
+            <td class="col-right">${formatNumber(stats.value.usd)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="double-line"></div>
+
+      <table class="totals-table">
+        <colgroup>
+          <col style="width: 60%" />
+          <col style="width: 40%" />
+        </colgroup>
+        <tbody>
+          <tr style="font-weight:bold">
+            <td class="totals-label">INGRESO TOTAL:</td>
+            <td class="col-right">${formatMoney(stats.value.granTotal)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="footer">
+        <br/>
+        <div class="center">
+          <div>Este es un reporte interno</div>
+          <div>=== Gracias ===</div>
+        </div>
+      </div>
+      <br><br>
     </body>
   </html>
   `;

@@ -27,6 +27,7 @@ const inventario = ref<InventarioItem[]>([]);
 const filter = ref('');
 const showInventoryManager = ref(false);
 const itemToEdit = ref<InventarioItem | null>(null);
+const bodegaSeleccionada = ref<1 | 2>(1);
 
 const columns: { name: string; align: 'left' | 'center' | 'right'; label: string; field: string | ((row: InventarioItem) => string | number); sortable?: boolean }[] = [
   { name: 'nombre', align: 'left', label: 'Producto', field: (row: InventarioItem) => row.producto?.nombre || 'Sin nombre', sortable: true },
@@ -40,7 +41,7 @@ const columns: { name: string; align: 'left' | 'center' | 'right'; label: string
 const lowStockItems = computed(() => {
   return inventario.value.filter(item => {
     const min = item.inv_min ?? item.producto?.inv_min ?? 0;
-    return item.cantidad < min && item.bodega_id === 1;
+    return item.cantidad < min && item.bodega_id === bodegaSeleccionada.value;
   });
 });
 
@@ -74,10 +75,20 @@ onMounted(() => {
 <template>
   <q-page padding class="reporte-page">
     <div class="header-section q-mb-lg">
-      <h1 class="text-h4 text-weight-bold gradient-text q-mb-md">Reporte de Existencias Bajas</h1>
-      <p class="text-subtitle1 text-grey-8">
-        Productos en tienda con existencia por debajo del nivel mínimo configurado.
-      </p>
+      <div class="row items-center justify-between q-mb-md">
+        <div>
+          <h1 class="text-h4 text-weight-bold gradient-text q-mb-sm">Reporte de Existencias Bajas</h1>
+          <p class="text-subtitle1 text-grey-8 q-my-none">
+            Productos con existencia por debajo del nivel mínimo configurado.
+          </p>
+        </div>
+        <div class="bodega-toggle">
+          <q-btn-toggle v-model="bodegaSeleccionada" :options="[
+            { label: 'Tienda', value: 1 },
+            { label: 'Bodega', value: 2 }
+          ]" color="amber-8" text-color="white" toggle-color="amber-9" />
+        </div>
+      </div>
     </div>
 
     <q-table :rows="lowStockItems" :columns="columns" row-key="id" :loading="loading" :filter="filter" flat bordered
@@ -132,6 +143,18 @@ onMounted(() => {
 <style scoped>
 .reporte-page {
   background: transparent;
+}
+
+.header-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+@media (max-width: 768px) {
+  .bodega-toggle {
+    margin-top: 1rem;
+  }
 }
 
 .gradient-text {

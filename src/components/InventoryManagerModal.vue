@@ -59,7 +59,7 @@ const newPrecio = ref(0);
 const newPrecioTap = ref(0);
 const newInvMin = ref<number>(0);
 const updateLoading = ref(false);
-const deleteLoading = ref(false);
+//const deleteLoading = ref(false);
 
 // Preview state
 const showPreview = ref(false);
@@ -276,7 +276,7 @@ const updateProduct = async () => {
   }
 };
 
-const deleteProduct = () => {
+/*const deleteProduct = () => {
   console.log('🗑️ deleteProduct llamada');
   console.log('📦 selectedItem:', selectedItem.value);
 
@@ -338,7 +338,7 @@ const deleteProduct = () => {
   }).onCancel(() => {
     console.log('❌ Usuario canceló la eliminación');
   });
-};
+};*/
 
 const generatePreview = () => {
   console.log('🔍 Generando preview, editMode:', editMode.value);
@@ -659,8 +659,8 @@ const formatValue = (value: unknown): string => {
 
               <q-separator class="q-my-sm" />
 
-              <q-btn label="Eliminar Producto" icon="delete" color="negative" outline class="rounded-btn"
-                :loading="deleteLoading" @click="deleteProduct" />
+              <!--<q-btn label="Eliminar Producto" icon="delete" color="negative" outline class="rounded-btn"
+                :loading="deleteLoading" @click="deleteProduct" />-->
             </div>
 
             <!-- Quantity Edit Mode -->

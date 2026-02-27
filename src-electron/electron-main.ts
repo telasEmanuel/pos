@@ -15,6 +15,7 @@ if (process.platform === 'win32') {
 }
 
 let mainWindow: BrowserWindow | undefined;
+let lastUsedPrinterName = '';
 
 function runPowerShell(command: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -221,6 +222,8 @@ ipcMain.handle('print-ticket', async (event, html: string) => {
       n.includes('xprinter')
     );
   });
+  const selectedPrinterName = thermalPrinter?.name || printers[0]?.name || '';
+  lastUsedPrinterName = selectedPrinterName;
 
   // Configuración de impresión para tickets térmicos 58mm
   const options: Parameters<typeof win.webContents.print>[0] = {
@@ -234,7 +237,7 @@ ipcMain.handle('print-ticket', async (event, html: string) => {
     },
     printBackground: true,
     scaleFactor: 100,
-    deviceName: thermalPrinter?.name || printers[0]?.name || '',
+    deviceName: selectedPrinterName,
   };
 
   try {
@@ -263,7 +266,7 @@ ipcMain.handle('open-cash-drawer', async () => {
     return { success: false, message: 'Apertura de caja RAW implementada para Windows' };
   }
 
-  const printerName = await getPreferredPrinterName();
+  const printerName = lastUsedPrinterName || (await getPreferredPrinterName());
   if (!printerName) {
     throw new Error('No se encontró impresora para abrir caja');
   }
