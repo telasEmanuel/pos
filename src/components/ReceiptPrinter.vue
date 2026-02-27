@@ -110,6 +110,25 @@ const formatQty = (value: unknown) => {
   return Number.isInteger(qty) ? String(qty) : qty.toFixed(2)
 }
 
+const abreviarMedida = (medida: string | undefined) => {
+  if (!medida) return ''
+
+  const medidaUpper = medida.toUpperCase().trim()
+
+  const abreviaturas: Record<string, string> = {
+    'PIEZAS': 'PZ',
+    'PIEZA': 'PZ',
+    'METROS': 'MTS',
+    'METRO': 'MTS',
+    'LITROS': 'LTS',
+    'LITRO': 'LTS',
+    'KILOS': 'KG',
+    'KILO': 'KG'
+  }
+
+  return abreviaturas[medidaUpper] || medida
+}
+
 const escapeHTML = (text: string) => text
   .replaceAll('&', '&amp;')
   .replaceAll('<', '&lt;')
@@ -162,12 +181,14 @@ const paymentLinesHTML = (data: ReceiptData) => {
 }
 
 const generateReceiptHTML = (data: ReceiptData) => {
+
   const products = data.productos.map(p => {
     const qty = toSafeNumber(p.cantidad)
-    const price = toSafeNumber(p.precio_unitario ?? 0)
-    const importe = qty * price
+    const precioUnitario = toSafeNumber(p.precio_unitario ?? 0)
+    const importe = qty * precioUnitario
+
     const qtyStr = formatQty(p.cantidad)
-    const medida = p.medida ? ` ${p.medida}` : ''
+    const medida = p.medida ? ` ${abreviarMedida(p.medida)}` : ''
     const cantidadConMedida = `${qtyStr}${medida}`
     const nombre = escapeHTML(p.nombre)
     const importeStr = toMoney(importe)
@@ -196,11 +217,11 @@ const generateReceiptHTML = (data: ReceiptData) => {
           margin: 0;
         }
         body {
-          font-family: monospace;
-          font-size: 11px;
+          font-family: Consolas, 'Courier New', monospace;
+          font-size: 12px;
           max-width: 70mm;
           overflow: hidden;
-          line-height: 1.2;
+          line-height: 1.3;
           color: #000 !important;
           -webkit-print-color-adjust: exact;
         }
@@ -210,7 +231,7 @@ const generateReceiptHTML = (data: ReceiptData) => {
         .double-line { border-top: 1.5px double #000; margin: 4px 0; }
 
         .header-section { margin-bottom: 8px; }
-        .header-title { font-size: 14px; font-weight: 900; }
+        .header-title { font-size: 15px; font-weight: 900; letter-spacing: 0.5px; }
 
         table {
           width: 100%;
@@ -245,7 +266,7 @@ const generateReceiptHTML = (data: ReceiptData) => {
         .totals-table td { padding: 1px 0; font-weight: 900; }
         .totals-label { text-align: right; padding-right: 8px; font-weight: 900; }
 
-        .footer { margin-top: 10px; font-size: 10px; font-weight: 700; }
+        .footer { margin-top: 10px; font-size: 11px; font-weight: 700; }
         .barcode { margin: 8px auto; width: 80%; border-top: 15px solid #000; }
 
         /* Force boldness for thermal printers */

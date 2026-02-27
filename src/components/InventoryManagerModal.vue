@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import api from 'src/api/axios';
 import { useQuasar } from 'quasar';
 
@@ -78,6 +78,13 @@ const createForm = ref({
 const createLoading = ref(false);
 
 const selectItem = (item: InventarioItem) => {
+  console.log('📦 Item seleccionado:', {
+    id: item.id,
+    cantidad: item.cantidad,
+    inv_min: item.inv_min,
+    producto: item.producto?.nombre
+  });
+
   selectedItem.value = item;
   newQuantity.value = item.cantidad;
   newProductName.value = item.producto?.nombre || '';
@@ -87,6 +94,8 @@ const selectItem = (item: InventarioItem) => {
   editMode.value = null;
   showPreview.value = false;
   currentState.value = 'update';
+
+  console.log('✅ Valores inicializados - newInvMin:', newInvMin.value);
 };
 
 const checkPassword = () => {
@@ -144,8 +153,7 @@ const updateStock = async () => {
   updateLoading.value = true;
   try {
     await api.put(`inventarios/${selectedItem.value.id}`, {
-      cantidad: newQuantity.value,
-      inv_min: newInvMin.value
+      cantidad: newQuantity.value
     });
 
     $q.notify({
@@ -155,7 +163,7 @@ const updateStock = async () => {
     });
 
     emit('updated');
-    resetAndClose();
+    resetToSearch();
   } catch (err) {
     console.error('Error updating stock:', err);
     $q.notify({
@@ -169,6 +177,8 @@ const updateStock = async () => {
 };
 
 const updateProduct = async () => {
+  console.log('🔄 updateProduct llamada con editMode:', editMode.value);
+
   if (!selectedItem.value?.producto?.id) return;
 
   // Validaciones
@@ -202,6 +212,12 @@ const updateProduct = async () => {
       updateData.precio = parseFloat(newPrecio.value.toString());
       updateData.precio_tap = parseFloat(newPrecioTap.value.toString());
     } else if (editMode.value === 'inv_min') {
+      console.log('🔧 Actualizando inv_min:', {
+        inventarioId: selectedItem.value.id,
+        valorAnterior: selectedItem.value.inv_min,
+        valorNuevo: newInvMin.value
+      });
+
       if (newInvMin.value < 0) {
         $q.notify({
           message: 'La cantidad mínima no puede ser negativa',
@@ -211,16 +227,30 @@ const updateProduct = async () => {
         updateLoading.value = false;
         return;
       }
-      await api.put(`inventarios/${selectedItem.value.id}`, {
-        inv_min: newInvMin.value
-      });
-      $q.notify({
-        message: 'Cantidad mínima actualizada correctamente',
-        color: 'positive',
-        icon: 'check'
-      });
-      emit('updated');
-      resetAndClose();
+
+      try {
+        const response = await api.put(`inventarios/${selectedItem.value.id}`, {
+          inv_min: newInvMin.value
+        });
+        console.log('✅ Respuesta del servidor:', response.data);
+
+        $q.notify({
+          message: 'Cantidad mínima actualizada correctamente',
+          color: 'positive',
+          icon: 'check'
+        });
+        emit('updated');
+        resetToSearch();
+      } catch (error) {
+        console.error('❌ Error actualizando inv_min:', error);
+        $q.notify({
+          message: 'Error al actualizar la cantidad mínima',
+          color: 'negative',
+          icon: 'error'
+        });
+      } finally {
+        updateLoading.value = false;
+      }
       return;
     }
 
@@ -233,7 +263,7 @@ const updateProduct = async () => {
     });
 
     emit('updated');
-    resetAndClose();
+    resetToSearch();
   } catch (err) {
     console.error('Error updating product:', err);
     $q.notify({
@@ -247,16 +277,39 @@ const updateProduct = async () => {
 };
 
 const deleteProduct = () => {
-  if (!selectedItem.value?.producto?.id) return;
+  console.log('🗑️ deleteProduct llamada');
+  console.log('📦 selectedItem:', selectedItem.value);
+
+  // Usar producto_id en lugar de producto.id
+  const productoId = selectedItem.value?.producto_id || selectedItem.value?.producto?.id;
+
+  if (!productoId) {
+    console.log('❌ No hay producto seleccionado o no tiene ID');
+    $q.notify({
+      message: 'No se pudo identificar el producto a eliminar',
+      color: 'negative',
+      icon: 'error'
+    });
+    return;
+  }
+
+  console.log('✅ ID del producto a eliminar:', productoId);
+  console.log('📝 Tipo de ID:', typeof productoId);
 
   $q.dialog({
     title: 'Confirmar eliminación',
-    message: `¿Estás seguro de que deseas eliminar "${selectedItem.value.producto.nombre}"? Esta acción no se puede deshacer.`,
+    message: `¿Estás seguro de que deseas eliminar este producto?\n\nID: ${productoId}\n\nEsta acción no se puede deshacer.`,
     cancel: true,
-    persistent: true
+    persistent: true,
+    html: true
   }).onOk(() => {
+    console.log('💾 Usuario confirmó eliminación');
     deleteLoading.value = true;
-    api.delete(`productos/${selectedItem.value!.producto!.id}`).then(() => {
+    console.log('🔧 Llamando a DELETE /productos/' + productoId);
+
+    api.delete(`productos/${productoId}`).then((response) => {
+      console.log('✅ Respuesta del servidor:', response.data);
+
       $q.notify({
         message: 'Producto eliminado correctamente',
         color: 'positive',
@@ -264,21 +317,38 @@ const deleteProduct = () => {
       });
 
       emit('updated');
-      resetAndClose();
+      resetToSearch();
     }).catch((err) => {
-      console.error('Error deleting product:', err);
+      console.error('❌ Error eliminando producto:', err);
+      console.error('📝 Detalles del error:', {
+        response: err.response?.data,
+        status: err.response?.status,
+        message: err.message
+      });
+
       $q.notify({
-        message: 'Error al eliminar el producto',
+        message: err.response?.data?.error || 'Error al eliminar el producto',
         color: 'negative',
         icon: 'error'
       });
     }).finally(() => {
+      console.log('🏁 Finalizando proceso de eliminación');
       deleteLoading.value = false;
     });
+  }).onCancel(() => {
+    console.log('❌ Usuario canceló la eliminación');
   });
 };
 
 const generatePreview = () => {
+  console.log('🔍 Generando preview, editMode:', editMode.value);
+  console.log('📊 Valores actuales:', {
+    cantidad: selectedItem.value?.cantidad,
+    inv_min: selectedItem.value?.inv_min,
+    newQuantity: newQuantity.value,
+    newInvMin: newInvMin.value
+  });
+
   previewChanges.value = {};
 
   if (editMode.value === 'quantity') {
@@ -288,6 +358,7 @@ const generatePreview = () => {
         nuevo: newQuantity.value
       };
     }
+  } else if (editMode.value === 'inv_min') {
     if (newInvMin.value !== selectedItem.value?.inv_min) {
       previewChanges.value.inv_min = {
         anterior: selectedItem.value?.inv_min || 5,
@@ -314,15 +385,9 @@ const generatePreview = () => {
         nuevo: newPrecioTap.value
       };
     }
-  } else if (editMode.value === 'inv_min') {
-    if (newInvMin.value !== selectedItem.value?.inv_min) {
-      previewChanges.value.inv_min = {
-        anterior: selectedItem.value?.inv_min || 5,
-        nuevo: newInvMin.value
-      };
-    }
   }
 
+  console.log('✨ Preview generado:', previewChanges.value);
   showPreview.value = true;
 };
 
@@ -392,7 +457,7 @@ const crearProducto = async () => {
     });
 
     emit('updated');
-    resetAndClose();
+    resetToSearch();
   } catch (err) {
     console.error('Error creating product:', err);
     $q.notify({
@@ -405,13 +470,13 @@ const crearProducto = async () => {
   }
 };
 
-const resetAndClose = () => {
-  currentState.value = 'auth';
-  password.value = '';
+const resetToSearch = () => {
+  currentState.value = 'search';
   searchQuery.value = '';
   searchResults.value = [];
   selectedItem.value = null;
   editMode.value = null;
+  showPreview.value = false;
   createForm.value = {
     nombre: '',
     descripcion: '',
@@ -420,6 +485,12 @@ const resetAndClose = () => {
     categoria_id: null,
     cantidad: 1
   };
+};
+
+const resetAndClose = () => {
+  currentState.value = 'auth';
+  password.value = '';
+  resetToSearch();
   emit('close');
 };
 
@@ -451,6 +522,29 @@ onMounted(async () => {
     categories.value = Array.isArray(res.data) ? res.data : (res.data.items ?? []);
   } catch (err) {
     console.error('Error loading categories:', err);
+  }
+});
+
+// Watch para resetear el estado cuando se abre el modal
+watch(() => props.show, (newValue, oldValue) => {
+  // Cuando el modal se abre (cambia de false a true)
+  if (newValue && !oldValue) {
+    console.log('🔓 Modal abierto - reseteando a estado de autenticación');
+    currentState.value = 'auth';
+    password.value = '';
+    searchQuery.value = '';
+    searchResults.value = [];
+    selectedItem.value = null;
+    editMode.value = null;
+    showPreview.value = false;
+    createForm.value = {
+      nombre: '',
+      descripcion: '',
+      precio: 0.00,
+      precio_tap: 0.00,
+      categoria_id: null,
+      cantidad: 1
+    };
   }
 });
 
@@ -561,7 +655,7 @@ const formatValue = (value: unknown): string => {
               <q-btn label="Editar Precios" icon="price_change" color="positive" outline class="rounded-btn"
                 @click="editMode = 'prices'" />
               <q-btn label="Editar Mín. de Inventario" icon="low_priority" color="purple" outline class="rounded-btn"
-                @click="editMode = 'inv_min'" />
+                @click="() => { console.log('🎯 Click en Editar Mín. Inventario'); editMode = 'inv_min'; console.log('✅ editMode ahora es:', editMode); }" />
 
               <q-separator class="q-my-sm" />
 
@@ -585,12 +679,12 @@ const formatValue = (value: unknown): string => {
                 </div>
               </div>
 
-              <div class="row q-col-gutter-md">
+              <!--<div class="row q-col-gutter-md">
                 <div class="col-12">
                   <q-input v-model.number="newInvMin" type="number" label="Cantidad Mínima" filled
                     @keyup.enter="generatePreview" />
                 </div>
-              </div>
+              </div>-->
 
               <div class="row q-gutter-md">
                 <q-btn label="Cancelar" flat color="grey" class="col rounded-btn" @click="editMode = null" />
@@ -655,9 +749,11 @@ const formatValue = (value: unknown): string => {
               <div class="row q-gutter-md q-mt-md">
                 <q-btn label="Atrás" flat color="grey" class="col rounded-btn" @click="showPreview = false" />
                 <q-btn label="Guardar Cambios" color="positive" class="col rounded-btn" :loading="updateLoading"
-                  @click="updateStock" v-if="editMode === 'quantity'" />
+                  @click="() => { console.log('💾 Guardando cambios - editMode:', editMode); updateStock(); }"
+                  v-if="editMode === 'quantity'" />
                 <q-btn label="Guardar Cambios" color="positive" class="col rounded-btn" :loading="updateLoading"
-                  @click="updateProduct" v-else />
+                  @click="() => { console.log('💾 Guardando cambios (else) - editMode:', editMode); updateProduct(); }"
+                  v-else />
               </div>
             </div>
           </div>

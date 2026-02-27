@@ -703,7 +703,7 @@ watch(
                   -
                 </button>
                 <input type="number" v-model.number="prod.cantidadPedido" inputmode="decimal" min="0" step="any"
-                  :max="prod.cantidad" class="qty-input" :disabled="prod.cantidad < prod.cantidadPedido" />
+                  :max="prod.cantidad" class="qty-input" :disabled="prod.cantidad < prod.cantidadPedido && prod.cantidad === 0" />
                 <button @click="incrementarCantidad(prod)" class="btn-qty"
                   :disabled="prod.cantidadPedido >= prod.cantidad">
                   +

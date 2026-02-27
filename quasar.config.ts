@@ -98,7 +98,7 @@ export default defineConfig((/* ctx */) => {
       // components: [],
       directives: ['TouchPan'],
       // Quasar plugins
-      plugins: ['AppVisibility', 'Notify'],
+      plugins: ['AppVisibility', 'Notify', 'Dialog'],
     },
 
     // animations: 'all', // --- includes all animations
