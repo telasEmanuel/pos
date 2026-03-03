@@ -4,6 +4,7 @@ import api from 'src/api/axios';
 import { useQuasar, date } from 'quasar';
 import ReceiptPrinter from 'src/components/ReceiptPrinter.vue';
 import type { ReceiptData } from 'src/components/types';
+import * as XLSX from 'xlsx';
 
 // Interfaces based on API introspection
 interface DetalleVenta {
@@ -46,6 +47,57 @@ const stats = ref({
   transferencia: 0,
   usd: 0,
   granTotal: 0
+});
+
+// Calcular stats con débito y crédito separados
+const statsCalculadas = computed(() => {
+  let efectivo = 0;
+  let debito = 0;
+  let credito = 0;
+  let transferencia = 0;
+  let usd = 0;
+
+  ventas.value.forEach(venta => {
+    const metodoPago = (venta.metodo_pago || 'EFECTIVO').toUpperCase();
+    const comentarios = venta.comentarios || '';
+    const total = Number(venta.total) || 0;
+
+    if (metodoPago === 'EFECTIVO') {
+      efectivo += total;
+    } else if (metodoPago === 'DEBITO') {
+      debito += total;
+    } else if (metodoPago === 'CREDITO') {
+      credito += total;
+    } else if (metodoPago === 'TARJETA') {
+      // Verificar en comentarios si es débito o crédito
+      if (comentarios.includes('[Tipo Tarjeta: DEBITO]')) {
+        debito += total;
+      } else if (comentarios.includes('[Tipo Tarjeta: CREDITO]')) {
+        credito += total;
+      } else {
+        // Si no se especifica, asumir que es tarjeta genérica (débito por defecto)
+        debito += total;
+      }
+    } else if (metodoPago === 'TRANSFERENCIA') {
+      transferencia += total;
+    }
+
+    // Extraer USD de los comentarios si existen
+    const usdMatch = comentarios.match(/USD:\s*([\d.]+)/i);
+    if (usdMatch && usdMatch[1]) {
+      usd += parseFloat(usdMatch[1]);
+    }
+  });
+
+  return {
+    efectivo,
+    debito,
+    credito,
+    tarjeta: debito + credito, // Total de tarjetas
+    transferencia,
+    usd,
+    granTotal: efectivo + debito + credito + transferencia
+  };
 });
 const loading = ref(true);
 const productosMap = ref<Map<number, string>>(new Map());
@@ -337,15 +389,19 @@ const generateDailyReportHTML = () => {
         <tbody>
           <tr>
             <td class="totals-label">Efectivo:</td>
-            <td class="col-right">${formatMoney(stats.value.efectivo)}</td>
+            <td class="col-right">${formatMoney(statsCalculadas.value.efectivo)}</td>
           </tr>
           <tr>
-            <td class="totals-label">Tarjeta:</td>
-            <td class="col-right">${formatMoney(stats.value.tarjeta)}</td>
+            <td class="totals-label">Débito:</td>
+            <td class="col-right">${formatMoney(statsCalculadas.value.debito)}</td>
+          </tr>
+          <tr>
+            <td class="totals-label">Crédito:</td>
+            <td class="col-right">${formatMoney(statsCalculadas.value.credito)}</td>
           </tr>
           <tr>
             <td class="totals-label">Transferencia:</td>
-            <td class="col-right">${formatMoney(stats.value.transferencia)}</td>
+            <td class="col-right">${formatMoney(statsCalculadas.value.transferencia)}</td>
           </tr>
           <tr>
             <td class="totals-label">Dólares (USD):</td>
@@ -364,7 +420,7 @@ const generateDailyReportHTML = () => {
         <tbody>
           <tr style="font-weight:bold">
             <td class="totals-label">INGRESO TOTAL:</td>
-            <td class="col-right">${formatMoney(stats.value.granTotal)}</td>
+            <td class="col-right">${formatMoney(statsCalculadas.value.granTotal)}</td>
           </tr>
         </tbody>
       </table>
@@ -401,8 +457,184 @@ const printDailyReport = async () => {
   }
 };
 
+const exportToExcel = () => {
+  try {
+    // Crear workbook
+    const wb = XLSX.utils.book_new();
+
+    // Preparar datos del resumen
+    const resumenData = [
+      ['TELAS EMANUEL - REPORTE DE VENTAS'],
+      [''],
+      ['Periodo:', displayDate.value],
+      ['Fecha de Generación:', date.formatDate(Date.now(), 'DD/MM/YYYY HH:mm')],
+      [''],
+      ['RESUMEN POR TIPO DE PAGO'],
+      ['Efectivo:', formatCurrency(statsCalculadas.value.efectivo)],
+      ['Débito:', formatCurrency(statsCalculadas.value.debito)],
+      ['Crédito:', formatCurrency(statsCalculadas.value.credito)],
+      ['Transferencia:', formatCurrency(statsCalculadas.value.transferencia)],
+      ['Dólares (USD):', formatNumber(statsCalculadas.value.usd)],
+      [''],
+      ['TOTAL GENERAL:', formatCurrency(statsCalculadas.value.granTotal)],
+      ['Total de Transacciones:', ventas.value.length],
+      filtroTipoPago.value ? ['Filtro Aplicado:', filtroTipoPago.value] : [],
+      filtroTipoPago.value ? ['Transacciones Filtradas:', ventasFiltradas.value.length] : [],
+      ['']
+    ].filter(row => row.length > 0);
+
+    // Preparar datos de ventas
+    const ventasData: (string | number)[][] = [
+      ['DETALLE DE VENTAS'],
+      [''],
+      ['ID', 'Fecha', 'Hora', 'Cliente', 'Método de Pago', 'Total', 'Comentarios']
+    ];
+
+    ventasFiltradas.value.forEach(venta => {
+      ventasData.push([
+        venta.id,
+        formatDateLong(venta.fecha_venta),
+        formatTime(venta.fecha_venta),
+        venta.cliente || 'Cliente General',
+        venta.metodo_pago,
+        Number(venta.total) || 0,
+        venta.comentarios || ''
+      ]);
+    });
+
+    // Preparar datos de productos vendidos
+    const productosData: (string | number)[][] = [
+      ['DETALLE DE PRODUCTOS'],
+      [''],
+      ['Venta ID', 'Cliente', 'Producto', 'Cantidad', 'Medida', 'Precio Unitario', 'Subtotal']
+    ];
+
+    ventasFiltradas.value.forEach(venta => {
+      (venta.detallesVenta || []).forEach(detalle => {
+        const cantidad = Number(detalle.cantidad) || 0;
+        const precioUnitario = Number(detalle.precio_unitario) || 0;
+        const subtotal = cantidad * precioUnitario;
+        productosData.push([
+          venta.id,
+          venta.cliente || 'Cliente General',
+          getProductoNombre(detalle.producto_id),
+          cantidad,
+          detalle.medida || getProductoMedida(detalle.producto_id),
+          precioUnitario,
+          subtotal
+        ]);
+      });
+    });
+
+    // Crear hojas
+    const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+    const wsVentas = XLSX.utils.aoa_to_sheet(ventasData);
+    const wsProductos = XLSX.utils.aoa_to_sheet(productosData);
+
+    // Ajustar anchos de columnas
+    wsResumen['!cols'] = [{ wch: 25 }, { wch: 20 }];
+    wsVentas['!cols'] = [{ wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 30 }];
+    wsProductos['!cols'] = [{ wch: 10 }, { wch: 20 }, { wch: 30 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 12 }];
+
+    // Agregar hojas al workbook
+    XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
+    XLSX.utils.book_append_sheet(wb, wsVentas, 'Ventas');
+    XLSX.utils.book_append_sheet(wb, wsProductos, 'Productos');
+
+    // Generar nombre de archivo
+    const fileName = `Reporte_Ventas_${date.formatDate(Date.now(), 'YYYYMMDD_HHmmss')}.xlsx`;
+
+    // Descargar archivo
+    XLSX.writeFile(wb, fileName);
+
+    $q.notify({
+      message: 'Reporte de Excel generado exitosamente',
+      color: 'positive',
+      icon: 'download'
+    });
+  } catch (error) {
+    console.error('Error generando reporte de Excel:', error);
+    $q.notify({
+      message: 'Error al generar el reporte de Excel',
+      color: 'negative',
+      icon: 'error'
+    });
+  }
+};
+
+// Filtro de tipo de pago
+const filtroTipoPago = ref<string | null>(null);
+
+// Helper para obtener el tipo de tarjeta de una venta
+const getTipoTarjeta = (venta: Venta): 'DEBITO' | 'CREDITO' | null => {
+  const metodoPago = (venta.metodo_pago || '').toUpperCase();
+  const comentarios = venta.comentarios || '';
+
+  if (metodoPago !== 'TARJETA' && !(metodoPago === 'MIXTO' && comentarios.includes('[Tipo Tarjeta:'))) {
+    return null;
+  }
+
+  if (comentarios.includes('[Tipo Tarjeta: CREDITO]')) {
+    return 'CREDITO';
+  }
+
+  if (comentarios.includes('[Tipo Tarjeta: DEBITO]')) {
+    return 'DEBITO';
+  }
+
+  // Por defecto, si es tarjeta sin especificar, asumir débito
+  return 'DEBITO';
+};
+
+// Separar ventas de tarjeta en débito y crédito
+const ventasTarjetaDebito = computed(() => {
+  if (filtroTipoPago.value !== 'TARJETA') return [];
+  return ventas.value.filter(venta => {
+    const metodoPago = (venta.metodo_pago || '').toUpperCase();
+    if (metodoPago !== 'TARJETA' && metodoPago !== 'MIXTO') return false;
+    return getTipoTarjeta(venta) === 'DEBITO';
+  });
+});
+
+const ventasTarjetaCredito = computed(() => {
+  if (filtroTipoPago.value !== 'TARJETA') return [];
+  return ventas.value.filter(venta => {
+    const metodoPago = (venta.metodo_pago || '').toUpperCase();
+    if (metodoPago !== 'TARJETA' && metodoPago !== 'MIXTO') return false;
+    return getTipoTarjeta(venta) === 'CREDITO';
+  });
+});
+
+const ventasFiltradas = computed(() => {
+  if (!filtroTipoPago.value) {
+    return ventas.value;
+  }
+
+  // Para TARJETA, no filtrar aquí, se maneja en la vista con dos columnas
+  if (filtroTipoPago.value === 'TARJETA') {
+    return ventas.value.filter(venta => {
+      const metodoPago = (venta.metodo_pago || 'EFECTIVO').toUpperCase();
+      return metodoPago === 'TARJETA' || metodoPago === 'MIXTO';
+    });
+  }
+
+  return ventas.value.filter(venta => {
+    const metodoPago = (venta.metodo_pago || 'EFECTIVO').toUpperCase();
+    return metodoPago === filtroTipoPago.value?.toUpperCase();
+  });
+});
+
+const toggleFiltroTipoPago = (tipo: string) => {
+  if (filtroTipoPago.value === tipo.toUpperCase()) {
+    filtroTipoPago.value = null; // Deseleccionar si ya está seleccionado
+  } else {
+    filtroTipoPago.value = tipo.toUpperCase();
+  }
+};
+
 watch(dateRange, () => {
   void loadVentas();
+  filtroTipoPago.value = null; // Limpiar filtro al cambiar fecha
 });
 
 onMounted(() => {
@@ -417,7 +649,7 @@ onMounted(() => {
     <!-- Header -->
     <div class="row items-center justify-between q-mb-lg header-section">
       <div>
-        <h1 class="text-h4 text-weight-bolder text-grey-9 q-my-none">Corte de Caja</h1>
+        <h1 class="text-h4 text-weight-bolder text-grey-9 q-my-none">Corte de caja</h1>
         <div class="row items-center q-mt-sm">
           <div class="text-subtitle1 text-grey-7 q-mr-md">
             Periodo: <span class="text-weight-bold text-primary">{{ displayDate }}</span>
@@ -434,6 +666,9 @@ onMounted(() => {
         </div>
       </div>
       <div class="row q-gutter-sm">
+        <q-btn icon="description" flat round color="green-8" @click="exportToExcel">
+          <q-tooltip>Exportar a Excel</q-tooltip>
+        </q-btn>
         <q-btn icon="print" flat round color="orange-8" @click="printDailyReport">
           <q-tooltip>Imprimir Reporte</q-tooltip>
         </q-btn>
@@ -456,7 +691,7 @@ onMounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">Ingreso Total</div>
-            <div class="kpi-value">{{ formatCurrency(stats.granTotal) }}</div>
+            <div class="kpi-value">{{ formatCurrency(statsCalculadas.granTotal) }}</div>
           </div>
         </div>
       </div>
@@ -478,27 +713,37 @@ onMounted(() => {
     <!-- Payment Methods Breakdown Row -->
     <div class="row q-col-gutter-sm q-mb-xl">
       <div class="col-6 col-md-3">
-        <div class="mini-stat-card">
+        <div class="mini-stat-card" :class="{ 'active-filter': filtroTipoPago === 'EFECTIVO' }"
+          @click="toggleFiltroTipoPago('EFECTIVO')">
           <div class="stat-label text-green-8">
             <q-icon name="attach_money" /> Efectivo
           </div>
-          <div class="stat-amount">{{ formatCurrency(stats.efectivo) }}</div>
+          <div class="stat-amount">{{ formatCurrency(statsCalculadas.efectivo) }}</div>
+          <q-tooltip>Click para filtrar ventas en efectivo</q-tooltip>
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="mini-stat-card">
+        <div class="mini-stat-card" :class="{ 'active-filter': filtroTipoPago === 'TARJETA' }"
+          @click="toggleFiltroTipoPago('TARJETA')">
           <div class="stat-label text-blue-8">
             <q-icon name="credit_card" /> Tarjeta
           </div>
-          <div class="stat-amount">{{ formatCurrency(stats.tarjeta) }}</div>
+          <div class="stat-amount">{{ formatCurrency(statsCalculadas.tarjeta) }}</div>
+          <!--<div class="stat-breakdown">
+            <span class="breakdown-item">D: ${{ statsCalculadas.debito.toFixed(2) }}</span>
+            <span class="breakdown-item">C: ${{ statsCalculadas.credito.toFixed(2) }}</span>
+          </div>-->
+          <q-tooltip>Click para ver ventas con tarjeta (débito/crédito)</q-tooltip>
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="mini-stat-card">
+        <div class="mini-stat-card" :class="{ 'active-filter': filtroTipoPago === 'TRANSFERENCIA' }"
+          @click="toggleFiltroTipoPago('TRANSFERENCIA')">
           <div class="stat-label text-purple-8">
             <q-icon name="account_balance" /> Transferencia
           </div>
-          <div class="stat-amount">{{ formatCurrency(stats.transferencia) }}</div>
+          <div class="stat-amount">{{ formatCurrency(statsCalculadas.transferencia) }}</div>
+          <q-tooltip>Click para filtrar ventas por transferencia</q-tooltip>
         </div>
       </div>
       <div class="col-6 col-md-3">
@@ -506,7 +751,7 @@ onMounted(() => {
           <div class="stat-label text-teal-8">
             <q-icon name="local_atm" /> Dólares
           </div>
-          <div class="stat-amount">USD {{ formatNumber(stats.usd) }}</div>
+          <div class="stat-amount">USD {{ formatNumber(statsCalculadas.usd) }}</div>
         </div>
       </div>
     </div>
@@ -519,13 +764,137 @@ onMounted(() => {
         <q-spinner-dots size="3rem" color="primary" />
       </div>
 
-      <div v-else-if="ventas.length === 0" class="empty-state text-center q-py-xl">
+      <div v-else-if="ventasFiltradas.length === 0" class="empty-state text-center q-py-xl">
         <q-icon name="point_of_sale" size="4rem" color="grey-4" />
-        <p class="text-grey-5 q-mt-md text-h6">No se registraron movimientos en este periodo.</p>
+        <p class="text-grey-5 q-mt-md text-h6">
+          {{ filtroTipoPago ? `No hay ventas con el método de pago: ${filtroTipoPago}` : 'No se registraron movimientos en este periodo.' }}
+        </p>
       </div>
 
+      <!-- Vista de dos columnas cuando se filtra por TARJETA -->
+      <div v-else-if="filtroTipoPago === 'TARJETA'" class="tarjeta-split-view">
+        <div class="tarjeta-column">
+          <h3 class="column-title debito-title">
+            <q-icon name="credit_card" /> Débito ({{ ventasTarjetaDebito.length }})
+          </h3>
+          <q-list v-if="ventasTarjetaDebito.length > 0" separator class="sales-list bg-white shadow-1 rounded-borders">
+            <q-expansion-item v-for="venta in ventasTarjetaDebito" :key="venta.id" group="sales-debito"
+              class="sale-item" expand-icon-class="hidden">
+              <template v-slot:header="{ expanded }">
+                <div class="row full-width items-center q-py-xs">
+                  <div class="col-auto q-mr-md">
+                    <div class="time-badge">{{ formatTime(venta.fecha_venta) }}</div>
+                    <div class="text-caption text-grey-5 q-mt-xs">{{ formatDateLong(venta.fecha_venta) }}</div>
+                  </div>
+                  <div class="col">
+                    <div class="text-weight-bold text-grey-9">{{ venta.cliente || 'Cliente General' }}</div>
+                    <div class="text-caption text-grey-6">
+                      <q-icon name="payments" size="xs" /> {{ venta.metodo_pago }}
+                    </div>
+                  </div>
+                  <div class="col-auto text-right row items-center q-gutter-x-sm">
+                    <q-btn icon="print" flat round dense color="primary" @click.stop="printVenta(venta)">
+                      <q-tooltip>Imprimir esta venta</q-tooltip>
+                    </q-btn>
+                    <div>
+                      <div class="text-weight-bolder text-primary text-body1">{{ formatCurrency(venta.total) }}</div>
+                      <div class="text-caption text-grey-5">#{{ venta.id }}</div>
+                    </div>
+                    <q-icon :name="expanded ? 'expand_less' : 'expand_more'" size="sm" color="grey-6" />
+                  </div>
+                </div>
+              </template>
+
+              <q-card>
+                <q-card-section>
+                  <div class="text-h6">Detalle de productos</div>
+                  <q-list dense separator>
+                    <q-item v-for="(detalle, idx) in venta.detallesVenta" :key="idx">
+                      <q-item-section>
+                        <q-item-label>{{ getProductoNombre(detalle.producto_id) }}</q-item-label>
+                        <q-item-label caption>
+                          {{ detalle.cantidad }} {{ detalle.medida || getProductoMedida(detalle.producto_id) }} × {{
+                            formatCurrency(detalle.precio_unitario) }}
+                        </q-item-label>
+                      </q-item-section>
+                      <q-item-section side>
+                        <q-item-label>{{ formatCurrency(detalle.cantidad * detalle.precio_unitario) }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+          </q-list>
+          <div v-else class="empty-column">
+            <q-icon name="credit_card_off" size="3rem" color="grey-4" />
+            <p class="text-grey-5">No hay ventas con débito</p>
+          </div>
+        </div>
+
+        <div class="tarjeta-column">
+          <h3 class="column-title credito-title">
+            <q-icon name="credit_card" /> Crédito ({{ ventasTarjetaCredito.length }})
+          </h3>
+          <q-list v-if="ventasTarjetaCredito.length > 0" separator class="sales-list bg-white shadow-1 rounded-borders">
+            <q-expansion-item v-for="venta in ventasTarjetaCredito" :key="venta.id" group="sales-credito"
+              class="sale-item" expand-icon-class="hidden">
+              <template v-slot:header="{ expanded }">
+                <div class="row full-width items-center q-py-xs">
+                  <div class="col-auto q-mr-md">
+                    <div class="time-badge">{{ formatTime(venta.fecha_venta) }}</div>
+                    <div class="text-caption text-grey-5 q-mt-xs">{{ formatDateLong(venta.fecha_venta) }}</div>
+                  </div>
+                  <div class="col">
+                    <div class="text-weight-bold text-grey-9">{{ venta.cliente || 'Cliente General' }}</div>
+                    <div class="text-caption text-grey-6">
+                      <q-icon name="payments" size="xs" /> {{ venta.metodo_pago }}
+                    </div>
+                  </div>
+                  <div class="col-auto text-right row items-center q-gutter-x-sm">
+                    <q-btn icon="print" flat round dense color="primary" @click.stop="printVenta(venta)">
+                      <q-tooltip>Imprimir esta venta</q-tooltip>
+                    </q-btn>
+                    <div>
+                      <div class="text-weight-bolder text-primary text-body1">{{ formatCurrency(venta.total) }}</div>
+                      <div class="text-caption text-grey-5">#{{ venta.id }}</div>
+                    </div>
+                    <q-icon :name="expanded ? 'expand_less' : 'expand_more'" size="sm" color="grey-6" />
+                  </div>
+                </div>
+              </template>
+
+              <q-card>
+                <q-card-section>
+                  <div class="text-h6">Detalle de productos</div>
+                  <q-list dense separator>
+                    <q-item v-for="(detalle, idx) in venta.detallesVenta" :key="idx">
+                      <q-item-section>
+                        <q-item-label>{{ getProductoNombre(detalle.producto_id) }}</q-item-label>
+                        <q-item-label caption>
+                          {{ detalle.cantidad }} {{ detalle.medida || getProductoMedida(detalle.producto_id) }} × {{
+                            formatCurrency(detalle.precio_unitario) }}
+                        </q-item-label>
+                      </q-item-section>
+                      <q-item-section side>
+                        <q-item-label>{{ formatCurrency(detalle.cantidad * detalle.precio_unitario) }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+          </q-list>
+          <div v-else class="empty-column">
+            <q-icon name="credit_card_off" size="3rem" color="grey-4" />
+            <p class="text-grey-5">No hay ventas con crédito</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista normal para otros métodos de pago -->
       <q-list v-else separator class="sales-list bg-white shadow-1 rounded-borders">
-        <q-expansion-item v-for="venta in ventas" :key="venta.id" group="sales" class="sale-item"
+        <q-expansion-item v-for="venta in ventasFiltradas" :key="venta.id" group="sales" class="sale-item"
           expand-icon-class="hidden">
           <template v-slot:header="{ expanded }">
             <div class="row full-width items-center q-py-xs">
@@ -684,12 +1053,43 @@ onMounted(() => {
   text-align: center;
   border: 1px solid #f0f0f0;
   transition: all 0.2s;
+  cursor: pointer;
+  position: relative;
 }
 
 .mini-stat-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
   border-color: #e0e0e0;
+}
+
+.mini-stat-card.active-filter {
+  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
+  border-color: #d9a441;
+  box-shadow: 0 4px 20px rgba(217, 164, 65, 0.4);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.mini-stat-card.active-filter .stat-label,
+.mini-stat-card.active-filter .stat-amount {
+  color: white !important;
+}
+
+.mini-stat-card.active-filter::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
 }
 
 .stat-label {
@@ -708,6 +1108,83 @@ onMounted(() => {
   font-size: 1.25rem;
   font-weight: 700;
   color: #1e293b;
+}
+
+.stat-breakdown {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+.breakdown-item {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.mini-stat-card.active-filter .breakdown-item {
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+/* Vista de dos columnas para tarjetas */
+.tarjeta-split-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .tarjeta-split-view {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tarjeta-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.column-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.debito-title {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.credito-title {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+}
+
+.empty-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+  background: white;
+  border-radius: 12px;
+}
+
+.filter-badge {
+  display: flex;
+  align-items: center;
 }
 
 .hidden {

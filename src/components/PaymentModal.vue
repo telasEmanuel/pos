@@ -20,6 +20,7 @@ const montoUSD = ref<number>(0);
 const tasaCambio = ref<number>(16); // Valor por defecto
 const montoTarjeta = ref<number>(0);
 const montoTransferencia = ref<number>(0);
+const tipoTarjeta = ref<'DEBITO' | 'CREDITO'>('DEBITO'); // Tipo de tarjeta
 
 const comentarios = ref('');
 const metodoPago = ref('EFECTIVO');
@@ -36,7 +37,7 @@ watch(() => props.show, (val) => {
   if (val) {
     resetState();
     comentarios.value = props.initialComments || '';
-    switch(metodoPago.value){
+    switch (metodoPago.value) {
       case 'EFECTIVO':
         montoPesos.value = props.total;
         break;
@@ -124,9 +125,16 @@ const handleConfirm = () => {
     totalPagado: Number(totalPagado.value || 0),
   };
 
+  // Si se pagó con tarjeta, agregar el tipo en los comentarios
+  let comentariosFinal = comentarios.value.trim();
+  if ((metodoPago.value === 'TARJETA' || metodoPago.value === 'MIXTO') && montoTarjeta.value > 0) {
+    const tipoInfo = `[Tipo Tarjeta: ${tipoTarjeta.value}]`;
+    comentariosFinal = comentariosFinal ? `${tipoInfo} ${comentariosFinal}` : tipoInfo;
+  }
+
   emit('confirm', {
     montoPagado: totalPagado.value,
-    comentarios: comentarios.value.trim(),
+    comentarios: comentariosFinal,
     metodoPago: metodoPago.value,
     pagoDetalle,
   });
@@ -219,6 +227,18 @@ const handleConfirm = () => {
               <div class="field-input">
                 <span class="prefix">💳</span>
                 <input type="number" v-model.number="montoTarjeta" step="any" min="0" />
+              </div>
+
+              <!-- Botones de tipo de tarjeta -->
+              <div class="card-type-buttons">
+                <button type="button" class="card-type-btn" :class="{ 'active': tipoTarjeta === 'DEBITO' }"
+                  @click="tipoTarjeta = 'DEBITO'">
+                  💳 Tarjeta de Débito
+                </button>
+                <button type="button" class="card-type-btn" :class="{ 'active': tipoTarjeta === 'CREDITO' }"
+                  @click="tipoTarjeta = 'CREDITO'">
+                  💎 Tarjeta de Crédito
+                </button>
               </div>
             </div>
 
@@ -492,6 +512,41 @@ const handleConfirm = () => {
 
 .field-input input:focus {
   border-color: #ffd54f;
+}
+
+.card-type-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.card-type-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.card-type-btn:hover {
+  border-color: #cbd5e0;
+  background: #f7fafc;
+}
+
+.card-type-btn.active {
+  border-color: #d9a441;
+  background: linear-gradient(135deg, rgba(217, 164, 65, 0.15) 0%, rgba(139, 94, 60, 0.1) 100%);
+  color: #8b5e3c;
+  font-weight: 700;
 }
 
 .usd-group {

@@ -497,7 +497,6 @@ onMounted(() => {
                 <span class="producto-linea">Existencia: {{ producto.cantidad }} {{ producto.medida_ind }}</span>
               </div>
               <div class="producto-precio">
-                <span v-if="esPrecioTap" class="price-original">${{ fmt(producto.precio) }}</span>
                 <span>${{ fmt(esPrecioTap ? producto.precio_tap : producto.precio) }}</span>
               </div>
             </div>
