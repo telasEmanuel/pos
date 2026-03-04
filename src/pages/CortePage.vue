@@ -5,7 +5,7 @@ import { useQuasar, date } from 'quasar';
 import ReceiptPrinter from 'src/components/ReceiptPrinter.vue';
 import type { ReceiptData } from 'src/components/types';
 import * as XLSX from 'xlsx';
-
+import { useAuthStore } from 'src/stores/auth';
 // Interfaces based on API introspection
 interface DetalleVenta {
   id: number;
@@ -41,6 +41,8 @@ interface CorteResponse {
 
 const $q = useQuasar();
 const ventas = ref<Venta[]>([]);
+const authStore = useAuthStore();
+const datos = ref<{ email?: string } | null>(null);
 const stats = ref({
   efectivo: 0,
   tarjeta: 0,
@@ -638,6 +640,7 @@ watch(dateRange, () => {
 });
 
 onMounted(() => {
+  datos.value = authStore.user as { email: string };
   void loadVentas();
   void loadProductos();
 });
@@ -654,7 +657,7 @@ onMounted(() => {
           <div class="text-subtitle1 text-grey-7 q-mr-md">
             Periodo: <span class="text-weight-bold text-primary">{{ displayDate }}</span>
           </div>
-          <q-btn icon="event" round flat color="primary" dense>
+          <q-btn v-if="datos?.email === 'visor'" icon="event" round flat color="primary" dense>
             <q-popup-proxy cover transition-show="scale" transition-hide="scale">
               <q-date v-model="dateRange" range mask="YYYY/MM/DD">
                 <div class="row items-center justify-end q-gutter-sm">
@@ -666,10 +669,10 @@ onMounted(() => {
         </div>
       </div>
       <div class="row q-gutter-sm">
-        <q-btn icon="description" flat round color="green-8" @click="exportToExcel">
+        <q-btn icon="description" flat round color="green-8" @click="exportToExcel" v-if="datos?.email === 'visor'">
           <q-tooltip>Exportar a Excel</q-tooltip>
         </q-btn>
-        <q-btn icon="print" flat round color="orange-8" @click="printDailyReport">
+        <q-btn icon="print" flat round color="orange-8" @click="printDailyReport" v-if="datos?.email === 'visor'">
           <q-tooltip>Imprimir Reporte</q-tooltip>
         </q-btn>
         <q-btn icon="print" flat round color="primary" @click="printLastReceipt" :disable="!lastReceipt">
@@ -767,7 +770,7 @@ onMounted(() => {
       <div v-else-if="ventasFiltradas.length === 0" class="empty-state text-center q-py-xl">
         <q-icon name="point_of_sale" size="4rem" color="grey-4" />
         <p class="text-grey-5 q-mt-md text-h6">
-          {{ filtroTipoPago ? `No hay ventas con el método de pago: ${filtroTipoPago}` : 'No se registraron movimientos en este periodo.' }}
+          {{ filtroTipoPago ? `Este es el apartado de las ventas pagadas con ${filtroTipoPago.toLowerCase()}` : 'No hay ventas registradas' }}
         </p>
       </div>
 

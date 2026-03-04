@@ -8,6 +8,7 @@ interface Producto {
   nombre: string;
   precio?: number;
   precio_tap?: number;
+  precio_comp?: number;
   categoria_id?: number;
 }
 
@@ -57,6 +58,7 @@ const newQuantity = ref<number>(0);
 const newProductName = ref('');
 const newPrecio = ref(0);
 const newPrecioTap = ref(0);
+const newPrecioComp = ref(0);
 const newInvMin = ref<number>(0);
 const updateLoading = ref(false);
 //const deleteLoading = ref(false);
@@ -72,6 +74,7 @@ const createForm = ref({
   descripcion: '',
   precio: 0.00,
   precio_tap: 0.00,
+  precio_comp: 0.00,
   categoria_id: null as number | null,
   cantidad: 1
 });
@@ -90,6 +93,7 @@ const selectItem = (item: InventarioItem) => {
   newProductName.value = item.producto?.nombre || '';
   newPrecio.value = item.producto?.precio || 0;
   newPrecioTap.value = item.producto?.precio_tap || 0;
+  newPrecioComp.value = item.producto?.precio_comp || 0;
   newInvMin.value = item.inv_min || 5;
   editMode.value = null;
   showPreview.value = false;
@@ -192,7 +196,7 @@ const updateProduct = async () => {
   }
 
   if (editMode.value === 'prices') {
-    if (newPrecio.value < 0 || newPrecioTap.value < 0) {
+    if (newPrecio.value < 0 || newPrecioTap.value < 0 || newPrecioComp.value < 0) {
       $q.notify({
         message: 'Los precios no pueden ser negativos',
         color: 'warning',
@@ -211,6 +215,7 @@ const updateProduct = async () => {
     } else if (editMode.value === 'prices') {
       updateData.precio = parseFloat(newPrecio.value.toString());
       updateData.precio_tap = parseFloat(newPrecioTap.value.toString());
+      updateData.precio_comp = parseFloat(newPrecioComp.value.toString());
     } else if (editMode.value === 'inv_min') {
       console.log('🔧 Actualizando inv_min:', {
         inventarioId: selectedItem.value.id,
@@ -385,6 +390,12 @@ const generatePreview = () => {
         nuevo: newPrecioTap.value
       };
     }
+    if (newPrecioComp.value !== selectedItem.value?.producto?.precio_comp) {
+      previewChanges.value.precio_comp = {
+        anterior: selectedItem.value?.producto?.precio_comp,
+        nuevo: newPrecioComp.value
+      };
+    }
   }
 
   console.log('✨ Preview generado:', previewChanges.value);
@@ -411,7 +422,7 @@ const crearProducto = async () => {
     return;
   }
 
-  if (createForm.value.precio < 0 || createForm.value.precio_tap < 0) {
+  if (createForm.value.precio < 0 || createForm.value.precio_tap < 0 || createForm.value.precio_comp < 0) {
     $q.notify({
       message: 'Los precios no pueden ser negativos',
       color: 'warning',
@@ -437,6 +448,7 @@ const crearProducto = async () => {
       descripcion: createForm.value.descripcion,
       precio: parseFloat(createForm.value.precio.toString()),
       precio_tap: parseFloat(createForm.value.precio_tap.toString()),
+      precio_comp: parseFloat(createForm.value.precio_comp.toString()),
       categoria_id: createForm.value.categoria_id
     });
 
@@ -482,6 +494,7 @@ const resetToSearch = () => {
     descripcion: '',
     precio: 0.00,
     precio_tap: 0.00,
+    precio_comp: 0.00,
     categoria_id: null,
     cantidad: 1
   };
@@ -511,6 +524,7 @@ const backFromCreate = () => {
     descripcion: '',
     precio: 0.00,
     precio_tap: 0.00,
+    precio_comp: 0.00,
     categoria_id: null,
     cantidad: 1
   };
@@ -542,6 +556,7 @@ watch(() => props.show, (newValue, oldValue) => {
       descripcion: '',
       precio: 0.00,
       precio_tap: 0.00,
+      precio_comp: 0.00,
       categoria_id: null,
       cantidad: 1
     };
@@ -554,7 +569,8 @@ const formatLabel = (key: string): string => {
     inv_min: 'Cantidad Mínima',
     nombre: 'Nombre',
     precio: 'Precio Público',
-    precio_tap: 'Precio Tapicero'
+    precio_tap: 'Precio Tapicero',
+    precio_comp: 'Precio Compra'
   };
   return labels[key] || key;
 };
@@ -708,6 +724,7 @@ const formatValue = (value: unknown): string => {
               <q-input v-model.number="newPrecio" type="number" step="0.01" label="Precio Público" filled autofocus
                 dense />
               <q-input v-model.number="newPrecioTap" type="number" step="0.01" label="Precio Tapicero" filled dense />
+              <q-input v-model.number="newPrecioComp" type="number" step="0.01" label="Precio Compra" filled dense />
 
               <div class="row q-gutter-md">
                 <q-btn label="Cancelar" flat color="grey" class="col rounded-btn" @click="editMode = null" />
@@ -776,6 +793,9 @@ const formatValue = (value: unknown): string => {
                   dense />
 
                 <q-input v-model.number="createForm.precio_tap" label="Precio Tapicero" type="number" step="0.01" filled
+                  dense />
+
+                <q-input v-model.number="createForm.precio_comp" label="Precio Compra" type="number" step="0.01" filled
                   dense />
 
                 <q-select v-model="createForm.categoria_id" :options="categories" option-value="id"

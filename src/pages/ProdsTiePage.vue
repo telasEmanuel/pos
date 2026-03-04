@@ -26,6 +26,7 @@ interface Producto {
   medida?: string;
   precio: number;
   precio_tap: number;
+  precio_comp: number;
   // New fields for card design
   detalles?: Array<{
     cantidad: number;
@@ -225,6 +226,7 @@ const cargarProductos = async () => {
         ...p,
         precio: Number(p.precio ?? prodObj.precio ?? 0),
         precio_tap: Number(p.precio_tap ?? prodObj.precio_tap ?? 0),
+        precio_comp: Number(p.precio_comp ?? prodObj.precio_comp ?? 0),
         producto: {
           ...prodObj,
           nombre: prodObj.nombre || p.nombre || 'Sin Nombre',
@@ -260,6 +262,21 @@ const productosFiltrados = () => {
     const catId = p.producto?.categoria_id ?? p.categoria_id ?? p.categoriaId;
     return catId === id && p.bodega_id === 1;
   });
+};
+
+const valorAlmacenado = () => {
+  return productosFiltrados().reduce((total, prod) => {
+    const precioComp = Number(prod.precio_comp || 0);
+    const cantidad = Number(prod.cantidad || 0);
+    return total + (precioComp * cantidad);
+  }, 0);
+};
+
+const formatCurrency = (val: number) => {
+  return `$${val.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 };
 
 const productosSeleccionados = computed(() => {
@@ -567,6 +584,17 @@ watch(
     <div v-if="props.descripcion" class="descripcion-container">
       <p class="descripcion">{{ props.descripcion }}</p>
     </div>
+
+    <!-- Valor Almacenado -->
+    <div v-if="datos?.email === 'visor'" class="valor-almacenado-container">
+      <div class="valor-almacenado-card">
+        <div class="valor-content">
+          <p class="valor-label">Valor Almacenado</p>
+          <p class="valor-amount">{{ formatCurrency(valorAlmacenado()) }}</p>
+        </div>
+      </div>
+    </div>
+
     <section>
       <h1 class="main-title">Productos</h1>
 
@@ -703,7 +731,8 @@ watch(
                   -
                 </button>
                 <input type="number" v-model.number="prod.cantidadPedido" inputmode="decimal" min="0" step="any"
-                  :max="prod.cantidad" class="qty-input" :disabled="prod.cantidad < prod.cantidadPedido && prod.cantidad === 0" />
+                  :max="prod.cantidad" class="qty-input"
+                  :disabled="prod.cantidad < prod.cantidadPedido && prod.cantidad === 0" />
                 <button @click="incrementarCantidad(prod)" class="btn-qty"
                   :disabled="prod.cantidadPedido >= prod.cantidad">
                   +
@@ -768,6 +797,63 @@ watch(
   color: #555;
   margin: 0;
   line-height: 1.6;
+}
+
+.valor-almacenado-container {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 2rem 1rem;
+}
+
+.valor-almacenado-card {
+  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(255, 213, 79, 0.3);
+  padding: 2rem 3rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  min-width: 350px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.valor-almacenado-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(255, 213, 79, 0.4);
+}
+
+.valor-icon {
+  font-size: 3rem;
+  background: rgba(74, 46, 26, 0.3);
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+}
+
+.valor-content {
+  flex: 1;
+}
+
+.valor-label {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.valor-amount {
+  margin: 0.5rem 0 0;
+  font-size: 2.5rem;
+  color: #ffffff;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -1px;
 }
 
 .main-title {

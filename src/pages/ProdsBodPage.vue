@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import api from 'src/api/axios'
+import { useAuthStore } from 'src/stores/auth';
 
 interface Producto {
   id: number
@@ -8,6 +9,7 @@ interface Producto {
   producto?: {
     nombre: string
     categoria_id: number
+    precio_comp?: number
   }
   categoria_id?: number
   categoriaId?: number
@@ -15,6 +17,7 @@ interface Producto {
   cantidad: number
   medida_gru: string
   medida_ind: string
+  precio_comp: number
   // New fields
   detalles?: Array<{
     cantidad: number
@@ -44,6 +47,8 @@ const productos = ref<Producto[]>([])
 const categoria = ref<Categoria | null>(null)
 const categoriaSeleccionada = ref<string | number>('')
 const loading = ref(false)
+const datos = ref<{ email?: string } | null>(null);
+const authStore = useAuthStore();
 
 const formatNumber = (val: number | string | undefined | null) => {
   if (val === null || val === undefined) return '0'
@@ -58,7 +63,17 @@ const cargarProductos = async () => {
   try {
     const res = await api.get('inventarios')
     const items = (Array.isArray(res.data) ? res.data : (res.data.items ?? [])) as Producto[]
-    productos.value = items.map((p) => ({ ...p, showDetails: false }))
+
+    productos.value = items.map((p) => {
+      const prodObj = p.producto || { precio_comp: 0 }
+      const precioComp = Number(p.precio_comp ?? prodObj.precio_comp ?? 0)
+
+      return {
+        ...p,
+        precio_comp: precioComp,
+        showDetails: false
+      }
+    })
   } catch (err) {
     console.error('Error cargando productos', err)
     productos.value = []
@@ -86,7 +101,23 @@ const productosFiltrados = () => {
   })
 }
 
+const valorAlmacenado = () => {
+  return productosFiltrados().reduce((total, prod) => {
+    const precioComp = Number(prod.precio_comp || 0)
+    const cantidad = Number(prod.cantidad || 0)
+    return total + (precioComp * cantidad)
+  }, 0)
+}
+
+const formatCurrency = (val: number) => {
+  return `$${val.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`
+}
+
 onMounted(() => {
+  datos.value = authStore.user;
   if (props.categoryId) {
     categoriaSeleccionada.value = props.categoryId
   }
@@ -118,6 +149,17 @@ watch(() => props.categoryId, (newVal) => {
     <div v-if="props.technicalCard" class="descripcion-container">
       <p class="descripcion">{{ props.technicalCard }}</p>
     </div>
+
+    <!-- Valor Almacenado -->
+    <div class="valor-almacenado-container" v-if="datos?.email === 'visor'">
+      <div class="valor-almacenado-card">
+        <div class="valor-content">
+          <p class="valor-label">Valor Almacenado</p>
+          <p class="valor-amount">{{ formatCurrency(valorAlmacenado()) }}</p>
+        </div>
+      </div>
+    </div>
+
     <section>
       <h1 class="main-title">Productos</h1>
       <div v-if="loading">Cargando productos...</div>
@@ -417,5 +459,62 @@ watch(() => props.categoryId, (newVal) => {
   color: #555;
   margin: 0;
   line-height: 1.6;
+}
+
+.valor-almacenado-container {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 2rem 1rem;
+}
+
+.valor-almacenado-card {
+  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(255, 213, 79, 0.3);
+  padding: 2rem 3rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  min-width: 350px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.valor-almacenado-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(255, 213, 79, 0.4);
+}
+
+.valor-icon {
+  font-size: 3rem;
+  background: rgba(74, 46, 26, 0.3);
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  backdrop-filter: blur(10px);
+}
+
+.valor-content {
+  flex: 1;
+}
+
+.valor-label {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.valor-amount {
+  margin: 0.5rem 0 0;
+  font-size: 2.5rem;
+  color: #ffffff;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -1px;
 }
 </style>
