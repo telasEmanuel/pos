@@ -360,14 +360,8 @@ onUnmounted(() => {
         </q-card-section>
 
         <q-card-section>
-          <q-input
-            v-model="passwordInput"
-            type="password"
-            label="Contraseña"
-            outlined
-            @keyup.enter="validarPassword"
-            autofocus
-          />
+          <q-input v-model="passwordInput" type="password" label="Contraseña" outlined @keyup.enter="validarPassword"
+            autofocus />
           <div v-if="passwordError" class="text-negative text-caption q-mt-md">
             {{ passwordError }}
           </div>
