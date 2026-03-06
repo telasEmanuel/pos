@@ -68,6 +68,7 @@ const statsCalculadas = computed(() => {
   let debito = 0;
   let credito = 0;
   let transferencia = 0;
+  let mixto = 0;
   let usd = 0;
 
   ventas.value.forEach(venta => {
@@ -93,6 +94,9 @@ const statsCalculadas = computed(() => {
       }
     } else if (metodoPago === 'TRANSFERENCIA') {
       transferencia += total;
+    } else if (metodoPago === 'MIXTO') {
+      // Pago mixto (múltiples métodos)
+      mixto += total;
     }
 
     // Extraer USD de los comentarios si existen
@@ -108,8 +112,9 @@ const statsCalculadas = computed(() => {
     credito,
     tarjeta: debito + credito, // Total de tarjetas
     transferencia,
+    mixto,
     usd,
-    granTotal: efectivo + debito + credito + transferencia
+    granTotal: efectivo + debito + credito + transferencia + mixto
   };
 });
 const loading = ref(true);
@@ -240,7 +245,11 @@ const loadVentas = async () => {
       fin = dateRange.value.to.replace(/\//g, '-');
     }
 
-    const params: { inicio: string; fin: string; usuario_id?: number } = { inicio, fin };
+    const params: { inicio: string; fin: string; usuario_id?: number; _t?: number } = { 
+      inicio, 
+      fin,
+      _t: Date.now() // Cache busting - prevenir respuestas 304
+    };
     if (usuarioSeleccionado.value !== null) {
       params.usuario_id = usuarioSeleccionado.value;
     }
@@ -293,10 +302,8 @@ const loadUsuarios = async () => {
       nombre: u.nombre
     }));
 
-    // Por defecto, seleccionar el usuario actual
-    if (authStore.user?.id || authStore.user?.usuario_id) {
-      usuarioSeleccionado.value = authStore.user.id || authStore.user.usuario_id || null;
-    }
+    // No filtrar automáticamente - mostrar todas las ventas por defecto
+    // El usuario puede filtrar manualmente si lo desea
   } catch (error) {
     console.error('Error al cargar usuarios:', error);
   }
@@ -452,7 +459,7 @@ const generateDailyReportHTML = () => {
           </tr>
           <tr>
             <td class="totals-label">Dólares (USD):</td>
-            <td class="col-right">${formatNumber(stats.value.usd)}</td>
+            <td class="col-right">${formatNumber(statsCalculadas.value.usd)}</td>
           </tr>
         </tbody>
       </table>
@@ -688,11 +695,13 @@ watch(dateRange, () => {
 });
 
 watch(usuarioSeleccionado, () => {
+  filtroTipoPago.value = null; // Limpiar filtro al cambiar usuario
   void loadVentas();
 });
 
 onMounted(() => {
   datos.value = authStore.user as { email: string };
+  filtroTipoPago.value = null; // Asegurar que no hay filtro al iniciar
   void loadUsuarios();
   void loadVentas();
   void loadProductos();
@@ -810,6 +819,16 @@ onMounted(() => {
           </div>
           <div class="stat-amount">{{ formatCurrency(statsCalculadas.transferencia) }}</div>
           <q-tooltip>Click para filtrar ventas por transferencia</q-tooltip>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="mini-stat-card" :class="{ 'active-filter': filtroTipoPago === 'MIXTO' }"
+          @click="toggleFiltroTipoPago('MIXTO')">
+          <div class="stat-label text-indigo-8">
+            <q-icon name="shuffle" /> Mixto
+          </div>
+          <div class="stat-amount">{{ formatCurrency(statsCalculadas.mixto) }}</div>
+          <q-tooltip>Click para filtrar ventas con pago mixto</q-tooltip>
         </div>
       </div>
       <div class="col-6 col-md-3">
