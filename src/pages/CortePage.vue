@@ -245,8 +245,8 @@ const loadVentas = async () => {
       fin = dateRange.value.to.replace(/\//g, '-');
     }
 
-    const params: { inicio: string; fin: string; usuario_id?: number; _t?: number } = { 
-      inicio, 
+    const params: { inicio: string; fin: string; usuario_id?: number; _t?: number } = {
+      inicio,
       fin,
       _t: Date.now() // Cache busting - prevenir respuestas 304
     };
