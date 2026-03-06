@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import api from 'src/api/axios';
 import { usePedidosStore } from 'src/stores/pedidos-store';
+import { useAuthStore } from 'src/stores/auth';
 import { useQuasar } from 'quasar';
 import PaymentModal from 'src/components/PaymentModal.vue';
 import { socket } from 'src/boot/socket';
@@ -52,6 +53,7 @@ interface ItemCarrito {
 
 const $q = useQuasar();
 const pedidosStore = usePedidosStore();
+const authStore = useAuthStore();
 
 const term = ref('');
 const sugerencias = ref<Producto[]>([]);
@@ -341,6 +343,7 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
       bodega_id: 1,
       comentarios: comentarios.value,
       metodo_pago: mpago,
+      usuario_id: authStore.user?.id || authStore.user?.usuario_id || null,
     };
 
     const resp = await api.post('ventas', payload);

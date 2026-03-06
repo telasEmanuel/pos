@@ -7,6 +7,13 @@ import type { ReceiptData } from 'src/components/types';
 import * as XLSX from 'xlsx';
 import { useAuthStore } from 'src/stores/auth';
 // Interfaces based on API introspection
+interface Usuario {
+  id: number;
+  username: string;
+  email: string;
+  nombre?: string;
+}
+
 interface DetalleVenta {
   id: number;
   producto_id: number;
@@ -25,6 +32,8 @@ interface Venta {
   total: number;
   comentarios: string | null;
   metodo_pago: string;
+  usuario_id?: number | null;
+  usuario?: Usuario;
   detallesVenta: DetalleVenta[];
 }
 
@@ -43,6 +52,8 @@ const $q = useQuasar();
 const ventas = ref<Venta[]>([]);
 const authStore = useAuthStore();
 const datos = ref<{ email?: string } | null>(null);
+const usuarios = ref<Usuario[]>([]);
+const usuarioSeleccionado = ref<number | null>(null);
 const stats = ref({
   efectivo: 0,
   tarjeta: 0,
@@ -116,6 +127,14 @@ const displayDate = computed(() => {
     return dateRange.value;
   }
   return `${dateRange.value.from} - ${dateRange.value.to}`;
+});
+
+const displayUsuario = computed(() => {
+  if (usuarioSeleccionado.value === null) {
+    return 'Todos los usuarios';
+  }
+  const usuario = usuarios.value.find(u => u.id === usuarioSeleccionado.value);
+  return usuario?.username || usuario?.nombre || usuario?.email || 'Usuario desconocido';
 });
 
 const formatCurrency = (amount: number | string | undefined | null) => {
@@ -221,9 +240,12 @@ const loadVentas = async () => {
       fin = dateRange.value.to.replace(/\//g, '-');
     }
 
-    const { data } = await api.get<CorteResponse>('ventas/rango', {
-      params: { inicio, fin }
-    });
+    const params: { inicio: string; fin: string; usuario_id?: number } = { inicio, fin };
+    if (usuarioSeleccionado.value !== null) {
+      params.usuario_id = usuarioSeleccionado.value;
+    }
+
+    const { data } = await api.get<CorteResponse>('ventas/rango', { params });
 
     ventas.value = data.ventas;
     stats.value = data.stats;
@@ -257,6 +279,26 @@ const loadProductos = async () => {
     updateLastReceipt();
   } catch (error) {
     console.error('Error al cargar productos:', error);
+  }
+};
+
+const loadUsuarios = async () => {
+  try {
+    const res = await api.get('usuarios');
+    const data = Array.isArray(res.data) ? res.data : (res.data.usuarios ?? []);
+    usuarios.value = data.map((u: Usuario) => ({
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      nombre: u.nombre
+    }));
+
+    // Por defecto, seleccionar el usuario actual
+    if (authStore.user?.id || authStore.user?.usuario_id) {
+      usuarioSeleccionado.value = authStore.user.id || authStore.user.usuario_id || null;
+    }
+  } catch (error) {
+    console.error('Error al cargar usuarios:', error);
   }
 };
 
@@ -363,6 +405,9 @@ const generateDailyReportHTML = () => {
         *** CORTE DE CAJA ***
       </div>
       <div style="font-weight: 700;">Periodo: ${displayDate.value}</div>
+      ${usuarioSeleccionado.value !== null ? `
+      <div style="font-weight: 700;">Usuario: ${usuarios.value.find(u => u.id === usuarioSeleccionado.value)?.username || 'N/A'}</div>
+      ` : '<div style="font-weight: 700;">Usuario: TODOS</div>'}
 
       <div class="double-line"></div>
 
@@ -469,6 +514,7 @@ const exportToExcel = () => {
       ['TELAS EMANUEL - REPORTE DE VENTAS'],
       [''],
       ['Periodo:', displayDate.value],
+      ['Usuario:', displayUsuario.value],
       ['Fecha de Generación:', date.formatDate(Date.now(), 'DD/MM/YYYY HH:mm')],
       [''],
       ['RESUMEN POR TIPO DE PAGO'],
@@ -489,7 +535,7 @@ const exportToExcel = () => {
     const ventasData: (string | number)[][] = [
       ['DETALLE DE VENTAS'],
       [''],
-      ['ID', 'Fecha', 'Hora', 'Cliente', 'Método de Pago', 'Total', 'Comentarios']
+      ['ID', 'Fecha', 'Hora', 'Cliente', 'Usuario', 'Método de Pago', 'Total', 'Comentarios']
     ];
 
     ventasFiltradas.value.forEach(venta => {
@@ -498,6 +544,7 @@ const exportToExcel = () => {
         formatDateLong(venta.fecha_venta),
         formatTime(venta.fecha_venta),
         venta.cliente || 'Cliente General',
+        venta.usuario?.username || venta.usuario?.nombre || venta.usuario?.email || 'N/A',
         venta.metodo_pago,
         Number(venta.total) || 0,
         venta.comentarios || ''
@@ -508,7 +555,7 @@ const exportToExcel = () => {
     const productosData: (string | number)[][] = [
       ['DETALLE DE PRODUCTOS'],
       [''],
-      ['Venta ID', 'Cliente', 'Producto', 'Cantidad', 'Medida', 'Precio Unitario', 'Subtotal']
+      ['Venta ID', 'Cliente', 'Usuario', 'Producto', 'Cantidad', 'Medida', 'Precio Unitario', 'Subtotal']
     ];
 
     ventasFiltradas.value.forEach(venta => {
@@ -519,6 +566,7 @@ const exportToExcel = () => {
         productosData.push([
           venta.id,
           venta.cliente || 'Cliente General',
+          venta.usuario?.username || venta.usuario?.nombre || venta.usuario?.email || 'N/A',
           getProductoNombre(detalle.producto_id),
           cantidad,
           detalle.medida || getProductoMedida(detalle.producto_id),
@@ -535,8 +583,8 @@ const exportToExcel = () => {
 
     // Ajustar anchos de columnas
     wsResumen['!cols'] = [{ wch: 25 }, { wch: 20 }];
-    wsVentas['!cols'] = [{ wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 30 }];
-    wsProductos['!cols'] = [{ wch: 10 }, { wch: 20 }, { wch: 30 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 12 }];
+    wsVentas['!cols'] = [{ wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 30 }];
+    wsProductos['!cols'] = [{ wch: 10 }, { wch: 20 }, { wch: 15 }, { wch: 30 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 12 }];
 
     // Agregar hojas al workbook
     XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
@@ -639,8 +687,13 @@ watch(dateRange, () => {
   filtroTipoPago.value = null; // Limpiar filtro al cambiar fecha
 });
 
+watch(usuarioSeleccionado, () => {
+  void loadVentas();
+});
+
 onMounted(() => {
   datos.value = authStore.user as { email: string };
+  void loadUsuarios();
   void loadVentas();
   void loadProductos();
 });
@@ -659,13 +712,23 @@ onMounted(() => {
           </div>
           <q-btn v-if="datos?.email === 'visor'" icon="event" round flat color="primary" dense>
             <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-              <q-date v-model="dateRange" range mask="YYYY/MM/DD">
+              <q-date v-model="dateRange" range mask="DD/MM/YYYY">
                 <div class="row items-center justify-end q-gutter-sm">
                   <q-btn label="Cerrar" color="primary" flat v-close-popup />
                 </div>
               </q-date>
             </q-popup-proxy>
           </q-btn>
+        </div>
+        <div class="row items-center q-mt-sm">
+          <div class="text-subtitle2 text-grey-7 q-mr-md">Usuario:</div>
+          <q-select v-model="usuarioSeleccionado"
+            :options="[{ label: 'Todos los usuarios', value: null }, ...usuarios.map(u => ({ label: u.username || u.email, value: u.id }))]"
+            outlined dense emit-value map-options style="min-width: 200px" class="q-mr-md">
+            <template v-slot:prepend>
+              <q-icon name="person" />
+            </template>
+          </q-select>
         </div>
       </div>
       <div class="row q-gutter-sm">
@@ -794,6 +857,9 @@ onMounted(() => {
                     <div class="text-caption text-grey-6">
                       <q-icon name="payments" size="xs" /> {{ venta.metodo_pago }}
                     </div>
+                    <div v-if="venta.usuario" class="text-caption text-grey-6">
+                      <q-icon name="person" size="xs" /> Atendió: {{ venta.usuario.username || venta.usuario.email }}
+                    </div>
                   </div>
                   <div class="col-auto text-right row items-center q-gutter-x-sm">
                     <q-btn icon="print" flat round dense color="primary" @click.stop="printVenta(venta)">
@@ -853,6 +919,9 @@ onMounted(() => {
                     <div class="text-caption text-grey-6">
                       <q-icon name="payments" size="xs" /> {{ venta.metodo_pago }}
                     </div>
+                    <div v-if="venta.usuario" class="text-caption text-grey-6">
+                      <q-icon name="person" size="xs" /> Atendió: {{ venta.usuario.username || venta.usuario.email }}
+                    </div>
                   </div>
                   <div class="col-auto text-right row items-center q-gutter-x-sm">
                     <q-btn icon="print" flat round dense color="primary" @click.stop="printVenta(venta)">
@@ -910,6 +979,9 @@ onMounted(() => {
                 <div class="text-caption text-grey-6">
                   <q-icon name="payments" size="xs" /> {{ venta.metodo_pago }}
                   <span v-if="venta.comentarios" class="q-ml-sm text-italic">"{{ venta.comentarios }}"</span>
+                </div>
+                <div v-if="venta.usuario" class="text-caption text-grey-6">
+                  <q-icon name="person" size="xs" /> Atendió: {{ venta.usuario.username || venta.usuario.email }}
                 </div>
               </div>
               <div class="col-auto text-right row items-center q-gutter-x-sm">

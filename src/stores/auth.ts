@@ -2,7 +2,12 @@ import { ref } from 'vue';
 import { defineStore } from 'pinia';
 
 export interface UserData {
+  id?: number;
+  usuario_id?: number;
   email?: string;
+  username?: string;
+  nombre?: string;
+  rol?: string;
   [key: string]: unknown;
 }
 
