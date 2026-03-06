@@ -31,7 +31,8 @@ const login = async () => {
 
       switch (datos.value?.email) {
         case 'caja':
-          await router.push('/carrito');
+          //await router.push('/carrito');
+          await router.push('/select');
           break;
         case 'vendedor':
           await router.push('/select');

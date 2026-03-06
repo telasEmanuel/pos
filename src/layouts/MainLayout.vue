@@ -9,6 +9,9 @@ import { storeToRefs } from 'pinia'
 import InventoryManagerModal from 'src/components/InventoryManagerModal.vue';
 
 const showInventoryManager = ref(false);
+const showPasswordDialog = ref(false);
+const passwordInput = ref('');
+const passwordError = ref('');
 
 const $q = useQuasar()
 const pedidosStore = usePedidosStore()
@@ -20,6 +23,30 @@ const authStore = useAuthStore();
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
+}
+
+const abrirCarritoConPassword = () => {
+  showPasswordDialog.value = true;
+  passwordInput.value = '';
+  passwordError.value = '';
+}
+
+const validarPassword = () => {
+  if (passwordInput.value === import.meta.env.VITE_CARRITO) {
+    showPasswordDialog.value = false;
+    passwordInput.value = '';
+    passwordError.value = '';
+    void router.push('/carrito');
+  } else {
+    passwordError.value = 'Contraseña incorrecta';
+    passwordInput.value = '';
+  }
+}
+
+const cerrarPasswordDialog = () => {
+  showPasswordDialog.value = false;
+  passwordInput.value = '';
+  passwordError.value = '';
 }
 
 const cerrarSesion = async () => {
@@ -129,7 +156,7 @@ onUnmounted(() => {
           Menú de opciones
         </q-item-label>
         <div v-if="datos?.email === 'caja'">
-          <q-item clickable to="/carrito">
+          <q-item clickable @click="abrirCarritoConPassword">
             <q-item-section avatar>
               <q-icon name="home" />
             </q-item-section>
@@ -323,6 +350,35 @@ onUnmounted(() => {
     <q-page-container class="main-bg">
       <router-view />
     </q-page-container>
+
+    <q-dialog v-model="showPasswordDialog" persistent>
+      <q-card style="min-width: 300px">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6">Ingresar contraseña</div>
+          <q-space />
+          <q-btn icon="close" flat round dense @click="cerrarPasswordDialog" />
+        </q-card-section>
+
+        <q-card-section>
+          <q-input
+            v-model="passwordInput"
+            type="password"
+            label="Contraseña"
+            outlined
+            @keyup.enter="validarPassword"
+            autofocus
+          />
+          <div v-if="passwordError" class="text-negative text-caption q-mt-md">
+            {{ passwordError }}
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="primary" @click="cerrarPasswordDialog" />
+          <q-btn unelevated label="Aceptar" color="primary" @click="validarPassword" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-layout>
 </template>
 
