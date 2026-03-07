@@ -196,12 +196,12 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
 
       // Obtener el username del creador del pedido desde localStorage
       let atendidoPor = 'MOSTRADOR';
-      
+
       try {
         const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}');
         console.log('📦 Pedidos vendedores en localStorage:', pedidosVendedores);
         console.log('🔍 Buscando vendedor para pedido ID:', pedido.id);
-        
+
         atendidoPor = pedidosVendedores[pedido.id!] || pedido.usuario_username || authStore.user?.username || 'MOSTRADOR';
         console.log('✅ Atendido por:', atendidoPor);
       } catch (err) {

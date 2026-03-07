@@ -211,10 +211,10 @@ const parseDetailedPaymentComment = (rawComment: string | null): {
 
 const buildLastReceiptFromVenta = (venta: Venta): ReceiptData => {
   const parsed = parseDetailedPaymentComment(venta.comentarios);
-  
+
   // Intentar obtener el nombre del usuario que hizo la venta
   let atendidoPor = 'MOSTRADOR';
-  
+
   try {
     // Intentar del authStore primero
     const currentUser = authStore.user;
@@ -586,7 +586,7 @@ const exportToExcel = () => {
       [''],
       ['Venta ID', 'Cliente', 'Usuario', 'Producto', 'Cantidad', 'Medida', 'Precio Unitario', 'Subtotal']
     ];
-//TODO:
+    //TODO:
     ventasFiltradas.value.forEach(venta => {
       (venta.detallesVenta || []).forEach(detalle => {
         const cantidad = Number(detalle.cantidad) || 0;
@@ -1026,11 +1026,13 @@ onMounted(async () => {
                 </div>
               </div>
               <div class="col-auto text-right row items-center q-gutter-x-sm">
-                <q-btn icon="print" flat round dense color="primary" @click.stop="printVenta(venta)" v-if="datos?.email === 'visor'">
+                <q-btn icon="print" flat round dense color="primary" @click.stop="printVenta(venta)"
+                  v-if="datos?.email === 'visor'">
                   <q-tooltip>Imprimir esta venta</q-tooltip>
                 </q-btn>
                 <div>
-                  <div class="text-weight-bolder text-primary text-body1" v-if="datos?.email === 'visor'">{{ formatCurrency(venta.total) }}</div>
+                  <div class="text-weight-bolder text-primary text-body1" v-if="datos?.email === 'visor'">{{
+                    formatCurrency(venta.total) }}</div>
                   <div class="text-caption text-grey-5">#{{ venta.id }}</div>
                 </div>
                 <q-icon :name="expanded ? 'expand_less' : 'expand_more'" size="sm" color="grey-6" />

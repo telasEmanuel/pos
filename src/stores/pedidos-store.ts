@@ -66,7 +66,9 @@ const transformarPedidoBackend = (pedidoBackend: PedidoBackend): Pedido => {
     ...(pedidoBackend.total !== undefined ? { total: Number(pedidoBackend.total) } : {}),
     ...(pedidoBackend.comentarios !== undefined ? { comentarios: pedidoBackend.comentarios } : {}),
     ...(pedidoBackend.usuario_id !== undefined ? { usuario_id: pedidoBackend.usuario_id } : {}),
-    ...(pedidoBackend.usuario_username !== undefined ? { usuario_username: pedidoBackend.usuario_username } : {}),
+    ...(pedidoBackend.usuario_username !== undefined
+      ? { usuario_username: pedidoBackend.usuario_username }
+      : {}),
   };
 };
 
