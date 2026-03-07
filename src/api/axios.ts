@@ -42,8 +42,8 @@ api.interceptors.response.use(
       if (status === 401) {
         const authStore = useAuthStore();
         authStore.logout();
-        // Optionally redirect to login
-        // window.location.href = '/'
+        // Redirigir a login cuando el token expira
+        window.location.href = '/';
       }
 
       // Return the actual error object with full context

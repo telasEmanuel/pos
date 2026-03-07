@@ -241,9 +241,19 @@ const enviar = async (extra: { comprador?: string } = {}) => {
       comprador: compradorFinal,
       productos,
       estado: 'pendiente' as const,
+      usuario_id: authStore.user?.id || authStore.user?.usuario_id || null,
+      usuario_username: authStore.user?.username || null,
     };
 
     const creado = await pedidosStore.agregarPedido(pedido);
+
+    // Guardar usuario_username en localStorage (más persistente) para recuperarlo después
+    if (creado?.id && authStore.user?.username) {
+      const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}');
+      pedidosVendedores[creado.id] = authStore.user.username;
+      localStorage.setItem('pedidos_vendedores', JSON.stringify(pedidosVendedores));
+      console.log('✅ Guardado en localStorage - Pedido ID:', creado.id, 'Vendedor:', authStore.user.username);
+    }
 
     // Notificar por socket para que otros clientes muestren la notificación
     socket.emit('nuevo-pedido', creado);

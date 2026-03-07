@@ -18,7 +18,7 @@ const pedidosStore = usePedidosStore()
 const { pedidos } = storeToRefs(pedidosStore)
 const router = useRouter();
 const leftDrawerOpen = ref(false);
-const datos = ref<{ email?: string } | null>(null);
+const datos = ref<{ nombre?: string, email?: string } | null>(null);
 const authStore = useAuthStore();
 
 function toggleLeftDrawer() {
@@ -146,7 +146,7 @@ onUnmounted(() => {
           Telas Emanuel
         </q-toolbar-title>
 
-        <div v-if="datos">{{ datos.email?.toUpperCase() }}</div>
+        <div v-if="datos">{{ datos.nombre?.toUpperCase() }}</div>
       </q-toolbar>
     </q-header>
 
@@ -222,7 +222,7 @@ onUnmounted(() => {
           </q-item>
         </div>
 
-        <div v-if="datos?.email === 'vendedor'">
+        <div v-if="datos?.email === 'vendedor1' || datos?.email === 'vendedor2'">
           <q-item clickable to="/select">
             <q-item-section avatar>
               <q-icon name="home" />

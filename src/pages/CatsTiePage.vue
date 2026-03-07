@@ -278,6 +278,8 @@ const enviarPedido = async () => {
       })),
       estado: 'pendiente' as const,
       total: totalPedido.value,
+      usuario_id: useAuthStore().user?.id || useAuthStore().user?.usuario_id || null,
+      usuario_username: useAuthStore().user?.username || null,
     };
     const isEditing = !!editOrderId.value;
     const created = editOrderId.value
@@ -289,6 +291,16 @@ const enviarPedido = async () => {
         ...pedido,
         comentarios: esPrecioTap.value ? 'PRECIO TAPICERO' : ''
       });
+
+    // Guardar usuario_username en localStorage para recuperarlo después
+    const authStoreInstance = useAuthStore();
+    if (created?.id && !isEditing && authStoreInstance.user?.username) {
+      const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}');
+      pedidosVendedores[created.id] = authStoreInstance.user.username;
+      localStorage.setItem('pedidos_vendedores', JSON.stringify(pedidosVendedores));
+      console.log('✅ Guardado en localStorage - Pedido ID:', created.id, 'Vendedor:', authStoreInstance.user.username);
+    }
+
     socket.emit(isEditing ? 'pedido-actualizado' : 'nuevo-pedido', created);
     sessionStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem('edit_order_id');

@@ -211,6 +211,25 @@ const parseDetailedPaymentComment = (rawComment: string | null): {
 
 const buildLastReceiptFromVenta = (venta: Venta): ReceiptData => {
   const parsed = parseDetailedPaymentComment(venta.comentarios);
+  
+  // Intentar obtener el nombre del usuario que hizo la venta
+  let atendidoPor = 'MOSTRADOR';
+  
+  try {
+    // Intentar del authStore primero
+    const currentUser = authStore.user;
+    if (currentUser?.username) {
+      atendidoPor = currentUser.username;
+    } else {
+      // Fallback a sessionStorage
+      const authUser = JSON.parse(sessionStorage.getItem('auth_user') || '{}');
+      if (authUser?.username) {
+        atendidoPor = authUser.username;
+      }
+    }
+  } catch {
+    // Si hay error, seguir con fallback
+  }
 
   return {
     cliente: (venta.cliente || 'Cliente General').trim(),
@@ -224,6 +243,7 @@ const buildLastReceiptFromVenta = (venta: Venta): ReceiptData => {
     metodoPago: String(venta.metodo_pago || 'EFECTIVO').toUpperCase(),
     fecha: venta.fecha_venta,
     ticketId: venta.id,
+    atendidoPor,
     ...(parsed.comments ? { comentarios: parsed.comments } : {}),
     ...(parsed.pagoDetalle ? { pagoDetalle: parsed.pagoDetalle } : {}),
   };
@@ -295,12 +315,14 @@ const loadUsuarios = async () => {
   try {
     const res = await api.get('usuarios');
     const data = Array.isArray(res.data) ? res.data : (res.data.usuarios ?? []);
-    usuarios.value = data.map((u: Usuario) => ({
-      id: u.id,
-      username: u.username,
-      email: u.email,
-      nombre: u.nombre
+    usuarios.value = data.map((u: Record<string, unknown>) => ({
+      id: (u.id ?? u.Id) as number,
+      username: (u.username ?? u.Username) as string,
+      email: (u.email ?? u.Email) as string,
+      nombre: (u.nombre ?? u.Nombre) as string
     }));
+
+    console.log('✅ Usuarios cargados:', usuarios.value);
 
     // No filtrar automáticamente - mostrar todas las ventas por defecto
     // El usuario puede filtrar manualmente si lo desea
@@ -564,7 +586,7 @@ const exportToExcel = () => {
       [''],
       ['Venta ID', 'Cliente', 'Usuario', 'Producto', 'Cantidad', 'Medida', 'Precio Unitario', 'Subtotal']
     ];
-
+//TODO:
     ventasFiltradas.value.forEach(venta => {
       (venta.detallesVenta || []).forEach(detalle => {
         const cantidad = Number(detalle.cantidad) || 0;
@@ -699,10 +721,10 @@ watch(usuarioSeleccionado, () => {
   void loadVentas();
 });
 
-onMounted(() => {
+onMounted(async () => {
   datos.value = authStore.user as { email: string };
   filtroTipoPago.value = null; // Asegurar que no hay filtro al iniciar
-  void loadUsuarios();
+  await loadUsuarios(); // Esperar a que se carguen usuarios primero
   void loadVentas();
   void loadProductos();
 });
@@ -729,7 +751,7 @@ onMounted(() => {
             </q-popup-proxy>
           </q-btn>
         </div>
-        <div class="row items-center q-mt-sm">
+        <div class="row items-center q-mt-sm" v-if="datos?.email === 'visor'">
           <div class="text-subtitle2 text-grey-7 q-mr-md">Usuario:</div>
           <q-select v-model="usuarioSeleccionado"
             :options="[{ label: 'Todos los usuarios', value: null }, ...usuarios.map(u => ({ label: u.username || u.email, value: u.id }))]"
@@ -757,7 +779,7 @@ onMounted(() => {
     </div>
 
     <!-- Main KPI Cards -->
-    <div class="row q-col-gutter-md q-mb-md">
+    <div class="row q-col-gutter-md q-mb-md" v-if="datos?.email === 'visor'">
       <!-- Total Income Card -->
       <div class="col-12 col-md-6">
         <div class="kpi-card gradient-bg text-white">
@@ -786,7 +808,7 @@ onMounted(() => {
     </div>
 
     <!-- Payment Methods Breakdown Row -->
-    <div class="row q-col-gutter-sm q-mb-xl">
+    <div class="row q-col-gutter-sm q-mb-xl" v-if="datos?.email === 'visor'">
       <div class="col-6 col-md-3">
         <div class="mini-stat-card" :class="{ 'active-filter': filtroTipoPago === 'EFECTIVO' }"
           @click="toggleFiltroTipoPago('EFECTIVO')">
@@ -1004,11 +1026,11 @@ onMounted(() => {
                 </div>
               </div>
               <div class="col-auto text-right row items-center q-gutter-x-sm">
-                <q-btn icon="print" flat round dense color="primary" @click.stop="printVenta(venta)">
+                <q-btn icon="print" flat round dense color="primary" @click.stop="printVenta(venta)" v-if="datos?.email === 'visor'">
                   <q-tooltip>Imprimir esta venta</q-tooltip>
                 </q-btn>
                 <div>
-                  <div class="text-weight-bolder text-primary text-body1">{{ formatCurrency(venta.total) }}</div>
+                  <div class="text-weight-bolder text-primary text-body1" v-if="datos?.email === 'visor'">{{ formatCurrency(venta.total) }}</div>
                   <div class="text-caption text-grey-5">#{{ venta.id }}</div>
                 </div>
                 <q-icon :name="expanded ? 'expand_less' : 'expand_more'" size="sm" color="grey-6" />
@@ -1026,7 +1048,7 @@ onMounted(() => {
                   {{ detalle.medida || getProductoMedida(detalle.producto_id) }} x {{
                     getProductoNombre(detalle.producto_id) }}
                 </div>
-                <div class="text-grey-7">
+                <div class="text-grey-7" v-if="datos?.email === 'visor'">
                   {{ formatCurrency((detalle.precio_unitario || 0) * (detalle.cantidad || 0)) }}
                 </div>
               </div>

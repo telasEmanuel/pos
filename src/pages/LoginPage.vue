@@ -34,7 +34,8 @@ const login = async () => {
           //await router.push('/carrito');
           await router.push('/select');
           break;
-        case 'vendedor':
+        case 'vendedor1':
+        case 'vendedor2':
           await router.push('/select');
           break;
         case 'visor':

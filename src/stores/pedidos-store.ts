@@ -28,6 +28,8 @@ export interface PedidoBackend {
   fecha: string;
   total?: number;
   comentarios?: string | null;
+  usuario_id?: number | null;
+  usuario_username?: string | null;
 }
 
 export interface Pedido {
@@ -38,6 +40,8 @@ export interface Pedido {
   fecha: string;
   total?: number;
   comentarios?: string | null;
+  usuario_id?: number | null;
+  usuario_username?: string | null;
 }
 
 // Función helper para transformar pedidos del backend
@@ -61,6 +65,8 @@ const transformarPedidoBackend = (pedidoBackend: PedidoBackend): Pedido => {
     fecha: pedidoBackend.fecha,
     ...(pedidoBackend.total !== undefined ? { total: Number(pedidoBackend.total) } : {}),
     ...(pedidoBackend.comentarios !== undefined ? { comentarios: pedidoBackend.comentarios } : {}),
+    ...(pedidoBackend.usuario_id !== undefined ? { usuario_id: pedidoBackend.usuario_id } : {}),
+    ...(pedidoBackend.usuario_username !== undefined ? { usuario_username: pedidoBackend.usuario_username } : {}),
   };
 };
 

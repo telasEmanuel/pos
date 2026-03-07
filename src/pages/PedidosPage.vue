@@ -194,6 +194,21 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
       await pedidosStore.actualizarEstadoPedido(pedido.id!, 'pagado');
       const vuelto = data.montoPagado - total;
 
+      // Obtener el username del creador del pedido desde localStorage
+      let atendidoPor = 'MOSTRADOR';
+      
+      try {
+        const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}');
+        console.log('📦 Pedidos vendedores en localStorage:', pedidosVendedores);
+        console.log('🔍 Buscando vendedor para pedido ID:', pedido.id);
+        
+        atendidoPor = pedidosVendedores[pedido.id!] || pedido.usuario_username || authStore.user?.username || 'MOSTRADOR';
+        console.log('✅ Atendido por:', atendidoPor);
+      } catch (err) {
+        console.error('❌ Error recuperando vendedor:', err);
+        atendidoPor = pedido.usuario_username || authStore.user?.username || 'MOSTRADOR';
+      }
+
       currentReceipt.value = {
         cliente: pedido.comprador || 'Cliente',
         productos: productosParaRecibo,
@@ -204,7 +219,7 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
         ...(data.comentarios ? { comentarios: data.comentarios } : {}),
         ...(vuelto > 0 ? { cambio: Number(vuelto.toFixed(2)) } : {}),
         ticketId: response.data?.id || pedido.id || 0,
-        atendidoPor: JSON.parse(sessionStorage.getItem('auth_user') || '{}').username || 'MOSTRADOR',
+        atendidoPor,
         subtotal: Number(total),
         iva: 0,
         descuento: 0,
