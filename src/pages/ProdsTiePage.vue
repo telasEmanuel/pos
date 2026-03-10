@@ -112,7 +112,7 @@ const formatPrice = (val: number | string | undefined | null) => {
   })}`;
 };
 const enviandoPedido = ref(false);
-const datos = ref<{ email?: string } | null>(null);
+const datos = ref<{ rol?: string } | null>(null);
 const nombreCliente = ref<string>('');
 const authStore = useAuthStore();
 const isRestoring = ref(false);
