@@ -33,6 +33,7 @@ interface Venta {
   comentarios: string | null;
   metodo_pago: string;
   usuario_id?: number | null;
+  usuario_username?: string | null;
   usuario?: Usuario;
   detallesVenta: DetalleVenta[];
 }
@@ -216,12 +217,20 @@ const buildLastReceiptFromVenta = (venta: Venta): ReceiptData => {
   let atendidoPor = 'MOSTRADOR';
 
   try {
-    // Intentar del authStore primero
-    const currentUser = authStore.user;
-    if (currentUser?.username) {
-      atendidoPor = currentUser.username;
-    } else {
-      // Fallback a sessionStorage
+    // Primero intentar del campo usuario_username que viene de la BD
+    if (venta.usuario_username) {
+      atendidoPor = venta.usuario_username;
+    }
+    // Si no, intentar del usuario relacionado
+    else if (venta.usuario?.username) {
+      atendidoPor = venta.usuario.username;
+    }
+    // Luego intentar del authStore actual
+    else if (authStore.user?.username) {
+      atendidoPor = authStore.user.username;
+    }
+    // Finalmente fallback a sessionStorage
+    else {
       const authUser = JSON.parse(sessionStorage.getItem('auth_user') || '{}');
       if (authUser?.username) {
         atendidoPor = authUser.username;
@@ -274,7 +283,13 @@ const loadVentas = async () => {
       params.usuario_id = usuarioSeleccionado.value;
     }
 
+    console.log('🔍 DEBUG CortePage - Parámetros de búsqueda:', params);
+
     const { data } = await api.get<CorteResponse>('ventas/rango', { params });
+
+    console.log('📊 DEBUG CortePage - Respuesta del API:', data);
+    console.log('📊 DEBUG CortePage - Ventas recibidas:', data.ventas);
+    console.log('📊 DEBUG CortePage - Stats:', data.stats);
 
     ventas.value = data.ventas;
     stats.value = data.stats;
@@ -741,7 +756,7 @@ onMounted(async () => {
           <div class="text-subtitle1 text-grey-7 q-mr-md">
             Periodo: <span class="text-weight-bold text-primary">{{ displayDate }}</span>
           </div>
-          <q-btn v-if="datos?.email === 'visor'" icon="event" round flat color="primary" dense>
+          <q-btn icon="event" round flat color="primary" dense>
             <q-popup-proxy cover transition-show="scale" transition-hide="scale">
               <q-date v-model="dateRange" range mask="DD/MM/YYYY">
                 <div class="row items-center justify-end q-gutter-sm">
@@ -751,7 +766,7 @@ onMounted(async () => {
             </q-popup-proxy>
           </q-btn>
         </div>
-        <div class="row items-center q-mt-sm" v-if="datos?.email === 'visor'">
+        <!--<div class="row items-center q-mt-sm">
           <div class="text-subtitle2 text-grey-7 q-mr-md">Usuario:</div>
           <q-select v-model="usuarioSeleccionado"
             :options="[{ label: 'Todos los usuarios', value: null }, ...usuarios.map(u => ({ label: u.username || u.email, value: u.id }))]"
@@ -759,14 +774,14 @@ onMounted(async () => {
             <template v-slot:prepend>
               <q-icon name="person" />
             </template>
-          </q-select>
-        </div>
+</q-select>
+</div>-->
       </div>
       <div class="row q-gutter-sm">
-        <q-btn icon="description" flat round color="green-8" @click="exportToExcel" v-if="datos?.email === 'visor'">
+        <q-btn icon="description" flat round color="green-8" @click="exportToExcel">
           <q-tooltip>Exportar a Excel</q-tooltip>
         </q-btn>
-        <q-btn icon="print" flat round color="orange-8" @click="printDailyReport" v-if="datos?.email === 'visor'">
+        <q-btn icon="print" flat round color="orange-8" @click="printDailyReport">
           <q-tooltip>Imprimir Reporte</q-tooltip>
         </q-btn>
         <q-btn icon="print" flat round color="primary" @click="printLastReceipt" :disable="!lastReceipt">
@@ -779,7 +794,7 @@ onMounted(async () => {
     </div>
 
     <!-- Main KPI Cards -->
-    <div class="row q-col-gutter-md q-mb-md" v-if="datos?.email === 'visor'">
+    <div class="row q-col-gutter-md q-mb-md">
       <!-- Total Income Card -->
       <div class="col-12 col-md-6">
         <div class="kpi-card gradient-bg text-white">
@@ -808,7 +823,7 @@ onMounted(async () => {
     </div>
 
     <!-- Payment Methods Breakdown Row -->
-    <div class="row q-col-gutter-sm q-mb-xl" v-if="datos?.email === 'visor'">
+    <div class="row q-col-gutter-sm q-mb-xl">
       <div class="col-6 col-md-3">
         <div class="mini-stat-card" :class="{ 'active-filter': filtroTipoPago === 'EFECTIVO' }"
           @click="toggleFiltroTipoPago('EFECTIVO')">
@@ -898,8 +913,9 @@ onMounted(async () => {
                     <div class="text-caption text-grey-6">
                       <q-icon name="payments" size="xs" /> {{ venta.metodo_pago }}
                     </div>
-                    <div v-if="venta.usuario" class="text-caption text-grey-6">
-                      <q-icon name="person" size="xs" /> Atendió: {{ venta.usuario.username || venta.usuario.email }}
+                    <div v-if="venta.usuario_username || venta.usuario" class="text-caption text-grey-6">
+                      <q-icon name="person" size="xs" /> Atendió: {{ venta.usuario_username || venta.usuario?.username
+                        || venta.usuario?.email }}
                     </div>
                   </div>
                   <div class="col-auto text-right row items-center q-gutter-x-sm">
@@ -960,8 +976,9 @@ onMounted(async () => {
                     <div class="text-caption text-grey-6">
                       <q-icon name="payments" size="xs" /> {{ venta.metodo_pago }}
                     </div>
-                    <div v-if="venta.usuario" class="text-caption text-grey-6">
-                      <q-icon name="person" size="xs" /> Atendió: {{ venta.usuario.username || venta.usuario.email }}
+                    <div v-if="venta.usuario_username || venta.usuario" class="text-caption text-grey-6">
+                      <q-icon name="person" size="xs" /> Atendió: {{ venta.usuario_username || venta.usuario?.username
+                        || venta.usuario?.email }}
                     </div>
                   </div>
                   <div class="col-auto text-right row items-center q-gutter-x-sm">
@@ -1021,17 +1038,17 @@ onMounted(async () => {
                   <q-icon name="payments" size="xs" /> {{ venta.metodo_pago }}
                   <span v-if="venta.comentarios" class="q-ml-sm text-italic">"{{ venta.comentarios }}"</span>
                 </div>
-                <div v-if="venta.usuario" class="text-caption text-grey-6">
-                  <q-icon name="person" size="xs" /> Atendió: {{ venta.usuario.username || venta.usuario.email }}
+                <div v-if="venta.usuario_username || venta.usuario" class="text-caption text-grey-6">
+                  <q-icon name="person" size="xs" /> Atendió: {{ venta.usuario_username || venta.usuario?.username ||
+                    venta.usuario?.email }}
                 </div>
               </div>
               <div class="col-auto text-right row items-center q-gutter-x-sm">
-                <q-btn icon="print" flat round dense color="primary" @click.stop="printVenta(venta)"
-                  v-if="datos?.email === 'visor'">
+                <q-btn icon="print" flat round dense color="primary" @click.stop="printVenta(venta)">
                   <q-tooltip>Imprimir esta venta</q-tooltip>
                 </q-btn>
                 <div>
-                  <div class="text-weight-bolder text-primary text-body1" v-if="datos?.email === 'visor'">{{
+                  <div class="text-weight-bolder text-primary text-body1">{{
                     formatCurrency(venta.total) }}</div>
                   <div class="text-caption text-grey-5">#{{ venta.id }}</div>
                 </div>
@@ -1050,7 +1067,7 @@ onMounted(async () => {
                   {{ detalle.medida || getProductoMedida(detalle.producto_id) }} x {{
                     getProductoNombre(detalle.producto_id) }}
                 </div>
-                <div class="text-grey-7" v-if="datos?.email === 'visor'">
+                <div class="text-grey-7">
                   {{ formatCurrency((detalle.precio_unitario || 0) * (detalle.cantidad || 0)) }}
                 </div>
               </div>

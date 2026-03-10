@@ -179,13 +179,23 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
       };
     });
 
+    // Obtener el nombre del vendedor ORIGINAL del pedido para guardar en la venta
+    let nombreVendedor: string | null = null;
+    try {
+      const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}');
+      nombreVendedor = pedidosVendedores[pedido.id!] || pedido.usuario_username || null;
+    } catch {
+      nombreVendedor = pedido.usuario_username || null;
+    }
+
     const payload = {
       cliente: pedido.comprador,
       total: total,
       detallesVenta,
       bodega_id: 1,
       comentarios: data.comentarios,
-      metodo_pago: data.metodoPago
+      metodo_pago: data.metodoPago,
+      usuario_username: nombreVendedor,
     };
 
     const response = await api.post('ventas', payload);

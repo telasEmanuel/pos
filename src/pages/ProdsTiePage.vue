@@ -737,7 +737,7 @@ watch(
               </div>
 
               <!-- Quantity Control (Vendedor only) -->
-              <div class="quantity-control" v-if="datos?.email === 'vendedor1' || datos?.email === 'vendedor2'">
+              <div class="quantity-control" v-if="datos?.email === 'vendedor'">
                 <button @click="decrementarCantidad(prod)" class="btn-qty" :disabled="prod.cantidadPedido === 0">
                   -
                 </button>

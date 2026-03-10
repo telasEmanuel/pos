@@ -35,7 +35,7 @@ const columns: { name: string; align: 'left' | 'center' | 'right'; label: string
   { name: 'inv_min', align: 'center', label: 'Mínimo', field: (row: InventarioItem) => row.inv_min ?? row.producto?.inv_min ?? 0, sortable: true },
   { name: 'unidad', align: 'left', label: 'Unidad', field: (row: InventarioItem) => row.medida_ind || row.medida || row.producto?.medida_ind || row.producto?.medida || '', sortable: true },
   { name: 'estado', align: 'center', label: 'Estado', field: 'id' },
-  { name: 'acciones', align: 'center', label: 'Acciones', field: 'id' }
+  /*{ name: 'acciones', align: 'center', label: 'Acciones', field: 'id' }*/
 ];
 
 const lowStockItems = computed(() => {

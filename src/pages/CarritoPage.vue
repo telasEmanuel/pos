@@ -247,12 +247,12 @@ const enviar = async (extra: { comprador?: string } = {}) => {
 
     const creado = await pedidosStore.agregarPedido(pedido);
 
-    // Guardar usuario_username en localStorage (más persistente) para recuperarlo después
-    if (creado?.id && authStore.user?.username) {
+    // Guardar nombre del vendedor en localStorage para recuperarlo después
+    if (creado?.id && authStore.user?.nombre) {
       const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}');
-      pedidosVendedores[creado.id] = authStore.user.username;
+      pedidosVendedores[creado.id] = authStore.user.nombre;
       localStorage.setItem('pedidos_vendedores', JSON.stringify(pedidosVendedores));
-      console.log('✅ Guardado en localStorage - Pedido ID:', creado.id, 'Vendedor:', authStore.user.username);
+      console.log('✅ Guardado en localStorage - Pedido ID:', creado.id, 'Vendedor:', authStore.user.nombre);
     }
 
     // Notificar por socket para que otros clientes muestren la notificación
@@ -346,6 +346,27 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
       throw new Error('No se pudo crear el pedido antes de procesar la venta');
     }
 
+    // Obtener el nombre del vendedor ORIGINAL que hizo el pedido desde localStorage
+    // Usar eso en lugar del usuario actual que está cobrando
+    const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}');
+    const vendedorOriginal = pedidosVendedores[creado.id];
+
+    let nombreVendedor: string | null = null;
+    if (vendedorOriginal) {
+      // Usar el nombre del vendedor que originalmente tomó la orden
+      nombreVendedor = vendedorOriginal;
+    } else if (authStore.user?.nombre) {
+      // Fallback al nombre del usuario actual si no hay vendedor original
+      nombreVendedor = authStore.user.nombre;
+    } else {
+      try {
+        const authUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+        nombreVendedor = authUser?.nombre || null;
+      } catch {
+        nombreVendedor = null;
+      }
+    }
+
     const payload = {
       cliente: clienteParaVenta,
       total: parseDecimal(total.value),
@@ -354,6 +375,7 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
       comentarios: comentarios.value,
       metodo_pago: mpago,
       usuario_id: authStore.user?.id || authStore.user?.usuario_id || null,
+      usuario_username: nombreVendedor,
     };
 
     const resp = await api.post('ventas', payload);

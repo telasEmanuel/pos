@@ -12,6 +12,7 @@ const showInventoryManager = ref(false);
 const showPasswordDialog = ref(false);
 const passwordInput = ref('');
 const passwordError = ref('');
+const currentPasswordContext = ref<'carrito' | 'corte' | 'reporte'>('carrito');
 
 const $q = useQuasar()
 const pedidosStore = usePedidosStore()
@@ -29,14 +30,41 @@ const abrirCarritoConPassword = () => {
   showPasswordDialog.value = true;
   passwordInput.value = '';
   passwordError.value = '';
+  currentPasswordContext.value = 'carrito';
 }
 
+const abrirCorteConPassword = () => {
+  showPasswordDialog.value = true;
+  passwordInput.value = '';
+  passwordError.value = '';
+  currentPasswordContext.value = 'corte';
+}
+
+/*const abrirReporteConPassword = () => {
+  showPasswordDialog.value = true;
+  passwordInput.value = '';
+  passwordError.value = '';
+  currentPasswordContext.value = 'reporte';
+
+  //@click="abrirReporteConPassword"
+}*/
+
 const validarPassword = () => {
-  if (passwordInput.value === import.meta.env.VITE_CARRITO) {
+  if (currentPasswordContext.value === 'carrito' && passwordInput.value === import.meta.env.VITE_CARRITO) {
     showPasswordDialog.value = false;
     passwordInput.value = '';
     passwordError.value = '';
     void router.push('/carrito');
+  } else if (currentPasswordContext.value === 'corte' && passwordInput.value === import.meta.env.VITE_CARRITO) {
+    showPasswordDialog.value = false;
+    passwordInput.value = '';
+    passwordError.value = '';
+    void router.push('/corte');
+  } else if (currentPasswordContext.value === 'reporte' && passwordInput.value === import.meta.env.VITE_CORTE) {
+    showPasswordDialog.value = false;
+    passwordInput.value = '';
+    passwordError.value = '';
+    void router.push('/reporte');
   } else {
     passwordError.value = 'Contraseña incorrecta';
     passwordInput.value = '';
@@ -192,7 +220,7 @@ onUnmounted(() => {
             </q-item-section>
           </q-item>
 
-          <q-item clickable to="/corte">
+          <q-item clickable @click="abrirCorteConPassword">
             <q-item-section avatar>
               <q-icon name="point_of_sale" />
             </q-item-section>
@@ -210,6 +238,15 @@ onUnmounted(() => {
             </q-item-section>
           </q-item>
 
+          <q-item clickable to="/reporte">
+            <q-item-section avatar>
+              <q-icon name="table_rows" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Reporte de Existencias</q-item-label>
+            </q-item-section>
+          </q-item>
+
           <InventoryManagerModal :show="showInventoryManager" @close="showInventoryManager = false" />
 
           <q-item clickable @click="cerrarSesion">
@@ -222,7 +259,7 @@ onUnmounted(() => {
           </q-item>
         </div>
 
-        <div v-if="datos?.email === 'vendedor1' || datos?.email === 'vendedor2'">
+        <div v-if="datos?.email === 'vendedor'">
           <q-item clickable to="/select">
             <q-item-section avatar>
               <q-icon name="home" />
