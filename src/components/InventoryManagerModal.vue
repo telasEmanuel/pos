@@ -589,7 +589,7 @@ const formatValue = (value: unknown): string => {
 
 <template>
   <q-dialog :model-value="show" @hide="resetAndClose" persistent>
-    <q-card style="min-width: 480px; border-radius: 20px;" class="inventory-manager-card">
+    <q-card class="inventory-manager-card">
       <q-card-section class="row items-center justify-between q-pb-none bg-gradient">
         <div class="text-h6 text-white font-weight-bold">
           <q-icon name="inventory" class="q-mr-sm" />
@@ -598,8 +598,8 @@ const formatValue = (value: unknown): string => {
         <q-btn icon="close" flat round dense v-close-popup color="white" />
       </q-card-section>
 
-      <q-card-section class="q-pt-lg flex flex-center">
-        <div style="width: 100%; max-width: 400px;">
+      <q-card-section class="q-pt-lg scroll-content flex flex-center">
+        <div class="modal-content-wrapper">
           <!-- AUTH STATE -->
           <div v-if="currentState === 'auth'" class="column items-center q-gutter-md">
             <div class="text-subtitle1 text-grey-8 q-mb-sm">Acceso Restringido</div>
@@ -624,10 +624,12 @@ const formatValue = (value: unknown): string => {
               </template>
             </q-input>
 
-            <q-btn label="Crear Nuevo Producto" icon="add" class="full-width rounded-btn btn-gold q-mb-sm"
-              @click="goToCreate" />
+            <div class="row justify-center q-mb-sm">
+              <q-btn label="Crear Nuevo Producto" icon="add" class="rounded-btn btn-gold"
+                @click="goToCreate" />
+            </div>
 
-            <q-scroll-area style="height: 300px;" class="rounded-borders border-grey">
+            <q-scroll-area class="search-results-scroll rounded-borders border-grey">
               <q-list separator>
                 <q-item v-if="searchLoading" class="flex-center q-pa-lg">
                   <q-spinner-dots color="yellow-13" size="lg" />
@@ -782,7 +784,7 @@ const formatValue = (value: unknown): string => {
               <div class="text-subtitle1 text-weight-bold">Crear Nuevo Producto</div>
             </div>
 
-            <q-scroll-area style="height: 350px;" class="rounded-borders border-grey q-pa-md">
+            <q-scroll-area class="create-form-scroll rounded-borders border-grey q-pa-md">
               <div class="column q-gutter-md">
                 <q-input v-model="createForm.nombre" label="Nombre del Producto" filled dense autofocus />
 
@@ -816,6 +818,35 @@ const formatValue = (value: unknown): string => {
 </template>
 
 <style scoped>
+.inventory-manager-card {
+  border-radius: 20px;
+  width: 95vw;
+  max-width: 500px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.scroll-content {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.modal-content-wrapper {
+  width: 100%;
+  max-width: 100%;
+}
+
+.search-results-scroll {
+  height: 250px;
+}
+
+.create-form-scroll {
+  height: 280px;
+}
+
 .bg-gradient {
   background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
 }
@@ -851,10 +882,6 @@ const formatValue = (value: unknown): string => {
   color: white !important;
 }
 
-.inventory-manager-card {
-  overflow: hidden;
-}
-
 .text-white {
   color: white !important;
 }
@@ -871,5 +898,55 @@ const formatValue = (value: unknown): string => {
 .text-positive {
   color: #21ba45;
   font-weight: bold;
+}
+
+/* Responsive Design */
+@media (max-height: 600px) {
+  .search-results-scroll {
+    height: 150px;
+  }
+
+  .create-form-scroll {
+    height: 180px;
+  }
+
+  .rounded-btn {
+    height: 40px;
+  }
+}
+
+@media (max-height: 800px) {
+  .inventory-manager-card {
+    max-height: 95vh;
+  }
+
+  .search-results-scroll {
+    height: 180px;
+  }
+
+  .create-form-scroll {
+    height: 220px;
+  }
+}
+
+@media (max-width: 480px) {
+  .inventory-manager-card {
+    width: 100%;
+    margin: 16px;
+    max-width: calc(100vw - 32px);
+  }
+
+  .rounded-btn {
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .search-results-scroll {
+    height: 180px;
+  }
+
+  .create-form-scroll {
+    height: 220px;
+  }
 }
 </style>
