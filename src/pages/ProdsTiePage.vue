@@ -597,7 +597,7 @@ watch(
     </div>
 
     <!-- Valor Almacenado -->
-    <div v-if="datos?.email === 'visor'" class="valor-almacenado-container">
+    <div v-if="datos?.rol === 'visor'" class="valor-almacenado-container">
       <div class="valor-almacenado-card">
         <div class="valor-content">
           <p class="valor-label">Valor Almacenado</p>
