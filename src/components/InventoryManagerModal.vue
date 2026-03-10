@@ -625,8 +625,7 @@ const formatValue = (value: unknown): string => {
             </q-input>
 
             <div class="row justify-center q-mb-sm">
-              <q-btn label="Crear Nuevo Producto" icon="add" class="rounded-btn btn-gold"
-                @click="goToCreate" />
+              <q-btn label="Crear Nuevo Producto" icon="add" class="rounded-btn btn-gold" @click="goToCreate" />
             </div>
 
             <q-scroll-area class="search-results-scroll rounded-borders border-grey">

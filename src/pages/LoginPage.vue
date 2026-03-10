@@ -10,7 +10,7 @@ const password = ref('')
 const mensajeError = ref('')
 const isPwd = ref(true)
 const isLoading = ref(false)
-const datos = ref<{ email?: string } | null>(null);
+const datos = ref<{ rol?: string } | null>(null);
 
 const login = async () => {
   mensajeError.value = ''
@@ -29,7 +29,7 @@ const login = async () => {
       authStore.login(token, usuario);
       datos.value = usuario;
 
-      switch (datos.value?.email) {
+      switch (datos.value?.rol) {
         case 'caja':
           //await router.push('/carrito');
           await router.push('/select');

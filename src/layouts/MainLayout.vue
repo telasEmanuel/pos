@@ -19,7 +19,7 @@ const pedidosStore = usePedidosStore()
 const { pedidos } = storeToRefs(pedidosStore)
 const router = useRouter();
 const leftDrawerOpen = ref(false);
-const datos = ref<{ nombre?: string, email?: string } | null>(null);
+const datos = ref<{ nombre?: string, rol?: string } | null>(null);
 const authStore = useAuthStore();
 
 function toggleLeftDrawer() {
@@ -55,12 +55,12 @@ const validarPassword = () => {
     passwordInput.value = '';
     passwordError.value = '';
     void router.push('/carrito');
-  } else if (currentPasswordContext.value === 'corte' && passwordInput.value === import.meta.env.VITE_CARRITO) {
+  } else if (currentPasswordContext.value === 'corte' && passwordInput.value === import.meta.env.VITE_CORTE) {
     showPasswordDialog.value = false;
     passwordInput.value = '';
     passwordError.value = '';
     void router.push('/corte');
-  } else if (currentPasswordContext.value === 'reporte' && passwordInput.value === import.meta.env.VITE_CORTE) {
+  } else if (currentPasswordContext.value === 'reporte' && passwordInput.value === import.meta.env.VITE_CARRITO) {
     showPasswordDialog.value = false;
     passwordInput.value = '';
     passwordError.value = '';
@@ -183,7 +183,7 @@ onUnmounted(() => {
         <q-item-label header>
           Menú de opciones
         </q-item-label>
-        <div v-if="datos?.email === 'caja'">
+        <div v-if="datos?.rol === 'caja'">
           <q-item clickable @click="abrirCarritoConPassword">
             <q-item-section avatar>
               <q-icon name="home" />
@@ -259,7 +259,7 @@ onUnmounted(() => {
           </q-item>
         </div>
 
-        <div v-if="datos?.email === 'vendedor'">
+        <div v-if="datos?.rol === 'vendedor'">
           <q-item clickable to="/select">
             <q-item-section avatar>
               <q-icon name="home" />
@@ -315,7 +315,7 @@ onUnmounted(() => {
           </q-item>
         </div>
 
-        <div v-if="datos?.email === 'visor'">
+        <div v-if="datos?.rol === 'visor'">
           <q-item clickable to="/select">
             <q-item-section avatar>
               <q-icon name="home" />

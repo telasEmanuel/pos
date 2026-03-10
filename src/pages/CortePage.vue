@@ -125,14 +125,11 @@ const receiptPrinter = ref<InstanceType<typeof ReceiptPrinter> | null>(null);
 const lastReceipt = ref<ReceiptData | null>(null);
 
 // Date selection
-const today = date.formatDate(Date.now(), 'YYYY/MM/DD');
-const dateRange = ref<string | { from: string; to: string }>(today);
+const todayFormatted = date.formatDate(Date.now(), 'DD/MM/YYYY');
+const dateRange = ref<string>(todayFormatted);
 
 const displayDate = computed(() => {
-  if (typeof dateRange.value === 'string') {
-    return dateRange.value;
-  }
-  return `${dateRange.value.from} - ${dateRange.value.to}`;
+  return dateRange.value;
 });
 
 const displayUsuario = computed(() => {
@@ -266,13 +263,10 @@ const updateLastReceipt = () => {
 const loadVentas = async () => {
   loading.value = true;
   try {
-    let inicio, fin;
-    if (typeof dateRange.value === 'string') {
-      inicio = fin = dateRange.value.replace(/\//g, '-');
-    } else {
-      inicio = dateRange.value.from.replace(/\//g, '-');
-      fin = dateRange.value.to.replace(/\//g, '-');
-    }
+    // Convertir de DD/MM/YYYY a YYYY-MM-DD
+    const [day, month, year] = (dateRange.value || todayFormatted).split('/');
+    const inicio = `${year}-${month}-${day}`;
+    const fin = inicio; // Mismo día
 
     const params: { inicio: string; fin: string; usuario_id?: number; _t?: number } = {
       inicio,
@@ -291,7 +285,16 @@ const loadVentas = async () => {
     console.log('📊 DEBUG CortePage - Ventas recibidas:', data.ventas);
     console.log('📊 DEBUG CortePage - Stats:', data.stats);
 
-    ventas.value = data.ventas;
+    // Filtrar ventas para mostrar solo las del día seleccionado (convertir a zona horaria local)
+    const ventasFiltradas = data.ventas.filter(venta => {
+      // Convertir fecha ISO a zona horaria local
+      const fechaLocal = date.formatDate(new Date(venta.fecha_venta), 'YYYY-MM-DD');
+      return fechaLocal === inicio;
+    });
+
+    console.log(`📊 Ventas filtradas para ${inicio}:`, ventasFiltradas);
+
+    ventas.value = ventasFiltradas;
     stats.value = data.stats;
     updateLastReceipt();
   } catch (error) {
@@ -738,8 +741,8 @@ watch(usuarioSeleccionado, () => {
 
 onMounted(async () => {
   datos.value = authStore.user as { email: string };
-  filtroTipoPago.value = null; // Asegurar que no hay filtro al iniciar
-  await loadUsuarios(); // Esperar a que se carguen usuarios primero
+  filtroTipoPago.value = null;
+  await loadUsuarios();
   void loadVentas();
   void loadProductos();
 });
@@ -758,7 +761,7 @@ onMounted(async () => {
           </div>
           <q-btn icon="event" round flat color="primary" dense>
             <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-              <q-date v-model="dateRange" range mask="DD/MM/YYYY">
+              <q-date v-model="dateRange" mask="DD/MM/YYYY">
                 <div class="row items-center justify-end q-gutter-sm">
                   <q-btn label="Cerrar" color="primary" flat v-close-popup />
                 </div>
