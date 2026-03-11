@@ -112,7 +112,7 @@ const formatPrice = (val: number | string | undefined | null) => {
   })}`;
 };
 const enviandoPedido = ref(false);
-const datos = ref<{ email?: string } | null>(null);
+const datos = ref<{ rol?: string } | null>(null);
 const nombreCliente = ref<string>('');
 const authStore = useAuthStore();
 const isRestoring = ref(false);
@@ -597,7 +597,7 @@ watch(
     </div>
 
     <!-- Valor Almacenado -->
-    <div v-if="datos?.email === 'visor'" class="valor-almacenado-container">
+    <div v-if="datos?.rol === 'visor'" class="valor-almacenado-container">
       <div class="valor-almacenado-card">
         <div class="valor-content">
           <p class="valor-label">Valor Almacenado</p>
@@ -737,7 +737,7 @@ watch(
               </div>
 
               <!-- Quantity Control (Vendedor only) -->
-              <div class="quantity-control" v-if="datos?.email === 'vendedor'">
+              <div class="quantity-control" v-if="datos?.rol === 'vendedor'">
                 <button @click="decrementarCantidad(prod)" class="btn-qty" :disabled="prod.cantidadPedido === 0">
                   -
                 </button>
