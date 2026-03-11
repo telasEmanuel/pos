@@ -410,6 +410,14 @@ onUnmounted(() => {
             </q-item-section>
           </q-item>-->
 
+          <q-item clickable @click="showInventoryManager = true">
+            <q-item-section avatar>
+              <q-icon name="inventory" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Gestión de Inventario</q-item-label>
+            </q-item-section>
+          </q-item>
           <InventoryManagerModal :show="showInventoryManager" @close="showInventoryManager = false" />
 
           <q-item clickable @click="cerrarSesion">
