@@ -381,6 +381,44 @@ onUnmounted(() => {
             </q-item-section>
           </q-item>
         </div>
+
+        <div v-if="datos?.rol === 'secretaria'">
+          <q-item clickable to="/select">
+            <q-item-section avatar>
+              <q-icon name="home" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Inicio</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable to="/reporte">
+            <q-item-section avatar>
+              <q-icon name="table_rows" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Reporte de Existencias</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <!--<q-item clickable @click="showInventoryManager = true">
+            <q-item-section avatar>
+              <q-icon name="inventory" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Gestión de Inventario</q-item-label>
+            </q-item-section>
+          </q-item>-->
+
+          <q-item clickable @click="cerrarSesion">
+            <q-item-section avatar>
+              <q-icon name="logout" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Cerrar sesión</q-item-label>
+            </q-item-section>
+          </q-item>
+        </div>
       </q-list>
     </q-drawer>
 

@@ -31,15 +31,18 @@ const login = async () => {
 
       switch (datos.value?.rol) {
         case 'caja':
+        case 'vendedor':
+        case 'visor':
+        case 'secretaria':
           //await router.push('/carrito');
           await router.push('/select');
           break;
-        case 'vendedor':
+        /*case 'vendedor':
           await router.push('/select');
           break;
         case 'visor':
           await router.push('/select');
-          break;
+          break;*/
         case 'admin':
           try {
             const adminUrl = (import.meta.env.VITE_ADMIN_URL as string)
