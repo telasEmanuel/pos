@@ -141,7 +141,7 @@ const editPedido = (pedido: Pedido) => {
   void router.push('/tienda');
 };
 
-const confirmarPago = async (data: { montoPagado: number; comentarios: string; metodoPago: string; pagoDetalle: PaymentBreakdown }) => {
+const confirmarPago = async (data: { montoPagado: number; comentarios: string; metodoPago: string; pagoDetalle: PaymentBreakdown; requiereFactura: boolean }) => {
   console.log('Confirmando pago con data:', data);
   if (!pedidoParaCompletar.value || !pedidoParaCompletar.value.id) {
     console.error('No hay pedido para completar seleccionado');
@@ -196,6 +196,7 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
       comentarios: data.comentarios,
       metodo_pago: data.metodoPago,
       usuario_username: nombreVendedor,
+      requiere_factura: data.requiereFactura,
     };
 
     const response = await api.post('ventas', payload);

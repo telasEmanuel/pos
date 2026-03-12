@@ -296,9 +296,9 @@ const abrirModalPago = () => {
   showPagoModal.value = true;
 };
 
-const confirmarPago = async (data: { montoPagado: number; comentarios: string; metodoPago: string; pagoDetalle: PaymentBreakdown }) => {
+const confirmarPago = async (data: { montoPagado: number; comentarios: string; metodoPago: string; pagoDetalle: PaymentBreakdown; requiereFactura: boolean }) => {
   showPagoModal.value = false;
-  const { montoPagado: mp, comentarios: cs, metodoPago: mpago, pagoDetalle } = data;
+  const { montoPagado: mp, comentarios: cs, metodoPago: mpago, pagoDetalle, requiereFactura } = data;
   comentarios.value = cs;
   const clienteParaVenta = clienteNombre.value;
 
@@ -376,6 +376,7 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
       metodo_pago: mpago,
       usuario_id: authStore.user?.id || authStore.user?.usuario_id || null,
       usuario_username: nombreVendedor,
+      requiere_factura: requiereFactura,
     };
 
     const resp = await api.post('ventas', payload);

@@ -35,6 +35,7 @@ interface Venta {
   usuario_id?: number | null;
   usuario_username?: string | null;
   usuario?: Usuario;
+  requiere_factura?: boolean;
   detallesVenta: DetalleVenta[];
 }
 
@@ -662,6 +663,9 @@ const exportToExcel = () => {
 // Filtro de tipo de pago
 const filtroTipoPago = ref<string | null>(null);
 
+// Filtro de estado de factura
+const filtroFactura = ref<boolean | null>(null);
+
 // Helper para obtener el tipo de tarjeta de una venta
 const getTipoTarjeta = (venta: Venta): 'DEBITO' | 'CREDITO' | null => {
   const metodoPago = (venta.metodo_pago || '').toUpperCase();
@@ -703,22 +707,91 @@ const ventasTarjetaCredito = computed(() => {
 });
 
 const ventasFiltradas = computed(() => {
-  if (!filtroTipoPago.value) {
-    return ventas.value;
+  let resultado = ventas.value;
+
+  // Aplicar filtro de tipo de pago
+  if (filtroTipoPago.value) {
+    if (filtroTipoPago.value === 'TARJETA') {
+      resultado = resultado.filter(venta => {
+        const metodoPago = (venta.metodo_pago || 'EFECTIVO').toUpperCase();
+        return metodoPago === 'TARJETA' || metodoPago === 'MIXTO';
+      });
+    } else {
+      resultado = resultado.filter(venta => {
+        const metodoPago = (venta.metodo_pago || 'EFECTIVO').toUpperCase();
+        return metodoPago === filtroTipoPago.value?.toUpperCase();
+      });
+    }
   }
 
-  // Para TARJETA, no filtrar aquí, se maneja en la vista con dos columnas
-  if (filtroTipoPago.value === 'TARJETA') {
-    return ventas.value.filter(venta => {
-      const metodoPago = (venta.metodo_pago || 'EFECTIVO').toUpperCase();
-      return metodoPago === 'TARJETA' || metodoPago === 'MIXTO';
-    });
+  // Aplicar filtro de factura
+  if (filtroFactura.value !== null) {
+    resultado = resultado.filter(venta => venta.requiere_factura === filtroFactura.value);
   }
 
-  return ventas.value.filter(venta => {
+  return resultado;
+});
+
+// Calcular total de ventas sin factura
+const totalVentasSinFactura = computed(() => {
+  return ventas.value
+    .filter(v => !v.requiere_factura)
+    .reduce((sum, v) => sum + (Number(v.total) || 0), 0);
+});
+
+// Calcular total de ventas con factura (requieren factura)
+const totalVentasConFactura = computed(() => {
+  return ventas.value
+    .filter(v => v.requiere_factura)
+    .reduce((sum, v) => sum + (Number(v.total) || 0), 0);
+});
+
+// Contadores de ventas por método de pago
+const ventasFiltradasPorMetodo = computed(() => {
+  let contEfectivo = 0;
+  let contTarjeta = 0;
+  let contTransferencia = 0;
+  let contMixto = 0;
+  let contUSD = 0;
+
+  ventasFiltradas.value.forEach(venta => {
     const metodoPago = (venta.metodo_pago || 'EFECTIVO').toUpperCase();
-    return metodoPago === filtroTipoPago.value?.toUpperCase();
+    const comentarios = venta.comentarios || '';
+
+    if (metodoPago === 'EFECTIVO') {
+      contEfectivo++;
+    } else if (metodoPago === 'TARJETA' || metodoPago === 'DEBITO' || metodoPago === 'CREDITO') {
+      contTarjeta++;
+    } else if (metodoPago === 'TRANSFERENCIA') {
+      contTransferencia++;
+    } else if (metodoPago === 'MIXTO') {
+      contMixto++;
+    }
+
+    const usdMatch = comentarios.match(/USD:\s*([\d.]+)/i);
+    if (usdMatch && usdMatch[1]) {
+      contUSD++;
+    }
   });
+
+  return {
+    efectivo: contEfectivo,
+    tarjeta: contTarjeta,
+    transferencia: contTransferencia,
+    mixto: contMixto,
+    usd: contUSD
+  };
+});
+
+// Contadores de ventas filtradas por estado de factura
+const ventasFiltradasPorFactura = computed(() => {
+  const sinFactura = ventasFiltradas.value.filter(v => !v.requiere_factura).length;
+  const conFactura = ventasFiltradas.value.filter(v => v.requiere_factura).length;
+
+  return {
+    sinFactura,
+    conFactura
+  };
 });
 
 const toggleFiltroTipoPago = (tipo: string) => {
@@ -729,19 +802,30 @@ const toggleFiltroTipoPago = (tipo: string) => {
   }
 };
 
+const toggleFiltroFactura = (requiereFactura: boolean) => {
+  if (filtroFactura.value === requiereFactura) {
+    filtroFactura.value = null; // Deseleccionar si ya está seleccionado
+  } else {
+    filtroFactura.value = requiereFactura;
+  }
+};
+
 watch(dateRange, () => {
   void loadVentas();
   filtroTipoPago.value = null; // Limpiar filtro al cambiar fecha
+  filtroFactura.value = null;
 });
 
 watch(usuarioSeleccionado, () => {
   filtroTipoPago.value = null; // Limpiar filtro al cambiar usuario
+  filtroFactura.value = null;
   void loadVentas();
 });
 
 onMounted(async () => {
   datos.value = authStore.user as { email: string };
   filtroTipoPago.value = null;
+  filtroFactura.value = null;
   await loadUsuarios();
   void loadVentas();
   void loadProductos();
@@ -834,6 +918,9 @@ onMounted(async () => {
             <q-icon name="attach_money" /> Efectivo
           </div>
           <div class="stat-amount">{{ formatCurrency(statsCalculadas.efectivo) }}</div>
+          <div class="stat-breakdown">{{ ventasFiltradasPorMetodo.efectivo }} venta{{ ventasFiltradasPorMetodo.efectivo
+            !==
+            1 ? 's' : '' }}</div>
           <q-tooltip>Click para filtrar ventas en efectivo</q-tooltip>
         </div>
       </div>
@@ -844,10 +931,9 @@ onMounted(async () => {
             <q-icon name="credit_card" /> Tarjeta
           </div>
           <div class="stat-amount">{{ formatCurrency(statsCalculadas.tarjeta) }}</div>
-          <!--<div class="stat-breakdown">
-            <span class="breakdown-item">D: ${{ statsCalculadas.debito.toFixed(2) }}</span>
-            <span class="breakdown-item">C: ${{ statsCalculadas.credito.toFixed(2) }}</span>
-          </div>-->
+          <div class="stat-breakdown">{{ ventasFiltradasPorMetodo.tarjeta }} venta{{ ventasFiltradasPorMetodo.tarjeta
+            !== 1
+            ? 's' : '' }}</div>
           <q-tooltip>Click para ver ventas con tarjeta (débito/crédito)</q-tooltip>
         </div>
       </div>
@@ -858,6 +944,8 @@ onMounted(async () => {
             <q-icon name="account_balance" /> Transferencia
           </div>
           <div class="stat-amount">{{ formatCurrency(statsCalculadas.transferencia) }}</div>
+          <div class="stat-breakdown">{{ ventasFiltradasPorMetodo.transferencia }} venta{{
+            ventasFiltradasPorMetodo.transferencia !== 1 ? 's' : '' }}</div>
           <q-tooltip>Click para filtrar ventas por transferencia</q-tooltip>
         </div>
       </div>
@@ -868,6 +956,9 @@ onMounted(async () => {
             <q-icon name="shuffle" /> Mixto
           </div>
           <div class="stat-amount">{{ formatCurrency(statsCalculadas.mixto) }}</div>
+          <div class="stat-breakdown">{{ ventasFiltradasPorMetodo.mixto }} venta{{ ventasFiltradasPorMetodo.mixto !== 1
+            ?
+            's' : '' }}</div>
           <q-tooltip>Click para filtrar ventas con pago mixto</q-tooltip>
         </div>
       </div>
@@ -877,11 +968,44 @@ onMounted(async () => {
             <q-icon name="local_atm" /> Dólares
           </div>
           <div class="stat-amount">USD {{ formatNumber(statsCalculadas.usd) }}</div>
+          <div class="stat-breakdown">{{ ventasFiltradasPorMetodo.usd }} venta{{ ventasFiltradasPorMetodo.usd !== 1 ?
+            's' :
+            '' }}</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="mini-stat-card" :class="{ 'active-filter': filtroFactura === false }"
+          @click="toggleFiltroFactura(false)">
+          <div class="stat-label text-orange-8">
+            <q-icon name="receipt" /> Ventas sin factura
+          </div>
+          <div class="stat-amount">{{ formatCurrency(totalVentasSinFactura) }}</div>
+          <div class="stat-breakdown">{{ ventasFiltradasPorFactura.sinFactura }} venta{{
+            ventasFiltradasPorFactura.sinFactura !== 1 ? 's' : '' }}</div>
+          <q-tooltip>Click para mostrar solo ventas facturadas</q-tooltip>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="mini-stat-card" :class="{ 'active-filter': filtroFactura === true }"
+          @click="toggleFiltroFactura(true)">
+          <div class="stat-label text-red-8">
+            <q-icon name="receipt_long" /> Ventas con factura
+          </div>
+          <div class="stat-amount">{{ formatCurrency(totalVentasConFactura) }}</div>
+          <div class="stat-breakdown">{{ ventasFiltradasPorFactura.conFactura }} venta{{
+            ventasFiltradasPorFactura.conFactura !== 1 ? 's' : '' }}</div>
+          <q-tooltip>Click para mostrar solo ventas pendientes de factura</q-tooltip>
         </div>
       </div>
     </div>
 
-    <!-- Sales List -->
+    <!-- Invoicing Status Filter Row -->
+    <!-- <div class="row q-col-gutter-sm q-mb-xl">
+      <div class="col-12">
+        <div class="text-subtitle2 text-grey-7 q-mb-sm">Filtrar por estado de facturación:</div>
+      </div>
+
+    </div> -->
     <div class="sales-section">
       <h2 class="text-h5 text-weight-bold q-mb-md text-grey-8">Movimientos del Periodo</h2>
 

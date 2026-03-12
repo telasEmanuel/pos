@@ -11,7 +11,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void;
-  (e: 'confirm', data: { montoPagado: number; comentarios: string; metodoPago: string; pagoDetalle: PaymentBreakdown }): void;
+  (e: 'confirm', data: { montoPagado: number; comentarios: string; metodoPago: string; pagoDetalle: PaymentBreakdown; requiereFactura: boolean }): void;
 }>();
 
 // Estado granular del pago
@@ -24,6 +24,7 @@ const tipoTarjeta = ref<'DEBITO' | 'CREDITO'>('DEBITO'); // Tipo de tarjeta
 
 const comentarios = ref('');
 const metodoPago = ref('EFECTIVO');
+const requiereFactura = ref(false);
 
 const metodos = [
   { id: 'EFECTIVO', label: 'Efectivo', icon: 'payments' },
@@ -137,6 +138,7 @@ const handleConfirm = () => {
     comentarios: comentariosFinal,
     metodoPago: metodoPago.value,
     pagoDetalle,
+    requiereFactura: requiereFactura.value,
   });
 };
 </script>
@@ -261,6 +263,12 @@ const handleConfirm = () => {
           <div class="comments-box">
             <label>Notas adicionales</label>
             <textarea v-model="comentarios" placeholder="Ej: Pago con billetes de $2000..."></textarea>
+          </div>
+
+          <!-- Checkbox Facturar Después -->
+          <div class="factura-checkbox">
+            <input type="checkbox" id="facturaCheck" v-model="requiereFactura" />
+            <label for="facturaCheck">¿Requiere factura?</label>
           </div>
         </div>
 
@@ -664,5 +672,31 @@ const handleConfirm = () => {
 .modal-enter-from .modal-content,
 .modal-leave-to .modal-content {
   transform: scale(0.95);
+}
+
+/* Checkbox Facturar */
+.factura-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #f7fafc;
+  border: 1px solid #cbd5e0;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+.factura-checkbox input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+  accent-color: #8b5e3c;
+}
+
+.factura-checkbox label {
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+  color: #2d3748;
 }
 </style>
