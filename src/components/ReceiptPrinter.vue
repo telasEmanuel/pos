@@ -177,7 +177,7 @@ const paymentLinesHTML = (data: ReceiptData) => {
   }
 
   const efectivo = detail.efectivo + (detail.dolares * detail.tasaCambio)
-  return `<div>Efectivo: ${toMoney(efectivo > 0 ? efectivo : detail.totalPagado)}</div>`
+  return `<div>Pagó con: ${toMoney(efectivo > 0 ? efectivo : detail.totalPagado)}</div>`
 }
 
 const generateReceiptHTML = (data: ReceiptData) => {
@@ -319,13 +319,13 @@ const generateReceiptHTML = (data: ReceiptData) => {
         </colgroup>
         <tbody>
           <tr>
+            <td colspan="2" style="text-align: right; font-weight: 900;">TOTAL: ${toMoney(data.total)}</td>
+          </tr>
+          <tr>
             <td colspan="2" style="text-align: right; font-weight: 900;">${paymentLinesHTML(data)}</td>
           </tr>
           <tr>
             <td colspan="2" style="text-align: right; font-weight: 900;">Cambio: ${toMoney(data.cambio || 0)}</td>
-          </tr>
-          <tr>
-            <td colspan="2" style="text-align: right; font-weight: 900;">TOTAL: ${toMoney(data.total)}</td>
           </tr>
         </tbody>
       </table>

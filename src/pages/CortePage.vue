@@ -53,7 +53,7 @@ interface CorteResponse {
 const $q = useQuasar();
 const ventas = ref<Venta[]>([]);
 const authStore = useAuthStore();
-const datos = ref<{ email?: string } | null>(null);
+const datos = ref<{ rol?: string } | null>(null);
 const usuarios = ref<Usuario[]>([]);
 const usuarioSeleccionado = ref<number | null>(null);
 const stats = ref({
@@ -524,7 +524,6 @@ const generateDailyReportHTML = () => {
         <br/>
         <div class="center">
           <div>Este es un reporte interno</div>
-          <div>=== Gracias ===</div>
         </div>
       </div>
       <br><br>
@@ -605,7 +604,7 @@ const exportToExcel = () => {
       [''],
       ['Venta ID', 'Cliente', 'Usuario', 'Producto', 'Cantidad', 'Medida', 'Precio Unitario', 'Subtotal']
     ];
-    //TODO:
+
     ventasFiltradas.value.forEach(venta => {
       (venta.detallesVenta || []).forEach(detalle => {
         const cantidad = Number(detalle.cantidad) || 0;
@@ -690,20 +689,34 @@ const getTipoTarjeta = (venta: Venta): 'DEBITO' | 'CREDITO' | null => {
 // Separar ventas de tarjeta en débito y crédito
 const ventasTarjetaDebito = computed(() => {
   if (filtroTipoPago.value !== 'TARJETA') return [];
-  return ventas.value.filter(venta => {
+  let resultado = ventas.value.filter(venta => {
     const metodoPago = (venta.metodo_pago || '').toUpperCase();
     if (metodoPago !== 'TARJETA' && metodoPago !== 'MIXTO') return false;
     return getTipoTarjeta(venta) === 'DEBITO';
   });
+
+  // Aplicar filtro de factura si está seleccionado
+  if (filtroFactura.value !== null) {
+    resultado = resultado.filter(venta => venta.requiere_factura === filtroFactura.value);
+  }
+
+  return resultado;
 });
 
 const ventasTarjetaCredito = computed(() => {
   if (filtroTipoPago.value !== 'TARJETA') return [];
-  return ventas.value.filter(venta => {
+  let resultado = ventas.value.filter(venta => {
     const metodoPago = (venta.metodo_pago || '').toUpperCase();
     if (metodoPago !== 'TARJETA' && metodoPago !== 'MIXTO') return false;
     return getTipoTarjeta(venta) === 'CREDITO';
   });
+
+  // Aplicar filtro de factura si está seleccionado
+  if (filtroFactura.value !== null) {
+    resultado = resultado.filter(venta => venta.requiere_factura === filtroFactura.value);
+  }
+
+  return resultado;
 });
 
 const ventasFiltradas = computed(() => {
@@ -823,7 +836,7 @@ watch(usuarioSeleccionado, () => {
 });
 
 onMounted(async () => {
-  datos.value = authStore.user as { email: string };
+  datos.value = authStore.user as { rol: string };
   filtroTipoPago.value = null;
   filtroFactura.value = null;
   await loadUsuarios();
@@ -843,7 +856,7 @@ onMounted(async () => {
           <div class="text-subtitle1 text-grey-7 q-mr-md">
             Periodo: <span class="text-weight-bold text-primary">{{ displayDate }}</span>
           </div>
-          <q-btn icon="event" round flat color="primary" dense>
+          <q-btn icon="event" round flat color="primary" dense v-if="datos?.rol === 'visor'">
             <q-popup-proxy cover transition-show="scale" transition-hide="scale">
               <q-date v-model="dateRange" mask="DD/MM/YYYY">
                 <div class="row items-center justify-end q-gutter-sm">
@@ -865,7 +878,7 @@ onMounted(async () => {
 </div>-->
       </div>
       <div class="row q-gutter-sm">
-        <q-btn icon="description" flat round color="green-8" @click="exportToExcel">
+        <q-btn icon="description" flat round color="green-8" @click="exportToExcel" v-if="datos?.rol === 'visor'">
           <q-tooltip>Exportar a Excel</q-tooltip>
         </q-btn>
         <q-btn icon="print" flat round color="orange-8" @click="printDailyReport">
@@ -977,7 +990,7 @@ onMounted(async () => {
         <div class="mini-stat-card" :class="{ 'active-filter': filtroFactura === false }"
           @click="toggleFiltroFactura(false)">
           <div class="stat-label text-orange-8">
-            <q-icon name="receipt" /> Ventas sin factura
+            <q-icon name="receipt" /> Facturación global
           </div>
           <div class="stat-amount">{{ formatCurrency(totalVentasSinFactura) }}</div>
           <div class="stat-breakdown">{{ ventasFiltradasPorFactura.sinFactura }} venta{{
@@ -989,7 +1002,7 @@ onMounted(async () => {
         <div class="mini-stat-card" :class="{ 'active-filter': filtroFactura === true }"
           @click="toggleFiltroFactura(true)">
           <div class="stat-label text-red-8">
-            <q-icon name="receipt_long" /> Ventas con factura
+            <q-icon name="receipt_long" /> Facturación cliente contado
           </div>
           <div class="stat-amount">{{ formatCurrency(totalVentasConFactura) }}</div>
           <div class="stat-breakdown">{{ ventasFiltradasPorFactura.conFactura }} venta{{
@@ -1016,7 +1029,18 @@ onMounted(async () => {
       <div v-else-if="ventasFiltradas.length === 0" class="empty-state text-center q-py-xl">
         <q-icon name="point_of_sale" size="4rem" color="grey-4" />
         <p class="text-grey-5 q-mt-md text-h6">
-          {{ filtroTipoPago ? `Este es el apartado de las ventas pagadas con ${filtroTipoPago.toLowerCase()}` : 'No hay ventas registradas' }}
+          <template v-if="filtroTipoPago === 'TARJETA' && filtroFactura !== null">
+            No hay ventas con tarjeta {{ filtroFactura ? 'que pidieron factura' : 'que NO pidieron factura' }}
+          </template>
+          <template v-else-if="filtroTipoPago">
+            Este es el apartado de las ventas pagadas con {{ filtroTipoPago.toLowerCase() }}
+            <template v-if="filtroFactura !== null">
+              {{ filtroFactura ? 'que pidieron factura' : 'que NO pidieron factura' }}
+            </template>
+          </template>
+          <template v-else>
+            No hay ventas registradas
+          </template>
         </p>
       </div>
 
@@ -1024,7 +1048,11 @@ onMounted(async () => {
       <div v-else-if="filtroTipoPago === 'TARJETA'" class="tarjeta-split-view">
         <div class="tarjeta-column">
           <h3 class="column-title debito-title">
-            <q-icon name="credit_card" /> Débito ({{ ventasTarjetaDebito.length }})
+            <q-icon name="credit_card" />
+            Débito ({{ ventasTarjetaDebito.length }})
+            <!--<span v-if="filtroFactura !== null" class="q-ml-sm factura-badge" :class="{ 'con-factura': filtroFactura, 'sin-factura': !filtroFactura }">
+              {{ filtroFactura ? '✓ Con factura' : '✗ Sin factura' }}
+            </span>-->
           </h3>
           <q-list v-if="ventasTarjetaDebito.length > 0" separator class="sales-list bg-white shadow-1 rounded-borders">
             <q-expansion-item v-for="venta in ventasTarjetaDebito" :key="venta.id" group="sales-debito"
@@ -1087,7 +1115,11 @@ onMounted(async () => {
 
         <div class="tarjeta-column">
           <h3 class="column-title credito-title">
-            <q-icon name="credit_card" /> Crédito ({{ ventasTarjetaCredito.length }})
+            <q-icon name="credit_card" />
+            Crédito ({{ ventasTarjetaCredito.length }})
+            <!--<span v-if="filtroFactura !== null" class="q-ml-sm factura-badge" :class="{ 'con-factura': filtroFactura, 'sin-factura': !filtroFactura }">
+              {{ filtroFactura ? '✓ Con factura' : '✗ Sin factura' }}
+            </span>-->
           </h3>
           <q-list v-if="ventasTarjetaCredito.length > 0" separator class="sales-list bg-white shadow-1 rounded-borders">
             <q-expansion-item v-for="venta in ventasTarjetaCredito" :key="venta.id" group="sales-credito"
@@ -1431,6 +1463,26 @@ onMounted(async () => {
 .credito-title {
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
+}
+
+.factura-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+.factura-badge.con-factura {
+  background: rgba(34, 197, 94, 0.4);
+  color: #86efac;
+}
+
+.factura-badge.sin-factura {
+  background: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
 }
 
 .empty-column {
