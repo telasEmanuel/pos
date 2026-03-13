@@ -3,11 +3,7 @@ declare const self: ServiceWorkerGlobalScope;
 
 // Cacheo de activos estáticos
 const CACHE_NAME = 'pos-pwa-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.webmanifest',
-];
+const urlsToCache = ['/', '/index.html', '/manifest.webmanifest'];
 
 // Instalación del service worker
 self.addEventListener('install', (event: ExtendableEvent) => {
@@ -16,7 +12,7 @@ self.addEventListener('install', (event: ExtendableEvent) => {
       return cache.addAll(urlsToCache).catch((error) => {
         console.warn('Algún archivo no pudo ser cacheado:', error);
       });
-    })
+    }),
   );
   void self.skipWaiting();
 });
@@ -31,9 +27,9 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
             return caches.delete(cacheName);
           }
           return Promise.resolve();
-        })
+        }),
       );
-    })
+    }),
   );
   void self.clients.claim();
 });
@@ -66,15 +62,18 @@ self.addEventListener('fetch', (event: FetchEvent) => {
       .catch(() => {
         // Fallback a cache si la red falla
         return caches.match(request).then((response) => {
-          return response || new Response('Offline - recurso no disponible', {
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: new Headers({
-              'Content-Type': 'text/plain',
-            }),
-          });
+          return (
+            response ||
+            new Response('Offline - recurso no disponible', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: new Headers({
+                'Content-Type': 'text/plain',
+              }),
+            })
+          );
         });
-      })
+      }),
   );
 });
 
@@ -94,4 +93,3 @@ self.addEventListener('message', (event: ExtendableMessageEvent) => {
 });
 
 export {};
-
