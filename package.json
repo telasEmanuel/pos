@@ -12,6 +12,7 @@
     "dev": "quasar dev",
     "dev:electron": "quasar dev -m electron",
     "build": "quasar build",
+    "build:pwa": "quasar build -m pwa",
     "build:electron": "quasar build -m electron",
     "postinstall": "quasar prepare"
   },
