@@ -144,12 +144,12 @@ export default defineConfig((/* ctx */) => {
 
     // https://v2.quasar.dev/quasar-cli-vite/developing-pwa/configuring-pwa
     pwa: {
-      workboxMode: 'InjectManifest',
+      workboxMode: 'GenerateSW',
       // swFilename: 'sw.js',
       // manifestFilename: 'manifest.webmanifest',
       injectPwaMetaTags: true,
       // extendManifestJson (json) {},
-      // extendInjectManifestOptions (cfg) {},
+      // extendGenerateSWOptions (cfg) {},
     },
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/developing-cordova-apps/configuring-cordova
