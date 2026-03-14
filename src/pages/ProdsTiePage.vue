@@ -392,17 +392,26 @@ const enviarPedido = async () => {
 
     console.log('--- PEDIDO PROCESADO ---', created);
 
-    // Guardar usuario_username en localStorage para recuperarlo después
+    // Guardar usuario_username en AMBOS storages para máxima persistencia
     const authStoreInstance = useAuthStore();
-    if (created?.id && !isEditing && authStoreInstance.user?.username) {
+    const vendedorUsername = authStoreInstance.user?.username;
+
+    if (created?.id && vendedorUsername) {
+      const keySession = `pedido_${created.id}_usuario_username`;
+      sessionStorage.setItem(keySession, vendedorUsername);
+      localStorage.setItem(keySession, vendedorUsername);
       const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}');
-      pedidosVendedores[created.id] = authStoreInstance.user.username;
+      pedidosVendedores[created.id] = vendedorUsername;
       localStorage.setItem('pedidos_vendedores', JSON.stringify(pedidosVendedores));
-      console.log('✅ Guardado en localStorage - Pedido ID:', created.id, 'Vendedor:', authStoreInstance.user.username);
+      console.log(`✅ Pedido #${created.id}: "${vendedorUsername}" → sessionStorage + localStorage`);
     }
 
-    // Notificar por socket
-    socket.emit(isEditing ? 'pedido-actualizado' : 'nuevo-pedido', created);
+    // Notificar por socket - INCLUIR usuario_username en el objeto emitido
+    const pedidoParaSocket = {
+      ...created,
+      usuario_username: vendedorUsername || undefined,
+    };
+    socket.emit(isEditing ? 'pedido-actualizado' : 'nuevo-pedido', pedidoParaSocket);
 
     // Limpiar almacenamiento temporal y estado local
     sessionStorage.removeItem(STORAGE_KEY);

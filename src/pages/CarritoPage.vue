@@ -237,22 +237,23 @@ const enviar = async (extra: { comprador?: string } = {}) => {
       }
     ));
 
+    const usuarioIdentificador = authStore.user?.username || authStore.user?.email || authStore.user?.nombre || authStore.user?.correo || authStore.user?.nombre_usuario || authStore.user?.user || authStore.user?.name || 'DESCONOCIDO';
+
     const pedido = {
       comprador: compradorFinal,
       productos,
       estado: 'pendiente' as const,
       usuario_id: authStore.user?.id || authStore.user?.usuario_id || null,
-      usuario_username: authStore.user?.username || null,
+      usuario_username: (usuarioIdentificador !== 'DESCONOCIDO' ? usuarioIdentificador : null) as string | null,
     };
 
     const creado = await pedidosStore.agregarPedido(pedido);
 
     // Guardar nombre del vendedor en localStorage para recuperarlo después
-    if (creado?.id && authStore.user?.nombre) {
+    if (creado?.id && usuarioIdentificador && usuarioIdentificador !== 'DEFECTO') {
       const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}');
-      pedidosVendedores[creado.id] = authStore.user.nombre;
+      pedidosVendedores[creado.id] = usuarioIdentificador;
       localStorage.setItem('pedidos_vendedores', JSON.stringify(pedidosVendedores));
-      console.log('✅ Guardado en localStorage - Pedido ID:', creado.id, 'Vendedor:', authStore.user.nombre);
     }
 
     // Notificar por socket para que otros clientes muestren la notificación
@@ -326,9 +327,6 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
 
   const totalParaRecibo = Number(total.value); // Capturar ANTES de limpiar
 
-  console.log('📦 Productos capturados para el recibo:', productosParaRecibo);
-  console.log('💰 Total capturado:', totalParaRecibo);
-
   // Construir detallesVenta a partir del carrito antes de enviarlo
   // CRITICAL: Use precio_tap when toggle is active, otherwise use precio
   const detallesVenta = carrito.value.map((i) => ({
@@ -398,13 +396,12 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
         ...(vuelto > 0 ? { cambio: vuelto } : {}),
         ...(ahorroTapicero > 0 ? { ahorroTapicero: Number(ahorroTapicero.toFixed(2)) } : {}),
         ticketId: resp.data?.id || creado.id || 0,
-        atendidoPor: JSON.parse(sessionStorage.getItem('auth_user') || '{}').username || 'MOSTRADOR',
+        atendidoPor: authStore.user?.username || 'MOSTRADOR',
         subtotal: totalParaRecibo,
         iva: 0,
         descuento: 0,
       };
 
-      console.log('📋 Datos del recibo:', reciboDatos);
       currentReceipt.value = reciboDatos;
 
       // Trigger print
@@ -415,7 +412,6 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
 
           const printCopies = async () => {
             for (let copy = 0; copy < ticketCopies; copy += 1) {
-              console.log(`🖨️ Imprimiendo ticket ${copy + 1}/${ticketCopies}...`)
               await receiptPrinter.value?.print()
               if (copy < ticketCopies - 1) {
                 await new Promise((resolve) => setTimeout(resolve, 300))
@@ -425,7 +421,7 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
 
           void printCopies()
         } else {
-          console.error('❌ ReceiptPrinter no está disponible')
+          console.error('ReceiptPrinter no está disponible')
         }
       }, 500);
 
@@ -489,7 +485,6 @@ const restaurar = () => {
 
     // If we filtered out items, save the cleaned cart back to sessionStorage
     if (restoredCart.length !== carrito.value.length) {
-      console.log(`Filtered out ${restoredCart.length - carrito.value.length} phantom products from sessionStorage`);
       guardar();
     }
   } catch (err) {

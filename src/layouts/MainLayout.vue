@@ -112,8 +112,19 @@ onMounted(() => {
   //void cargarPedidos()
 
   // Escuchar nuevos pedidos por socket
-  socket.on('orden-recibida', (pedido: Pedido | PedidoBackend) => {
-    console.log('Nuevo pedido recibido:', pedido)
+  socket.on('nuevo-pedido', (pedido: Pedido | PedidoBackend) => {
+    console.log('🟢 [MainLayout] ⭐ EVENTO SOCKET RECIBIDO - nuevo-pedido:', { id: pedido.id, comprador: pedido.comprador });
+
+    // Guardar el usuario_username en localStorage para evitar pérdida de datos
+    const pedidoConUsername = pedido as unknown as Record<string, string | null>;
+    if (pedidoConUsername.usuario_username && typeof pedidoConUsername.usuario_username === 'string') {
+      const key = `pedido_${pedido.id}_usuario_username`;
+      localStorage.setItem(key, pedidoConUsername.usuario_username);
+      console.log(`  ✅ GUARDADO EN LOCALSTORAGE: "${key}" = "${pedidoConUsername.usuario_username}"`);
+    } else {
+      console.log(`  ⚠️ NO HAY usuario_username en el evento socket. usuario_username =`, pedidoConUsername.usuario_username);
+    }
+
     pedidosStore.agregarPedidoLocal(pedido)
     // Obtener el nombre del comprador independientemente del formato
     const comprador = pedido.comprador
@@ -143,7 +154,6 @@ onMounted(() => {
 
   // Escuchar actualizaciones de pedidos
   socket.on('pedido-actualizado', (pedido: Pedido | PedidoBackend) => {
-    console.log('Pedido actualizado:', pedido)
     const index = pedidos.value.findIndex(p => p.id === pedido.id)
     if (index !== -1) {
       // Si tiene DetallePedido, necesita transformación
@@ -159,7 +169,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  socket.off('orden-recibida')
+  socket.off('nuevo-pedido')
   socket.off('pedido-actualizado')
 })
 </script>

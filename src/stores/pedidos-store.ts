@@ -102,9 +102,21 @@ export const usePedidosStore = defineStore('pedidos', () => {
     try {
       const response = await api.get('pedidos');
       // Transformar los pedidos del backend al formato del frontend
-      pedidos.value = response.data.map((pedidoBackend: PedidoBackend) =>
-        transformarPedidoBackend(pedidoBackend),
-      );
+      pedidos.value = response.data.map((pedidoBackend: PedidoBackend) => {
+        const pedido = transformarPedidoBackend(pedidoBackend);
+
+        // Enriquecer con usuario_username del storage si no viene del backend
+        if (!pedido.usuario_username && pedido.id) {
+          const keyEspecifica = `pedido_${pedido.id}_usuario_username`;
+          const usuarioGuardado =
+            sessionStorage.getItem(keyEspecifica) || localStorage.getItem(keyEspecifica);
+          if (usuarioGuardado) {
+            pedido.usuario_username = usuarioGuardado;
+          }
+        }
+
+        return pedido;
+      });
     } catch (err) {
       error.value = 'Error al obtener pedidos';
       console.error('Error obteniendo pedidos:', err);
@@ -133,13 +145,26 @@ export const usePedidosStore = defineStore('pedidos', () => {
   };
 
   const agregarPedidoLocal = (pedido: Pedido | PedidoBackend) => {
+    let pedidoFinal: Pedido;
+
     // Si el pedido tiene DetallePedido, es del backend y necesita transformación
     if ('DetallePedido' in pedido) {
-      const pedidoTransformado = transformarPedidoBackend(pedido);
-      pedidos.value.push(pedidoTransformado);
+      pedidoFinal = transformarPedidoBackend(pedido);
     } else {
-      pedidos.value.push(pedido as Pedido);
+      pedidoFinal = pedido as Pedido;
     }
+
+    // Enriquecer con usuario_username del storage si no viene
+    if (!pedidoFinal.usuario_username && pedidoFinal.id) {
+      const keyEspecifica = `pedido_${pedidoFinal.id}_usuario_username`;
+      const usuarioGuardado =
+        sessionStorage.getItem(keyEspecifica) || localStorage.getItem(keyEspecifica);
+      if (usuarioGuardado) {
+        pedidoFinal.usuario_username = usuarioGuardado;
+      }
+    }
+
+    pedidos.value.push(pedidoFinal);
   };
 
   const actualizarPedido = async (id: number, data: Partial<Pedido>) => {

@@ -9,7 +9,6 @@ import { useAuthStore } from 'src/stores/auth';
 import PaymentModal from 'src/components/PaymentModal.vue';
 import ReceiptPrinter from 'src/components/ReceiptPrinter.vue';
 import type { PaymentBreakdown, ReceiptData } from 'src/components/types';
-
 import { useRouter } from 'vue-router';
 
 interface InventarioItem {
@@ -69,7 +68,6 @@ const cargarInventario = async () => {
         if (nombre) nombreMap.value[nombre] = medida;
       }
     });
-    console.log(`--- MAPAS CARGADOS --- IDs Mapeados: ${Object.keys(inventarioMap.value).length}, Nombres: ${Object.keys(nombreMap.value).length}`);
   } catch (error) {
     console.error('Error cargando inventario:', error);
   }
@@ -94,11 +92,6 @@ const cargarPedidos = async () => {
   cargando.value = true;
   try {
     await pedidosStore.obtenerPedidos();
-    console.log('--- DEBUG PEDIDOS PAGE ---');
-    console.log('Pedidos cargados:', JSON.parse(JSON.stringify(pedidos.value)));
-    pedidos.value.forEach((p) => {
-      console.log(`Pedido #${p.id} - Total raw:`, p.total, 'Type:', typeof p.total);
-    });
   } catch (error) {
     console.error('Error cargando pedidos:', error);
     $q.notify({
@@ -113,8 +106,8 @@ const cargarPedidos = async () => {
 };
 
 const completarPedido = (pedido: Pedido) => {
-  console.log('Abriendo modal para pedido:', pedido);
   if (!pedido.id) return;
+  console.log('🔵 [PedidosPage] COMPLETAR PEDIDO CLICKEADO', { id: pedido.id, usuario_username: pedido.usuario_username, usuario_id: pedido.usuario_id, allKeys: Object.keys(pedido) });
   pedidoParaCompletar.value = pedido;
   showPagoModal.value = true;
 };
@@ -142,7 +135,6 @@ const editPedido = (pedido: Pedido) => {
 };
 
 const confirmarPago = async (data: { montoPagado: number; comentarios: string; metodoPago: string; pagoDetalle: PaymentBreakdown; requiereFactura: boolean }) => {
-  console.log('Confirmando pago con data:', data);
   if (!pedidoParaCompletar.value || !pedidoParaCompletar.value.id) {
     console.error('No hay pedido para completar seleccionado');
     return;
@@ -150,6 +142,8 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
 
   const pedido = pedidoParaCompletar.value;
   showPagoModal.value = false;
+
+  console.log('🔴 [PedidosPage] CONFIRMANDO PAGO - Datos del pedido recibido:', { id: pedido.id, usuario_username: pedido.usuario_username, productos: pedido.productos?.length });
 
   try {
     const detallesVenta = (pedido.productos || []).map((p) => {
@@ -170,7 +164,6 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
 
     const productosParaRecibo = (pedido.productos || []).map((p, idx) => {
       const finalUnit = getMedidaPara(p);
-      console.log(`📦 RECIBO: "${p.nombre}" -> Unidad Final: "${finalUnit}"`);
       return {
         cantidad: typeof p.cantidad === 'string' ? parseFloat(p.cantidad) : Number(p.cantidad),
         medida: finalUnit,
@@ -181,12 +174,44 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
 
     // Obtener el nombre del vendedor ORIGINAL del pedido para guardar en la venta
     let nombreVendedor: string | null = null;
-    try {
-      const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}');
-      nombreVendedor = pedidosVendedores[pedido.id!] || pedido.usuario_username || null;
-    } catch {
-      nombreVendedor = pedido.usuario_username || null;
+
+    // PRIORIDAD 0: Clave específica por pedido - sessionStorage PRIMERO
+    const keyEspecifica = `pedido_${pedido.id}_usuario_username`;
+    nombreVendedor = sessionStorage.getItem(keyEspecifica);
+    if (nombreVendedor) {
+      console.log(`✅ SessionStorage: "${nombreVendedor}"`);
     }
+
+    // PRIORIDAD 1: localStorage
+    if (!nombreVendedor) {
+      nombreVendedor = localStorage.getItem(keyEspecifica);
+      if (nombreVendedor) {
+        console.log(`✅ LocalStorage: "${nombreVendedor}"`);
+      }
+    }
+
+    // PRIORIDAD 2: Usuario del pedido (si backend lo devuelve)
+    if (!nombreVendedor && pedido.usuario_username) {
+      nombreVendedor = pedido.usuario_username;
+      console.log('✅ Del pedido:', nombreVendedor);
+    }
+
+    // PRIORIDAD 3: localStorage histórica
+    if (!nombreVendedor) {
+      const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}') as Record<string, unknown>;
+      nombreVendedor = (pedidosVendedores[pedido.id!] as string) || null;
+      if (nombreVendedor) {
+        console.log('✅ Histórica:', nombreVendedor);
+      }
+    }
+
+    // PRIORIDAD 4: Usuario actual (fallback)
+    if (!nombreVendedor) {
+      nombreVendedor = authStore.user?.username || authStore.user?.email || 'MOSTRADOR';
+      console.log('⚠️ FALLBACK:', nombreVendedor);
+    }
+
+    console.log(`→ Pedido #${pedido.id}: usuario_username="${nombreVendedor}"`);
 
     const payload = {
       cliente: pedido.comprador,
@@ -205,20 +230,8 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
       await pedidosStore.actualizarEstadoPedido(pedido.id!, 'pagado');
       const vuelto = data.montoPagado - total;
 
-      // Obtener el username del creador del pedido desde localStorage
-      let atendidoPor = 'MOSTRADOR';
-
-      try {
-        const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}');
-        console.log('📦 Pedidos vendedores en localStorage:', pedidosVendedores);
-        console.log('🔍 Buscando vendedor para pedido ID:', pedido.id);
-
-        atendidoPor = pedidosVendedores[pedido.id!] || pedido.usuario_username || authStore.user?.username || 'MOSTRADOR';
-        console.log('✅ Atendido por:', atendidoPor);
-      } catch (err) {
-        console.error('❌ Error recuperando vendedor:', err);
-        atendidoPor = pedido.usuario_username || authStore.user?.username || 'MOSTRADOR';
-      }
+      // Obtener el username del creador del pedido
+      const atendidoPor = nombreVendedor || pedido.usuario_username || authStore.user?.username || authStore.user?.email || 'MOSTRADOR';
 
       currentReceipt.value = {
         cliente: pedido.comprador || 'Cliente',
@@ -236,8 +249,24 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
         descuento: 0,
       };
 
+      // Imprimir ticket y abrir caja
       setTimeout(() => {
-        receiptPrinter.value?.print();
+        void receiptPrinter.value?.print();
+
+        // Abrir caja después de imprimir
+        setTimeout(() => {
+          if (window.pos?.openCashDrawer) {
+            void window.pos.openCashDrawer()
+              .then((result: unknown) => {
+                if (!(result as Record<string, unknown>)?.success) {
+                  console.warn('No se pudo abrir caja desde Electron:', (result as Record<string, unknown>)?.message ?? 'sin detalle');
+                }
+              })
+              .catch((error: unknown) => {
+                console.error('Error abriendo caja desde Electron:', error);
+              });
+          }
+        }, 500);
       }, 500);
 
       $q.notify({
@@ -324,24 +353,21 @@ onMounted(() => {
   void cargarPedidos();
 
   // Escuchar nuevos pedidos por socket
-  /*socket.on('orden-recibida', (pedido: Pedido) => {
-    console.log('Nuevo pedido recibido:', pedido)
-    pedidosStore.agregarPedidoLocal(pedido)
+  socket.on('nuevo-pedido', (pedido: Pedido | PedidoBackend) => {
+    console.log('Nuevo pedido recibido en PedidosPage:', pedido);
+    pedidosStore.agregarPedidoLocal(pedido);
     $q.notify({
       message: `¡Nuevo pedido de ${pedido.comprador}!`,
       color: 'positive',
       icon: 'shopping_cart',
       position: 'top-right',
       timeout: 5000,
-      actions: [
-        { label: 'Ver', color: 'white', handler: async () => { await router.push('/pedidos') } }
-      ]
-    })
-  })*/
+      actions: [{ label: 'Ver', color: 'white', handler: () => { void router.push('/pedidos'); } }],
+    });
+  });
 
   // Escuchar actualizaciones de pedidos
   socket.on('pedido-actualizado', (pedido: Pedido | PedidoBackend) => {
-    console.log('Pedido actualizado:', pedido);
     const index = pedidos.value.findIndex((p) => p.id === pedido.id);
     if (index !== -1) {
       // Si tiene DetallePedido, necesita transformación
@@ -357,7 +383,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  //socket.off('orden-recibida')
+  socket.off('nuevo-pedido');
   socket.off('pedido-actualizado');
 });
 </script>

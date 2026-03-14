@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import path from 'path';
 import os from 'os';
 //import { fileURLToPath } from 'url';
@@ -275,7 +275,10 @@ ipcMain.handle('open-cash-drawer', async () => {
   return { success: true, printerName };
 });
 
-void app.whenReady().then(createWindow);
+void app.whenReady().then(async () => {
+  Menu.setApplicationMenu(null);
+  await createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (platform !== 'darwin') {
