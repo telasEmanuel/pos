@@ -1,0 +1,173 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Electron (Production)",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Android (Production)",
+			"type": "shell",
+			"command": "npx quasar build -m capacitor -T android",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Electron (Fixed)",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32 > build_electron.log 2>&1 ; if ($LASTEXITCODE -eq 0) { Write-Host '✅ Electron BUILD OK' } else { Write-Host '❌ Errores encontrados:'; Select-String 'error' build_electron.log | Select-Object -First 5 }",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Electron (Retry)",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32 > build_electron.log 2>&1 ; if ($LASTEXITCODE -eq 0) { Write-Host '✅ Electron BUILD OK' } else { Write-Host '❌ Errores encontrados:'; Select-String 'error' build_electron.log | Select-Object -First 10 }",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Electron (Fixed 2)",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32 > build_electron.log 2>&1 ; if ($LASTEXITCODE -eq 0) { Write-Host 'Electron BUILD OK' } else { Write-Host 'Errores:'; head -50 build_electron.log | tail -20 }",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Electron",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Electron",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32 > build_electron.log 2>&1 ; Write-Host ( if ($LASTEXITCODE -eq 0) { '✅ BUILD OK' } else { '❌ FAILED - Checking log:'; Get-Content build_electron.log | Select-String 'error' | Select-Object -First 3 } )",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Android",
+			"type": "shell",
+			"command": "npx quasar build -m capacitor -T android",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Electron (Diag)",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32 2>&1 | tail -40",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Electron",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build E",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32 > build.log 2>&1 ; if ($LASTEXITCODE -eq 0) { Write-Host 'OK' } else { Get-Content build.log | Select-String 'error|Error|ERROR' | Select-Object -First 5 }",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build E2",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32 > build_e.log 2>&1 ; Write-Host ( if ($LASTEXITCODE -eq 0) { 'BUILD OK' } else { 'ERRORS'; Get-Content build_e.log | Select-String 'error' | Select-Object -First 3 } )",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Final",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Electron",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Now",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32 2>&1 | Select-String -Pattern 'DONE|Error|error' | Select-Object -First 20",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Android",
+			"type": "shell",
+			"command": "npx quasar build -m capacitor -T android",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Electron Quick",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32 2>&1 | Select-String -Pattern 'DONE|Success|Error|error' | Select-Object -First 15",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Electron",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Electron Fast",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32 2>&1 | Select-String -Pattern 'DONE|Success|Build' | Select-Object -Last 5",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build E",
+			"type": "shell",
+			"command": "npx quasar build -m electron -T win32 2>&1 | tail -30",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build Android",
+			"type": "shell",
+			"command": "npx quasar build -m capacitor -T android 2>&1 | tail -30",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}
