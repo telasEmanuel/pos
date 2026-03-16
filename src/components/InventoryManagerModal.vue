@@ -513,9 +513,9 @@ const backToSearch = () => {
   editMode.value = null;
 };
 
-const goToCreate = () => {
+/*const goToCreate = () => {
   currentState.value = 'create';
-};
+};*/
 
 const backFromCreate = () => {
   currentState.value = 'search';
@@ -624,9 +624,9 @@ const formatValue = (value: unknown): string => {
               </template>
             </q-input>
 
-            <div class="row justify-center q-mb-sm">
+            <!--<div class="row justify-center q-mb-sm">
               <q-btn label="Crear Nuevo Producto" icon="add" class="rounded-btn btn-gold" @click="goToCreate" />
-            </div>
+            </div>-->
 
             <q-scroll-area class="search-results-scroll rounded-borders border-grey">
               <q-list separator>

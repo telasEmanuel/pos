@@ -12,6 +12,15 @@ import {
   CarritoPage,
   CortePage,
   ReporteExistencias,
+  OpcionesBodega,
+  Calculadora,
+  categoriesPage,
+  Proveedores,
+  UsersPage,
+  Ordenes,
+  Ventas,
+  EnvioMateriales,
+  Productos,
 } from '../pages/index';
 
 const routes: RouteRecordRaw[] = [
@@ -108,6 +117,78 @@ const routes: RouteRecordRaw[] = [
     component: ReporteExistencias,
     meta: {
       title: 'Reporte de Existencias',
+      layout: MainLayout,
+    },
+  },
+  {
+    path: '/moresettings',
+    component: OpcionesBodega,
+    meta: {
+      title: 'Opciones de Bodega',
+      layout: MainLayout,
+    },
+  },
+  {
+    path: '/categorias',
+    component: categoriesPage,
+    meta: {
+      title: 'Categorías de productos',
+      layout: MainLayout,
+    },
+  },
+  {
+    path: '/productos',
+    component: Productos,
+    meta: {
+      title: 'Opciones de Bodega',
+      layout: MainLayout,
+    },
+  },
+  {
+    path: '/usuarios',
+    component: UsersPage,
+    meta: {
+      title: 'Ver usuarios del sistema',
+      layout: MainLayout,
+    },
+  },
+  {
+    path: '/ordenes',
+    component: Ordenes,
+    meta: {
+      title: 'Consultar ordenes de compra',
+      layout: MainLayout,
+    },
+  },
+  {
+    path: '/ventas',
+    component: Ventas,
+    meta: {
+      title: 'Salidas de productos',
+      layout: MainLayout,
+    },
+  },
+  {
+    path: '/proveedores',
+    component: Proveedores,
+    meta: {
+      title: 'Gestionar proveedores',
+      layout: MainLayout,
+    },
+  },
+  {
+    path: '/calculadora',
+    component: Calculadora,
+    meta: {
+      title: 'Calculadora de precios',
+      layout: MainLayout,
+    },
+  },
+  {
+    path: '/transferencias',
+    component: EnvioMateriales,
+    meta: {
+      title: 'Transferencias de inventario',
       layout: MainLayout,
     },
   },

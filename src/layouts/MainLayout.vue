@@ -382,6 +382,15 @@ onUnmounted(() => {
 
           <InventoryManagerModal :show="showInventoryManager" @close="showInventoryManager = false" />
 
+          <q-item clickable to="/moresettings">
+            <q-item-section avatar>
+              <q-icon name="add_box" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>Más configuraciones</q-item-label>
+            </q-item-section>
+          </q-item>
+
           <q-item clickable @click="cerrarSesion">
             <q-item-section avatar>
               <q-icon name="logout" />
