@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import api from '../api/axios'
-import { jsPDF } from 'jspdf'
 import logo from '../assets/logoT.png'
+import { generateOrderPDF } from '../utils/pdfGenerator'
 
 const props = defineProps({ show: Boolean })
 const emit = defineEmits(['close', 'created'])
@@ -117,8 +117,12 @@ async function submitOrder(): Promise<void> {
     console.log("Orden creada:", payloadToSend);
     emit('created')
 
-    // Generar PDF de la orden
-    generatePDF(payloadToSend)
+    // Generar PDF de la orden - no bloquea si falla
+    try {
+      await generateOrderPDF(payloadToSend, logo, inventarios.value, proveedores.value, proveedor_id.value ?? undefined)
+    } catch (pdfError) {
+      console.warn('Advertencia: No se pudo generar el PDF, pero la orden fue creada:', pdfError)
+    }
 
     // Reset de formulario
     proveedor_id.value = null
@@ -269,167 +273,6 @@ onMounted(async (): Promise<void> => {
   await fetchProductos()
   await fetchProveedores()
 })
-
-type DetalleOrden = { producto_id: number | null; cantidad: number; precio_unitario: number; tipo?: string; measurements?: number[]; rollos?: number }
-
-function generatePDF(payload: { proveedor_id?: number; detalles?: DetalleOrden[] }): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const doc = new (jsPDF as any)()
-
-  // Colores basados en tu logo (naranja/dorado y gris)
-  const primaryColor: number[] = [242, 169, 59] // Naranja/dorado del logo
-  const secondaryColor: number[] = [80, 80, 80] // Gris oscuro
-
-  // ============ ENCABEZADO ============
-  // Logo más grande ocupando más espacio a la izquierda
-  doc.addImage(logo, 'PNG', 15, 10, 50, 25) // Aumentado de 30x30 a 50x35
-
-  // Nombre de la empresa - CENTRADO
-  doc.setFontSize(24)
-  doc.setTextColor(primaryColor[0] as number, primaryColor[1] as number, primaryColor[2] as number)
-  doc.setFont('helvetica', 'bold')
-  doc.text('Telas Emanuel', 105, 25, { align: 'center' })
-
-  // Título del documento - CENTRADO
-  doc.setFontSize(16)
-  doc.setTextColor(secondaryColor[0] as number, secondaryColor[1] as number, secondaryColor[2] as number)
-  doc.text('ORDEN DE COMPRA', 105, 35, { align: 'center' })
-
-  // ============ INFORMACIÓN DE CONTACTO (Derecha) ============
-  doc.setFontSize(9)
-  doc.setTextColor(100, 100, 100)
-  doc.setFont('helvetica', 'normal')
-  const rightMargin = 195
-  doc.text('Dirección de la Empresa', rightMargin, 15, { align: 'right' })
-  doc.text('Supermanzana 94, 77517', rightMargin, 20, { align: 'right' })
-  doc.text('Cancún, Quintana Roo', rightMargin, 25, { align: 'right' })
-  doc.text('telasemanuel23@hotmail.com', rightMargin, 30, { align: 'right' })
-  doc.text('(998) 260 3290', rightMargin, 35, { align: 'right' })
-
-  // Línea separadora
-  doc.setDrawColor(primaryColor[0] as number, primaryColor[1] as number, primaryColor[2] as number)
-  doc.setLineWidth(0.5)
-  doc.line(15, 45, 195, 45)
-
-  // ============ INFORMACIÓN DEL PROVEEDOR ============
-  const proveedor = proveedores.value.find(p => p.id === proveedor_id.value)
-  doc.setFontSize(11)
-  doc.setTextColor(0, 0, 0)
-  doc.setFont('helvetica', 'bold')
-  doc.text('Proveedor:', 15, 55)
-
-  doc.setFont('helvetica', 'normal')
-  doc.text(proveedor ? proveedor.nombre : 'No encontrado', 40, 55)
-
-  /*doc.setFont('helvetica', 'bold')
-  doc.text('Enviar a:', 15, 62)
-
-  doc.setFont('helvetica', 'normal')
-  doc.text('846 Av. Puerto Juárez, 77517, Cancún, Q.R.', 40, 62)*/
-
-  // ============ TABLA DE PRODUCTOS ============
-  let yPosition = 75
-
-  // Encabezado de la tabla con color naranja
-  doc.setFillColor(primaryColor[0] as number, primaryColor[1] as number, primaryColor[2] as number)
-  doc.rect(15, yPosition, 180, 8, 'F')
-
-  // Verificar visibilidad de columnas
-  const mostrarCantidad = (payload.detalles ?? []).some((d: DetalleOrden): boolean => Number(d.cantidad) > 0)
-  const mostrarRollos = (payload.detalles ?? []).some((d: DetalleOrden): boolean => d.tipo === 'rollos')
-
-  // Posiciones dinámicas (Descripción siempre en 17)
-  const posCantidad = 110
-  let posRollos = 110 // Valor inicial
-
-  if (mostrarCantidad && mostrarRollos) {
-    posRollos = 135 // Si ambos, rollos va a la derecha
-  }
-
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'bold')
-  doc.text('DESCRIPCIÓN DEL ARTÍCULO', 17, yPosition + 5.5)
-
-  if (mostrarCantidad) {
-    doc.text('CANTIDAD', posCantidad, yPosition + 5.5)
-  }
-
-  if (mostrarRollos) {
-    doc.text('ROLLOS', posRollos, yPosition + 5.5)
-  }
-
-  yPosition += 8
-
-  // Productos
-  doc.setTextColor(0, 0, 0)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-
-    (payload.detalles ?? []).forEach((detalle: DetalleOrden, index: number): void => {
-      const invItem = inventarios.value.find(inv => inv.producto_id === detalle.producto_id) as { producto: { nombre: string }; medida_ind?: string; medida_gru?: string } | undefined
-      if (invItem) {
-        const productoNombre = invItem.producto.nombre
-        const cantidadItem = detalle.cantidad
-        const rollosItem = detalle.rollos
-        const medidaInd = String(invItem.medida_ind || '')
-        const medidaGru = String(invItem.medida_gru || '')
-
-        // Preparar el nombre con medidas si es tipo rollos
-        let displayNombre = productoNombre.toUpperCase()
-        if (detalle.tipo === 'rollos' && detalle.measurements && detalle.measurements.length > 0) {
-          displayNombre += ` (${detalle.measurements.join(', ')} ${medidaInd})`
-        }
-
-        // Calcular líneas y altura de fila
-        const maxWidth = (mostrarCantidad ? posCantidad : posRollos) - 20
-        const lines = doc.splitTextToSize(displayNombre, maxWidth)
-        const rowHeight = Math.max(10, lines.length * 5 + 2)
-
-        // Fondo alternado para filas
-        if (index % 2 === 0) {
-          doc.setFillColor(245, 245, 245)
-          doc.rect(15, yPosition, 180, rowHeight, 'F')
-        }
-
-        // Información de las columnas
-        doc.setFont('helvetica', 'bold')
-        lines.forEach((line: string, i: number): void => {
-          doc.text(line, 17, yPosition + 6 + (i * 5))
-        })
-
-        doc.setFont('helvetica', 'normal')
-        if (mostrarCantidad) {
-          if (cantidadItem > 0) {
-            doc.text(`${cantidadItem} ${medidaInd}`, posCantidad + 7, yPosition + 6, { align: 'center' })
-          }
-        }
-
-        if (mostrarRollos && detalle.tipo === 'rollos') {
-          doc.text(`${rollosItem} ${medidaGru}`, posRollos + 7, yPosition + 6, { align: 'center' })
-        }
-
-        yPosition += rowHeight
-      }
-    })
-
-  // Línea separadora
-  doc.setDrawColor(200, 200, 200)
-  doc.setLineWidth(0.3)
-  doc.line(15, yPosition + 2, 195, yPosition + 2)
-
-  // ============ PIE DE PÁGINA ============
-  const footerY = 265
-
-  // Nota de factura - ROJO Y NEGRILLA
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(255, 0, 0)
-  doc.text('Nota: enviar factura al correo telasemanuel23@hotmail.com', 105, footerY + 2, { align: 'center' })
-
-  // ============ GUARDAR PDF ============
-  doc.save(`orden_compra_${proveedor ? proveedor.nombre : 'no_proveedor'}.pdf`)
-}
 </script>
 
 <template>
@@ -537,7 +380,7 @@ function generatePDF(payload: { proveedor_id?: number; detalles?: DetalleOrden[]
             <button type="submit">Crear Orden</button>
             <button type="button" @click="close">Cancelar</button>
             <button type="button"
-              @click="generatePDF({ proveedor_id: proveedor_id as any, estado, detalles: getProcessedDetalles() } as any)">Generar
+              @click="generateOrderPDF({ proveedor_id: proveedor_id, estado, detalles: getProcessedDetalles() }, logo, inventarios, proveedores, proveedor_id ?? undefined)">Generar
               PDF</button>
           </div>
         </form>

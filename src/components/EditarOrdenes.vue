@@ -76,10 +76,10 @@ const actualizarOrden = async (): Promise<void> => {
     if (detalles.value.length === 0) {
       alert("La orden debe tener al menos un producto");
       return;
-    } else if (estado.value === 'recibido') {
+    } /*else if (estado.value === 'recibido') {
       alert("Acción denegada, la orden ya fue recibida.");
       return;
-    }
+    }*/
 
     // 2. Buscar la bodega. Si el estado es recibido, necesitamos una bodega válida.
     // Buscamos en el primer detalle que tenga el campo 'bodega' lleno.
@@ -128,7 +128,7 @@ onMounted((): void => {
         <input type="number" v-model="proveedor_id" />
 
         <label>Estado:</label>
-        <select v-model="estado" id="selectorEstado" :disabled="estado === 'recibido'">
+        <select v-model="estado" id="selectorEstado">
           <option value="pendiente">Pendiente</option>
           <option value="recibido">Recibido</option>
         </select>
@@ -151,10 +151,10 @@ onMounted((): void => {
               <label>Rollos</label>
               <input type="number" placeholder="Rollos" v-model.number="detalle.rollos" />
             </div>
-            <div class="form-field">
+            <!--<div class="form-field">
               <label>Precio Unitario</label>
               <input type="number" placeholder="Precio Unitario" v-model.number="detalle.precio_unitario" />
-            </div>
+            </div>-->
             <div class="form-field">
               <label>Bodega</label>
               <select v-model.number="detalle.bodega">

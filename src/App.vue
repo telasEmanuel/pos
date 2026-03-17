@@ -1,5 +1,18 @@
 <template>
   <component :is="layout">
+    <!-- Banner de actualización PWA -->
+    <q-banner v-if="hasUpdate" class="bg-info text-white">
+      <template #avatar>
+        <q-icon name="system_update" size="md" />
+      </template>
+      <div class="text-weight-bold">Nueva versión disponible</div>
+      <div class="text-caption">Actualiza la app para obtener las últimas mejoras</div>
+      <template #action>
+        <q-btn flat dense label="Actualizar" color="white" @click="reloadApp" class="q-ml-md" />
+        <q-btn flat dense round icon="close" color="white" @click="dismissUpdate" />
+      </template>
+    </q-banner>
+
     <div class="app-header">
     </div>
     <router-view v-slot="{ Component }">
@@ -14,8 +27,22 @@
 
 <script lang="ts">
 import { LoginPage } from "./pages/index.js";
+import { useAppUpdate } from "./composables/useAppUpdate";
 
 export default {
+  setup() {
+    const { hasUpdate, updateAvailable, reloadApp } = useAppUpdate()
+
+    return {
+      hasUpdate,
+      updateAvailable,
+      reloadApp,
+      dismissUpdate: () => {
+        // El usuario puede cerrar el banner, se mostrará de nuevo en 5 minutos
+        hasUpdate.value = false
+      }
+    }
+  },
   computed: {
     LoginPage() {
       return LoginPage

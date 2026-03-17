@@ -2,9 +2,13 @@
 import { ref, watch } from 'vue';
 import api from '../api/axios';
 
+type Venta = { id: number; cliente?: string; fecha_venta: string; total: number; detallesVenta: Array<{ id: number; producto_id: number; producto?: { nombre: string }; cantidad: number; precio_unitario: number }> }
+
 const modo = ref('todas');
 const detalleId = ref('');
-const ventas = ref<Array<{ id: number; cliente?: string; fecha_venta: string; total: number; detallesVenta: Array<{ id: number; producto_id: number; producto?: { nombre: string }; cantidad: number; precio_unitario: number }> }>>([])
+const fechaInicio = ref('');
+const fechaFin = ref('');
+const ventas = ref<Venta[]>([])
 const cargando = ref(false);
 const error = ref('');
 
@@ -45,9 +49,85 @@ const buscarPorId = async (): Promise<void> => {
   }
 };
 
+const buscarPorRangoFechas = async (): Promise<void> => {
+  if (!fechaInicio.value || !fechaFin.value) {
+    error.value = 'Debes seleccionar ambas fechas.';
+    return;
+  }
+
+  const inicio = new Date(fechaInicio.value);
+  const fin = new Date(fechaFin.value);
+
+  if (inicio > fin) {
+    error.value = 'La fecha de inicio no puede ser mayor que la fecha de fin.';
+    return;
+  }
+
+  cargando.value = true;
+  ventas.value = [];
+  error.value = '';
+
+  try {
+    const response = await api.get('ventas');
+    const todasLasVentas = Array.isArray(response.data) ? response.data : [response.data];
+
+    ventas.value = todasLasVentas.filter((venta: Venta) => {
+      const fechaVenta = new Date(venta.fecha_venta);
+      return fechaVenta >= inicio && fechaVenta <= new Date(fin.getTime() + 86400000); // +1 día para incluir el día fin completo
+    });
+
+    if (ventas.value.length === 0) {
+      error.value = 'No se encontraron ventas en el rango de fechas especificado.';
+    }
+  } catch (err) {
+    const msg = (err instanceof Error) ? err.message : 'Error al buscar ventas por rango de fechas.';
+    error.value = msg;
+    console.error('Error al buscar por rango de fechas:', err);
+  } finally {
+    cargando.value = false;
+  }
+};
+
+const eliminarVenta = async (ventaId: number): Promise<void> => {
+  if (!confirm('⚠️ ATENCIÓN: Se eliminará la venta #' + ventaId + ' y todos sus detalles asociados. ¿Deseas continuar?')) {
+    return;
+  }
+
+  cargando.value = true;
+  error.value = '';
+  try {
+    console.log(`🔴 Eliminando venta ${ventaId}...`);
+
+    // Eliminar la venta - el backend debe tener cascades configurados
+    await api.delete(`ventas/${ventaId}`);
+
+    console.log(`✅ Venta ${ventaId} y detalles eliminados correctamente`);
+
+    // Actualizar la lista local
+    ventas.value = ventas.value.filter(v => v.id !== ventaId);
+    error.value = '';
+  } catch (err) {
+    const message = (err instanceof Error) ? err.message : 'Error desconocido';
+
+    if (message.includes('404')) {
+      error.value = '❌ No se encontró la venta. Recarga la página e intenta nuevamente.';
+    } else if (message.includes('400')) {
+      error.value = '❌ No se puede eliminar esta venta. Verifica que no tenga transacciones vinculadas.';
+    } else {
+      error.value = `❌ Error al eliminar: ${message}`;
+    }
+
+    console.error('Error al eliminar venta:', err);
+  } finally {
+    cargando.value = false;
+  }
+};
+
 watch(modo, () => {
   error.value = '';
   detalleId.value = '';
+  fechaInicio.value = '';
+  fechaFin.value = '';
   ventas.value = [];
 });
 </script>
@@ -61,12 +141,27 @@ watch(modo, () => {
       <select v-model="modo" id="modo">
         <option value="todas">Ver todas las ventas</option>
         <option value="porId">Buscar por ID</option>
+        <option value="porFechas">Buscar por rango de fechas</option>
       </select>
     </div>
 
     <div v-if="modo === 'porId'" class="busqueda-id">
       <input v-model="detalleId" type="number" placeholder="🔍 Buscar ID de venta" class="input-estilizado" />
       <button @click="buscarPorId" class="btn">Buscar</button>
+    </div>
+
+    <div v-if="modo === 'porFechas'" class="busqueda-fechas">
+      <div class="rango-fechas-container">
+        <div class="fecha-group">
+          <label for="fechaInicio">Fecha inicio:</label>
+          <input v-model="fechaInicio" type="date" id="fechaInicio" class="input-fecha" />
+        </div>
+        <div class="fecha-group">
+          <label for="fechaFin">Fecha fin:</label>
+          <input v-model="fechaFin" type="date" id="fechaFin" class="input-fecha" />
+        </div>
+        <button @click="buscarPorRangoFechas" class="btn">Buscar por rango</button>
+      </div>
     </div>
 
     <div v-if="modo === 'todas'" class="busqueda-todas">
@@ -84,6 +179,7 @@ watch(modo, () => {
           <th>Fecha</th>
           <th>Total</th>
           <th>Productos</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -99,6 +195,11 @@ watch(modo, () => {
                 (x{{ d.cantidad }} a ${{ d.precio_unitario }})
               </li>
             </ul>
+          </td>
+          <td>
+            <button @click="eliminarVenta(v.id)" class="btn-eliminar" title="Eliminar venta y detalles">
+              🗑️ Eliminar
+            </button>
           </td>
         </tr>
       </tbody>
@@ -119,11 +220,47 @@ watch(modo, () => {
 
 .selector-modo,
 .busqueda-id,
+.busqueda-fechas,
 .busqueda-todas {
   margin-top: 1.5rem;
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.rango-fechas-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.fecha-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fecha-group label {
+  font-weight: 500;
+  color: #333;
+  min-width: 100px;
+}
+
+.input-fecha {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  outline: none;
+  font-size: 16px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+}
+
+.input-fecha:focus {
+  box-shadow: 0 0 0 2px #007bff44;
+  border-color: #007bff;
 }
 
 .input-estilizado {
@@ -154,6 +291,28 @@ watch(modo, () => {
 
 .btn:hover {
   background-color: #1558d6;
+}
+
+.btn-eliminar {
+  padding: 8px 16px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background 0.3s ease, transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-eliminar:hover {
+  background-color: #c82333;
+  transform: scale(1.05);
+}
+
+.btn-eliminar:active {
+  transform: scale(0.95);
 }
 
 .tabla {
