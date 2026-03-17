@@ -8,8 +8,8 @@
       <div class="text-weight-bold">Nueva versión disponible</div>
       <div class="text-caption">Actualiza la app para obtener las últimas mejoras</div>
       <template #action>
-        <q-btn flat dense label="Actualizar" color="white" @click="reloadApp" class="q-ml-md" />
-        <q-btn flat dense round icon="close" color="white" @click="dismissUpdate" />
+        <q-btn flat dense label="Actualizar" color="white" @click.stop="reloadApp" class="q-ml-md" />
+        <q-btn flat dense round icon="close" color="white" @click.stop="dismissUpdate" />
       </template>
     </q-banner>
 
@@ -31,16 +31,28 @@ import { useAppUpdate } from "./composables/useAppUpdate";
 
 export default {
   setup() {
-    const { hasUpdate, updateAvailable, reloadApp } = useAppUpdate()
+    const { hasUpdate, reloadApp: originalReloadApp } = useAppUpdate()
+
+    // Wrapper para manejar el clic de actualizar
+    const handleReloadApp = async () => {
+      console.log('📲 Usuario hizo clic en Actualizar');
+      try {
+        await originalReloadApp()
+      } catch (error) {
+        console.error('Error en reloadApp:', error)
+      }
+    }
+
+    // Wrapper para cerrar el banner
+    const handleDismissUpdate = () => {
+      console.log('❌ Usuario cerró el banner');
+      hasUpdate.value = false
+    }
 
     return {
       hasUpdate,
-      updateAvailable,
-      reloadApp,
-      dismissUpdate: () => {
-        // El usuario puede cerrar el banner, se mostrará de nuevo en 5 minutos
-        hasUpdate.value = false
-      }
+      reloadApp: handleReloadApp,
+      dismissUpdate: handleDismissUpdate
     }
   },
   computed: {
