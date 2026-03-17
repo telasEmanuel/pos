@@ -53,6 +53,10 @@ export function useAppUpdate() {
   const reloadApp = async () => {
     console.log('🔄 Recargando app con nueva versión...');
 
+    // Oculta el banner INMEDIATAMENTE
+    hasUpdate.value = false;
+    updateAvailable.value = false;
+
     try {
       // Obtiene la versión más reciente
       const versionResponse = await fetch(`/version.json?t=${Date.now()}`);

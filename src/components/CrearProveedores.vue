@@ -65,7 +65,7 @@ const crearProveedor = async () => {
         </div>
         <div>
           <label>Dirección:</label>
-          <input v-model="direccion" required />
+          <input v-model="direccion" />
         </div>
         <button type="submit">Crear</button>
         <button type="button" @click="cerrarModal">Cancelar</button>
