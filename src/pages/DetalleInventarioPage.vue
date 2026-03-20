@@ -82,7 +82,7 @@ const actualizarDetalle = async (inventario: Inventario, detalleIdx: number, nue
       estado: nuevoDetalle.estado,
       codigo: nuevoDetalle.codigo
     })
-    
+
     // Actualizar localmente
     if (inventario?.detalles) {
       inventario.detalles[detalleIdx] = nuevoDetalle
@@ -165,12 +165,8 @@ onMounted(() => {
     <div v-else>
       <!-- Filtro de búsqueda -->
       <div class="filtro-container">
-        <input
-          v-model="filtroProducto"
-          type="text"
-          placeholder="Filtrar por nombre del producto..."
-          class="filtro-input"
-        />
+        <input v-model="filtroProducto" type="text" placeholder="Filtrar por nombre del producto..."
+          class="filtro-input" />
       </div>
 
       <!-- Mostrar errores -->
@@ -206,10 +202,7 @@ onMounted(() => {
           <!-- Detalles expandidos -->
           <div v-show="inventario.showDetails" class="detalles-expandidos">
             <div class="detalles-header">
-              <button
-                @click="abrirModalAgregarDetalle(inventario)"
-                class="btn-agregar-rollo"
-              >
+              <button @click="abrirModalAgregarDetalle(inventario)" class="btn-agregar-rollo">
                 ➕ Agregar Rollo
               </button>
             </div>
@@ -227,13 +220,9 @@ onMounted(() => {
                 <tr v-for="(detalle, detalleIdx) in inventario.detalles" :key="detalle.id">
                   <td>{{ detalle.codigo || 'N/A' }}</td>
                   <td>
-                    <input
-                      :value="detalle.cantidad"
-                      type="number"
-                      step="0.01"
+                    <input :value="detalle.cantidad" type="number" step="0.01"
                       @change="(e: Event) => actualizarDetalle(inventario, detalleIdx, { ...detalle, cantidad: parseFloat((e.target as HTMLInputElement).value) })"
-                      class="input-cantidad"
-                    />
+                      class="input-cantidad" />
                   </td>
                   <td>
                     <span class="estado-badge" :class="`estado-${detalle.estado?.toLowerCase()}`">
@@ -241,11 +230,8 @@ onMounted(() => {
                     </span>
                   </td>
                   <td class="acciones">
-                    <button
-                      @click="eliminarDetalle(inventario, detalle.id)"
-                      class="btn-eliminar"
-                      title="Eliminar detalle"
-                    >
+                    <button @click="eliminarDetalle(inventario, detalle.id)" class="btn-eliminar"
+                      title="Eliminar detalle">
                       🗑️
                     </button>
                   </td>
@@ -254,7 +240,8 @@ onMounted(() => {
               <tfoot>
                 <tr class="total-row">
                   <td colspan="1"><strong>Total</strong></td>
-                  <td><strong>{{ obtenerTotalMetros(inventario.detalles).toFixed(2) }} {{ inventario.medida_ind }}</strong></td>
+                  <td><strong>{{ obtenerTotalMetros(inventario.detalles).toFixed(2) }} {{ inventario.medida_ind
+                      }}</strong></td>
                   <td colspan="2"></td>
                 </tr>
               </tfoot>
@@ -274,13 +261,9 @@ onMounted(() => {
     </div>
 
     <!-- Modal para agregar detalle -->
-    <AgregarDetalleInventario
-      :visible="mostrarModalAgregar"
-      :inventario-id="inventarioSeleccionado?.id || 0"
-      :medida-ind="inventarioSeleccionado?.medida_ind || ''"
-      @close="cerrarModalAgregarDetalle"
-      @detalle-creado="detalleCreado"
-    />
+    <AgregarDetalleInventario :visible="mostrarModalAgregar" :inventario-id="inventarioSeleccionado?.id || 0"
+      :medida-ind="inventarioSeleccionado?.medida_ind || ''" @close="cerrarModalAgregarDetalle"
+      @detalle-creado="detalleCreado" />
   </div>
 </template>
 

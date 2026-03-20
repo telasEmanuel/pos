@@ -141,19 +141,12 @@ onMounted((): void => {
     </div>
 
     <!-- Modal para crear usuario -->
-    <CrearActualizarUsuario
-      :visible="showCreateModal"
-      @close="cerrarCreateModal"
-      @usuarioGuardado="onUsuarioGuardado"
-    />
+    <CrearActualizarUsuario :visible="showCreateModal" @close="cerrarCreateModal"
+      @usuarioGuardado="onUsuarioGuardado" />
 
     <!-- Modal para editar usuario -->
-    <CrearActualizarUsuario
-      :visible="showEditModal"
-      :usuario="usuarioSeleccionado"
-      @close="cerrarEditModal"
-      @usuarioGuardado="onUsuarioGuardado"
-    />
+    <CrearActualizarUsuario :visible="showEditModal" :usuario="usuarioSeleccionado" @close="cerrarEditModal"
+      @usuarioGuardado="onUsuarioGuardado" />
   </div>
 </template>
 

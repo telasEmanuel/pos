@@ -303,7 +303,7 @@ watch(() => props.categoryId, (newVal) => {
                       {{ prod.rollos }} {{ prod.medida_gru }}
                       <span v-if="prod.rolosSeleccionados?.length" class="selected-count">
                         ({{ prod.rolosSeleccionados.length }} seleccionado{{ prod.rolosSeleccionados.length > 1 ? 's' :
-                        '' }})
+                          '' }})
                       </span>
                     </span>
                   </button>
@@ -322,7 +322,7 @@ watch(() => props.categoryId, (newVal) => {
                         <div class="rollo-info-secondary">
                           <span class="rollo-conversion">
                             1 {{ prod.medida_gru }} = {{ formatNumber(prod.cantidad / (prod.rollos || 1)) }} {{
-                            prod.medida_ind }}
+                              prod.medida_ind }}
                           </span>
                           <span class="rollo-status" :class="'status-' + rollo.estado.toLowerCase()">
                             {{ rollo.estado }}

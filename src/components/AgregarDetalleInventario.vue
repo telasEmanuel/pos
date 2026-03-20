@@ -103,24 +103,13 @@ const cerrar = () => {
 
         <div class="form-group">
           <label for="codigo">Código del Rollo (Opcional)</label>
-          <input
-            id="codigo"
-            v-model="form.codigo"
-            type="text"
-            placeholder="Ej: ROLLO-001, A1, etc."
-          />
+          <input id="codigo" v-model="form.codigo" type="text" placeholder="Ej: ROLLO-001, A1, etc." />
         </div>
 
         <div class="form-group">
           <label for="cantidad">Cantidad ({{ medidaInd }}) *</label>
-          <input
-            id="cantidad"
-            v-model.number="form.cantidad"
-            type="number"
-            step="0.01"
-            placeholder="Ej: 50.5"
-            required
-          />
+          <input id="cantidad" v-model.number="form.cantidad" type="number" step="0.01" placeholder="Ej: 50.5"
+            required />
         </div>
 
         <div class="form-group">

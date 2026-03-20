@@ -34,17 +34,17 @@ export default defineComponent({
       try {
         loading.value = true;
         error.value = null;
-        
+
         const response = await api.get('transferencias');
         let transferencias: Transferencia[] = [];
-        
+
         if (Array.isArray(response.data)) {
           transferencias = response.data as Transferencia[];
         } else if (response.data && typeof response.data === 'object' && 'items' in response.data) {
           const apiResp = response.data as ApiResponse;
           transferencias = apiResp.items || [];
         }
-        
+
         // Mapear las transferencias a la interfaz Movimiento
         movimientos.value = transferencias.map((transferencia: Transferencia) => ({
           id: transferencia.id,

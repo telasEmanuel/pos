@@ -176,7 +176,7 @@ const closeModal = () => {
                 </p>
                 <div class="rollo-detail" v-for="rollo in prod.rolesTransferencia" :key="rollo.indice">
                   <span class="rollo-detail-text">Rollo #{{ rollo.indice + 1 }}: <strong>{{ formatNumber(rollo.cantidad)
-                      }} {{ prod.medida_ind }}</strong></span>
+                  }} {{ prod.medida_ind }}</strong></span>
                 </div>
               </div>
             </div>

@@ -164,35 +164,17 @@ const cerrar = () => {
 
         <div class="form-group">
           <label for="username">Usuario *</label>
-          <input
-            id="username"
-            v-model="form.username"
-            type="text"
-            placeholder="Nombre(s)"
-            required
-          />
+          <input id="username" v-model="form.username" type="text" placeholder="Nombre(s)" required />
         </div>
 
         <div class="form-group">
           <label for="email">Usuario/Email *</label>
-          <input
-            id="email"
-            v-model="form.email"
-            type="text"
-            placeholder="Ej: visor, vendedor1, secretaria"
-            required
-          />
+          <input id="email" v-model="form.email" type="text" placeholder="Ej: visor, vendedor1, secretaria" required />
         </div>
 
         <div class="form-group">
           <label for="nombre">Nombre Completo *</label>
-          <input
-            id="nombre"
-            v-model="form.nombre"
-            type="text"
-            placeholder="Ingresa nombre(s) y apellidos"
-            required
-          />
+          <input id="nombre" v-model="form.nombre" type="text" placeholder="Ingresa nombre(s) y apellidos" required />
         </div>
 
         <div class="form-group">
@@ -206,14 +188,11 @@ const cerrar = () => {
         </div>
 
         <div class="form-group">
-          <label for="password">{{ isEditMode ? 'Contraseña (dejar en blanco para no cambiar)' : 'Contraseña' }} {{ !isEditMode ? '*' : '' }}</label>
-          <input
-            id="password"
-            v-model="form.password"
-            type="password"
+          <label for="password">{{ isEditMode ? 'Contraseña (dejar en blanco para no cambiar)' : 'Contraseña' }} {{
+            !isEditMode ? '*' : '' }}</label>
+          <input id="password" v-model="form.password" type="password"
             :placeholder="isEditMode ? 'Dejar en blanco para no cambiar' : 'Ingresa una contraseña segura'"
-            :required="!isEditMode"
-          />
+            :required="!isEditMode" />
         </div>
 
         <div class="modal-footer">
