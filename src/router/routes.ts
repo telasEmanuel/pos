@@ -21,6 +21,8 @@ import {
   Ventas,
   EnvioMateriales,
   Productos,
+  DetalleInventario,
+  Historial,
 } from '../pages/index';
 
 const routes: RouteRecordRaw[] = [
@@ -129,6 +131,14 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/detalles-inventario',
+    component: DetalleInventario,
+    meta: {
+      title: 'Detalles de Inventario',
+      layout: MainLayout,
+    },
+  },
+  {
     path: '/categorias',
     component: categoriesPage,
     meta: {
@@ -189,6 +199,14 @@ const routes: RouteRecordRaw[] = [
     component: EnvioMateriales,
     meta: {
       title: 'Transferencias de inventario',
+      layout: MainLayout,
+    },
+  },
+  {
+    path: '/historial',
+    component: Historial,
+    meta: {
+      title: 'Historial de movimientos',
       layout: MainLayout,
     },
   },

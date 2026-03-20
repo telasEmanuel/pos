@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import api from 'src/api/axios'
 import { useAuthStore } from 'src/stores/auth';
+import TransferInventoryModal from 'src/components/TransferInventoryModal.vue'
 
 interface Producto {
   id: number
@@ -15,6 +16,7 @@ interface Producto {
   categoriaId?: number
   rollos: number
   cantidad: number
+  cantidad_piezas?: number
   medida_gru: string
   medida_ind: string
   precio_comp: number
@@ -22,9 +24,13 @@ interface Producto {
   detalles?: Array<{
     cantidad: number
     estado: string
+    id?: number
+    seleccionado?: boolean
     [key: string]: unknown
   }>
   showDetails?: boolean
+  rolosSeleccionados?: number[]
+  cantidadTransferencia?: number
 }
 
 interface Categoria {
@@ -49,6 +55,7 @@ const categoriaSeleccionada = ref<string | number>('')
 const loading = ref(false)
 const datos = ref<{ email?: string } | null>(null);
 const authStore = useAuthStore();
+const showTransferModal = ref(false)
 
 const formatNumber = (val: number | string | undefined | null) => {
   if (val === null || val === undefined) return '0'
@@ -64,6 +71,8 @@ const cargarProductos = async () => {
     const res = await api.get('inventarios')
     const items = (Array.isArray(res.data) ? res.data : (res.data.items ?? [])) as Producto[]
 
+    console.log('📦 Inventarios cargados:', items) // DEBUG
+
     productos.value = items.map((p) => {
       const prodObj = p.producto || { precio_comp: 0 }
       const precioComp = Number(p.precio_comp ?? prodObj.precio_comp ?? 0)
@@ -71,7 +80,10 @@ const cargarProductos = async () => {
       return {
         ...p,
         precio_comp: precioComp,
-        showDetails: false
+        showDetails: false,
+        rolosSeleccionados: [],
+        cantidadTransferencia: 0,
+        detalles: p.detalles || []
       }
     })
   } catch (err) {
@@ -114,6 +126,103 @@ const formatCurrency = (val: number) => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}`
+}
+
+// Productos seleccionados para transferencia
+const productosSeleccionados = computed(() => {
+  const resultado = []
+
+  for (const prod of productosFiltrados()) {
+    // OPCIÓN 1: Productos con rollos (cantidad_piezas > 0)
+    if (Number(prod.cantidad_piezas) > 0 && prod.detalles && prod.detalles.length > 0) {
+      // Obtener rollos seleccionados de este producto
+      const rolosSeleccionados = prod.detalles
+        .map((detalle, idx) => ({ detalle, idx }))
+        .filter(({ idx }) => prod.rolosSeleccionados?.includes(idx))
+
+      if (rolosSeleccionados.length === 0) continue
+
+      // Calcular cantidad total de rollos seleccionados
+      const cantidadTotal = rolosSeleccionados.reduce((sum, { detalle }) => {
+        return sum + (Number(detalle.cantidad) || 0)
+      }, 0)
+
+      resultado.push({
+        id: prod.id,
+        producto_id: prod.id,
+        bodega_id: prod.bodega_id,
+        nombre: prod.producto?.nombre || 'Sin nombre',
+        cantidadActual: prod.cantidad,
+        cantidadTransferencia: cantidadTotal,
+        medida_ind: prod.medida_ind,
+        precio_comp: prod.precio_comp,
+        rolesTransferencia: rolosSeleccionados.map(({ detalle, idx }) => ({
+          indice: idx,
+          cantidad: detalle.cantidad,
+          estado: detalle.estado
+        }))
+      })
+    }
+    // OPCIÓN 2: Productos sin detalles - input simple
+    else if ((prod.cantidadTransferencia ?? 0) > 0) {
+      resultado.push({
+        id: prod.id,
+        producto_id: prod.id,
+        bodega_id: prod.bodega_id,
+        nombre: prod.producto?.nombre || 'Sin nombre',
+        cantidadActual: prod.cantidad,
+        cantidadTransferencia: prod.cantidadTransferencia ?? 0,
+        medida_ind: prod.medida_ind,
+        precio_comp: prod.precio_comp,
+        rolesTransferencia: [] // Products without details don't have specific rollo info
+      })
+    }
+  }
+
+  return resultado
+})
+
+const totalProductosSeleccionados = computed(() => {
+  return productosSeleccionados.value.reduce((total, p) => total + p.cantidadTransferencia, 0)
+})
+
+const toggleRollo = (producto: Producto, indiceRollo: number) => {
+  if (!producto.rolosSeleccionados) {
+    producto.rolosSeleccionados = []
+  }
+
+  const idx = producto.rolosSeleccionados.indexOf(indiceRollo)
+  if (idx > -1) {
+    producto.rolosSeleccionados.splice(idx, 1)
+  } else {
+    producto.rolosSeleccionados.push(indiceRollo)
+  }
+}
+
+const estaRolloSeleccionado = (producto: Producto, indiceRollo: number) => {
+  return producto.rolosSeleccionados?.includes(indiceRollo) ?? false
+}
+
+const abrirTransferencia = () => {
+  if (productosSeleccionados.value.length === 0) {
+    alert('Por favor selecciona productos para transferir')
+    return
+  }
+  showTransferModal.value = true
+}
+
+const cerrarTransferencia = () => {
+  showTransferModal.value = false
+}
+
+const recargarDatos = async () => {
+  // Limpiar selecciones
+  productos.value.forEach(p => {
+    p.rolosSeleccionados = []
+    p.cantidadTransferencia = 0
+    p.showDetails = false
+  })
+  await cargarProductos()
 }
 
 onMounted(() => {
@@ -184,22 +293,70 @@ watch(() => props.categoryId, (newVal) => {
                 <span class="stat-unit">{{ prod.medida_ind }}</span>
               </div>
 
-              <!-- Toggle Details -->
-              <div class="card-footer" v-if="prod.detalles && prod.detalles.length">
-                <button class="btn-details" @click="prod.showDetails = !prod.showDetails">
-                  {{ prod.showDetails ? 'Ocultar' : 'Ver' }} Detalles
-                </button>
+              <!-- Solo mostrar opciones si cantidad > 0 -->
+              <div v-if="Number(prod.cantidad) > 0">
+                <!-- Rollos/Detalles Section (producto CON cantidad_piezas) -->
+                <div v-if="Number(prod.cantidad_piezas) > 0" class="rollos-section">
+                  <button class="btn-toggle-detalles" @click="prod.showDetails = !prod.showDetails">
+                    <span class="toggle-icon">{{ prod.showDetails ? '▼' : '▶' }}</span>
+                    <span class="toggle-text">
+                      {{ prod.rollos }} {{ prod.medida_gru }}
+                      <span v-if="prod.rolosSeleccionados?.length" class="selected-count">
+                        ({{ prod.rolosSeleccionados.length }} seleccionado{{ prod.rolosSeleccionados.length > 1 ? 's' :
+                        '' }})
+                      </span>
+                    </span>
+                  </button>
+
+                  <!-- Rollos Seleccionables -->
+                  <div v-if="prod.showDetails" class="rollos-list">
+                    <div v-for="(rollo, idx) in prod.detalles" :key="idx" class="rollo-item"
+                      :class="{ selected: estaRolloSeleccionado(prod, idx) }">
+                      <input type="checkbox" :id="`rollo-${prod.id}-${idx}`" :checked="estaRolloSeleccionado(prod, idx)"
+                        @change="toggleRollo(prod, idx)" class="rollo-checkbox" />
+                      <label :for="`rollo-${prod.id}-${idx}`" class="rollo-label">
+                        <div class="rollo-info-main">
+                          <span class="rollo-num">Rollo #{{ idx + 1 }}</span>
+                          <span class="rollo-qty">{{ formatNumber(rollo.cantidad) }} {{ prod.medida_ind }}</span>
+                        </div>
+                        <div class="rollo-info-secondary">
+                          <span class="rollo-conversion">
+                            1 {{ prod.medida_gru }} = {{ formatNumber(prod.cantidad / (prod.rollos || 1)) }} {{
+                            prod.medida_ind }}
+                          </span>
+                          <span class="rollo-status" :class="'status-' + rollo.estado.toLowerCase()">
+                            {{ rollo.estado }}
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Simple Input for Products WITHOUT Detalles -->
+                <div v-else class="input-simple-section">
+                  <label class="input-simple-label">🚚 Cantidad a transferir:</label>
+                  <div class="input-simple-group">
+                    <input v-model.number="prod.cantidadTransferencia" type="number" min="0"
+                      :max="Number(prod.cantidad)" class="input-simple" @input="(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        let val = Number(target.value) || 0;
+                        if (val > Number(prod.cantidad)) prod.cantidadTransferencia = Number(prod.cantidad);
+                        if (val < 0) prod.cantidadTransferencia = 0;
+                      }" placeholder="0" />
+                    <span class="input-simple-unit">{{ prod.medida_ind }}</span>
+                  </div>
+                  <div v-if="(prod.cantidadTransferencia ?? 0) > 0" class="input-simple-preview">
+                    <small>Transferirá: <strong>{{ formatNumber(prod.cantidadTransferencia) }}</strong> {{
+                      prod.medida_ind }}</small>
+                  </div>
+                </div>
+                <!-- Fin: Solo mostrar opciones si cantidad > 0 -->
               </div>
 
-              <!-- Details List -->
-              <div v-if="prod.showDetails && prod.detalles" class="details-list">
-                <div v-for="(detalle, idx) in prod.detalles" :key="idx" class="detail-item">
-                  <span class="detail-idx">#{{ idx + 1 }}</span>
-                  <span class="detail-val">{{ formatNumber(detalle.cantidad) }} {{ prod.medida_ind }}</span>
-                  <span class="detail-status" :class="detalle.estado.toLowerCase()">{{
-                    detalle.estado
-                  }}</span>
-                </div>
+              <!-- Toggle Details -->
+              <div class="card-footer" v-if="prod.detalles && prod.detalles.length">
+                <!-- Details shown above in rollos-section -->
               </div>
             </div>
           </div>
@@ -207,7 +364,20 @@ watch(() => props.categoryId, (newVal) => {
         <div v-else>No hay productos para la categoría seleccionada.</div>
       </div>
     </section>
+
+    <!-- Floating Transfer Button -->
+    <div v-if="totalProductosSeleccionados > 0" class="floating-transfer-btn">
+      <button @click="abrirTransferencia" class="btn-transfer-floating">
+        <span class="transfer-icon">🚚</span>
+        <span class="transfer-count">{{ totalProductosSeleccionados }}</span>
+        <span class="transfer-label">Transferir</span>
+      </button>
+    </div>
   </main>
+
+  <!-- Transfer Modal -->
+  <TransferInventoryModal :show="showTransferModal" :productos="productosSeleccionados" @close="cerrarTransferencia"
+    @success="recargarDatos" />
 </template>
 
 <style scoped>
@@ -516,5 +686,380 @@ watch(() => props.categoryId, (newVal) => {
   font-weight: 800;
   line-height: 1;
   letter-spacing: -1px;
+}
+
+/* Transfer Section Styles */
+.transfer-section {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border-radius: 12px;
+  border: 2px solid #667eea30;
+}
+
+.transfer-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.transfer-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.transfer-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #667eea;
+  background: white;
+  transition: all 0.2s;
+}
+
+.transfer-input:focus {
+  outline: none;
+  border-color: #764ba2;
+  box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+}
+
+.transfer-input::placeholder {
+  color: #cbd5e1;
+}
+
+.transfer-unit {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+  min-width: 50px;
+}
+
+/* Rollos Section Styles */
+.rollos-section {
+  width: 100%;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.btn-toggle-detalles {
+  width: 100%;
+  padding: 0.875rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.2s;
+  font-size: 0.95rem;
+}
+
+.btn-toggle-detalles:hover {
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-icon {
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+
+.toggle-text {
+  flex: 1;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.selected-count {
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 0.25rem 0.5rem;
+  border-radius: 20px;
+  margin-left: auto;
+}
+
+.rollos-list {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rollo-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rollo-item:hover {
+  border-color: #667eea;
+  background: #f8f9fc;
+}
+
+.rollo-item.selected {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.rollo-checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+  accent-color: #667eea;
+  flex-shrink: 0;
+}
+
+.rollo-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  cursor: pointer;
+  margin-left: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.rollo-info-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rollo-num {
+  font-weight: 700;
+  color: #1e293b;
+  min-width: 70px;
+}
+
+.rollo-qty {
+  font-weight: 600;
+  color: #667eea;
+  min-width: 100px;
+}
+
+.rollo-info-secondary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.rollo-conversion {
+  color: #64748b;
+  font-style: italic;
+  font-weight: 500;
+  flex: 1;
+}
+
+.rollo-status {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rollo-status.status-disponible {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.rollo-status.status-reservado {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.rollo-status.status-defectuoso {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Input Simple Section Styles */
+.input-simple-section {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-radius: 12px;
+  border: 2px solid #667eea30;
+}
+
+.input-simple-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-simple-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.input-simple {
+  flex: 1;
+  padding: 0.875rem;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #667eea;
+  background: white;
+  transition: all 0.2s;
+}
+
+.input-simple:focus {
+  outline: none;
+  border-color: #764ba2;
+  box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+}
+
+.input-simple::placeholder {
+  color: #cbd5e1;
+}
+
+.input-simple-unit {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+  min-width: 60px;
+}
+
+.input-simple-preview {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #dbeafe;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #0c4a6e;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.input-simple-preview strong {
+  color: #667eea;
+  font-weight: 700;
+}
+
+/* Floating Transfer Button */
+.floating-transfer-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 100;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.btn-transfer-floating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  min-width: 140px;
+}
+
+.btn-transfer-floating:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+}
+
+.btn-transfer-floating:active {
+  transform: translateY(-2px);
+}
+
+.transfer-icon {
+  font-size: 1.5rem;
+}
+
+.transfer-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ff4757;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
+}
+
+@media (max-width: 768px) {
+  .floating-transfer-btn {
+    bottom: 1rem;
+    right: 1rem;
+  }
+
+  .btn-transfer-floating {
+    padding: 0.875rem 1rem;
+    min-width: 130px;
+  }
+
+  .transfer-input {
+    padding: 0.6rem;
+    font-size: 0.95rem;
+  }
 }
 </style>

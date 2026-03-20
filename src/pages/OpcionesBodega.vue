@@ -18,6 +18,12 @@
         <p>Añadir productos nuevos al inventario actual.</p>
         <router-link to="/productos" class="btn">Entrar</router-link>
       </div>
+      <!--<div class="card">
+        <span class="icon">📦</span>
+        <h3>Detalles de Inventario</h3>
+        <p>Ver y editar metros disponibles de cada rollo.</p>
+        <router-link to="/detalles-inventario" class="btn">Entrar</router-link>
+      </div>-->
       <div class="card">
         <span class="icon">👥</span>
         <h3>Administrar usuarios</h3>
@@ -42,12 +48,12 @@
         <p>Añade nuevos proveedores de materiales.</p>
         <router-link to="/proveedores" class="btn">Entrar</router-link>
       </div>
-      <!--<div class="card">
+      <div class="card">
         <span class="icon">⏳</span>
         <h3>Ver historial</h3>
         <p>Ver historial de motivos de cambios de productos.</p>
-        <router-link to="/historial" class="btn">Ver historial</router-link>
-      </div>-->
+        <router-link to="/historial" class="btn">Entrar</router-link>
+      </div>
       <div class="card">
         <span class="icon">🪙</span>
         <h3>Calculadora de precios</h3>
