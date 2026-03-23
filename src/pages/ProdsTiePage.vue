@@ -5,6 +5,7 @@ import { usePedidosStore, type ProductoPedido, type Pedido } from 'src/stores/pe
 import { useQuasar } from 'quasar';
 import { useAuthStore } from 'src/stores/auth';
 import { socket } from 'src/boot/socket';
+import EditarInventarioModal from 'src/components/EditarInventarioModal.vue';
 
 interface Producto {
   id: number;
@@ -41,6 +42,19 @@ interface ProductoRaw {
   producto_id?: number;
   nombre?: string;
   precio?: number;
+  bodega_id?: number;
+  cantidad?: number;
+  rollos?: number;
+  medida_ind?: string;
+  medida_gru?: string;
+  precio_tap?: number;
+  precio_comp?: number;
+  detalles?: Array<{
+    id?: number;
+    cantidad: number;
+    estado: string;
+    codigo?: string | null;
+  }>;
   producto?: {
     id?: number;
     precio: number;
@@ -122,6 +136,8 @@ const floatingPos = ref({ x: 0, y: 0 });
 const isDragging = ref(false);
 const editOrderId = ref<number | null>(null);
 const esPrecioTap = ref(false);
+const showEditModal = ref(false);
+const existenciaSeleccionada = ref<ProductoConCantidad | null>(null);
 
 interface PanDetails {
   delta?: { x?: number; y?: number };
@@ -231,6 +247,8 @@ const cargarProductos = async () => {
           ...prodObj,
           nombre: prodObj.nombre || p.nombre || 'Sin Nombre',
         },
+        // Asegurar que los detalles vengan exactamente como están en el backend
+        detalles: Array.isArray(p.detalles) ? p.detalles : [],
         cantidadPedido: 0,
         showDetails: false,
       } as unknown as ProductoConCantidad;
@@ -333,6 +351,51 @@ const decrementarCantidad = (prod: ProductoConCantidad) => {
   if (prod.cantidadPedido > 0) {
     const step = prod.cantidadPedido <= 0.61 ? 0.1 : 0.5;
     prod.cantidadPedido = round(Math.max(0, prod.cantidadPedido - step));
+  }
+};
+
+const abrirEditModal = (existencia: ProductoConCantidad) => {
+  existenciaSeleccionada.value = existencia;
+  showEditModal.value = true;
+};
+
+const cerrarEditModal = () => {
+  showEditModal.value = false;
+  existenciaSeleccionada.value = null;
+};
+
+const onInventarioActualizado = () => {
+  $q.notify({
+    message: 'Inventario actualizado exitosamente',
+    color: 'positive',
+    icon: 'check_circle',
+    position: 'top',
+  });
+  void cargarProductos();
+};
+
+const eliminarInventario = async (id: number) => {
+  if (!confirm('¿Estás seguro de que quieres eliminar este inventario?')) {
+    return;
+  }
+
+  try {
+    await api.delete(`inventarios/${id}`);
+    $q.notify({
+      message: 'Inventario eliminado correctamente',
+      color: 'positive',
+      icon: 'check_circle',
+      position: 'top',
+    });
+    void cargarProductos();
+  } catch (err) {
+    console.error('Error al eliminar inventario:', err);
+    $q.notify({
+      message: 'Error al eliminar el inventario',
+      color: 'negative',
+      icon: 'error',
+      position: 'top',
+    });
   }
 };
 
@@ -680,7 +743,7 @@ watch(
                     </div>
                     <span class="unit-label q-ml-md text-caption text-weight-medium" style="min-width: 45px;">{{
                       p.medida
-                      }}</span>
+                    }}</span>
                     <q-btn icon="delete" flat round dense color="negative" size="md"
                       @click.stop="removeItem(p.productoId)" @mousedown.stop @touchstart.stop class="q-ml-sm" />
                   </div>
@@ -694,7 +757,7 @@ watch(
             <div class="row justify-between items-center q-mb-md">
               <span class="text-subtitle1 text-weight-bold">Total:</span>
               <span class="text-h6 text-primary text-weight-bolder gradient-text">${{ formatNumber(totalPedido)
-                }}</span>
+              }}</span>
             </div>
             <div class="row q-col-gutter-sm no-wrap">
               <div class="col-4">
@@ -767,6 +830,12 @@ watch(
                 </button>
               </div>
 
+              <!-- Action Buttons (Editar y Eliminar) -->
+              <div class="card-actions">
+                <button @click="abrirEditModal(prod)" class="btn-editar">Editar</button>
+                <button @click="eliminarInventario(prod.id)" class="btn-eliminar">Eliminar</button>
+              </div>
+
               <!-- Details List -->
               <div v-if="prod.showDetails && prod.detalles" class="details-list">
                 <div v-for="(detalle, idx) in prod.detalles" :key="idx" class="detail-item">
@@ -774,7 +843,7 @@ watch(
                   <span class="detail-val">{{ formatNumber(detalle.cantidad) }} {{ prod.medida_ind }}</span>
                   <span class="detail-status" :class="detalle.estado?.toLowerCase()">{{
                     detalle.estado
-                  }}</span>
+                    }}</span>
                 </div>
               </div>
             </div>
@@ -783,6 +852,10 @@ watch(
         <div v-else>No hay productos para la categoría seleccionada.</div>
       </div>
     </section>
+
+    <!-- Modal de Edición de Inventario -->
+    <EditarInventarioModal v-if="existenciaSeleccionada" :show="showEditModal" :existencia="existenciaSeleccionada"
+      @close="cerrarEditModal" @updated="onInventarioActualizado" />
   </main>
 </template>
 
@@ -1118,6 +1191,52 @@ watch(
   background: #f8fafc;
   color: #64748baf;
   border-color: #bfdbfe;
+}
+
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.btn-editar {
+  background: linear-gradient(135deg, #ffd54f 0%, #8b5e3c 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.btn-editar:hover {
+  background: linear-gradient(135deg, #ffdd77 0%, #a0744a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 213, 79, 0.4);
+}
+
+.btn-eliminar {
+  background: #dc2626;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.btn-eliminar:hover {
+  background: #b91c1c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
 
 .details-list {

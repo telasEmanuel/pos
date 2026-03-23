@@ -186,7 +186,7 @@ onMounted(() => {
                   <strong>Bodega:</strong> {{ inventario.bodega?.nombre || 'N/A' }}
                 </span>
                 <span class="meta-item">
-                  <strong>Total Rollos:</strong> {{ inventario.rollos }}
+                  <strong>Total {{ inventario.medida_gru }}:</strong> {{ inventario.rollos }}
                 </span>
                 <span class="meta-item">
                   <strong>Total {{ inventario.medida_ind }}:</strong>
@@ -203,7 +203,7 @@ onMounted(() => {
           <div v-show="inventario.showDetails" class="detalles-expandidos">
             <div class="detalles-header">
               <button @click="abrirModalAgregarDetalle(inventario)" class="btn-agregar-rollo">
-                ➕ Agregar Rollo
+                ➕ Agregar {{ inventario.medida_ind }}
               </button>
             </div>
 
