@@ -336,7 +336,7 @@ watch(() => props.categoryId, (newVal) => {
             <div class="card-body">
               <!-- Badge for Rolls/Group Measure -->
               <!-- <div v-if="prod.rollos > 0 || prod.medida_gru" class="badge-group"> -->
-              <div v-if="prod.rollos !== prod.cantidad" class="badge-group">
+              <div v-if="prod.medida_gru !== prod.medida_ind" class="badge-group">
                 <span class="badge-icon">📦</span>
                 <span class="badge-text">{{ formatNumber(prod.rollos) }} {{ prod.medida_gru }}</span>
               </div>
@@ -808,7 +808,7 @@ watch(() => props.categoryId, (newVal) => {
   display: block;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #667eea;
+  color: #d9a441;
   margin-bottom: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -823,19 +823,19 @@ watch(() => props.categoryId, (newVal) => {
 .transfer-input {
   flex: 1;
   padding: 0.75rem;
-  border: 2px solid #667eea;
+  border: 2px solid #d9a441;
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
-  color: #667eea;
+  color: #d9a441;
   background: white;
   transition: all 0.2s;
 }
 
 .transfer-input:focus {
   outline: none;
-  border-color: #764ba2;
-  box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+  border-color: #c2923a;
+  box-shadow: 0 0 0 3px rgba(217, 164, 65, 0.1);
 }
 
 .transfer-input::placeholder {
@@ -860,7 +860,7 @@ watch(() => props.categoryId, (newVal) => {
 .btn-toggle-detalles {
   width: 100%;
   padding: 0.875rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
   color: white;
   border: none;
   font-weight: 700;
@@ -929,12 +929,12 @@ watch(() => props.categoryId, (newVal) => {
 }
 
 .rollo-item:hover {
-  border-color: #667eea;
+  border-color: #d9a441;
   background: #f8f9fc;
 }
 
 .rollo-item.selected {
-  border-color: #667eea;
+  border-color: #d9a441;
   background: #f0f4ff;
 }
 
@@ -942,7 +942,7 @@ watch(() => props.categoryId, (newVal) => {
   width: 1.25rem;
   height: 1.25rem;
   cursor: pointer;
-  accent-color: #667eea;
+  accent-color: #d9a441;
   flex-shrink: 0;
 }
 
@@ -970,7 +970,7 @@ watch(() => props.categoryId, (newVal) => {
 
 .rollo-qty {
   font-weight: 600;
-  color: #667eea;
+  color: #d9a441;
   min-width: 100px;
 }
 
@@ -1025,7 +1025,7 @@ watch(() => props.categoryId, (newVal) => {
   display: block;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #667eea;
+  color: #d9a441;
   margin-bottom: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1035,24 +1035,24 @@ watch(() => props.categoryId, (newVal) => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+
 }
 
 .input-simple {
   flex: 1;
   padding: 0.875rem;
-  border: 2px solid #667eea;
+  border: 2px solid #d9a441;
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 700;
-  color: #667eea;
+  color: #e7b65b;
   background: white;
   transition: all 0.2s;
 }
 
 .input-simple:focus {
   outline: none;
-  border-color: #764ba2;
-  box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+  border-color: #966406;
 }
 
 .input-simple::placeholder {
@@ -1110,14 +1110,14 @@ watch(() => props.categoryId, (newVal) => {
   align-items: center;
   gap: 0.5rem;
   padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
   color: white;
   border: none;
   border-radius: 16px;
   font-weight: 700;
   font-size: 0.9rem;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 10px 30px rgba(217, 164, 65, 0.4);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   min-width: 140px;
@@ -1125,7 +1125,7 @@ watch(() => props.categoryId, (newVal) => {
 
 .btn-transfer-floating:hover {
   transform: translateY(-4px);
-  box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+  box-shadow: 0 15px 40px rgba(217, 164, 65, 0.6);
 }
 
 .btn-transfer-floating:active {

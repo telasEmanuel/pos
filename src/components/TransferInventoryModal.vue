@@ -144,7 +144,7 @@ const closeModal = () => {
     <q-card style="min-height: 60vh; max-height: 90vh; display: flex; flex-direction: column;">
       <!-- Header -->
       <q-card-section class="bg-gradient text-white q-pa-md"
-        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        style="background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);">
         <div class="row items-center justify-between">
           <div>
             <h2 class="q-ma-none text-h5" style="font-weight: 800;">🚚 Transferencia de Inventario</h2>
@@ -160,7 +160,7 @@ const closeModal = () => {
           <!-- Productos a transferir -->
           <div v-if="productos.length" class="space-y-4">
             <div v-for="prod in productos" :key="prod.id" class="product-item"
-              style="background: #f8f9fa; border-left: 4px solid #667eea; padding: 1rem; border-radius: 8px;">
+              style="background: #f8f9fa; border-left: 4px solid #d9a441; padding: 1rem; border-radius: 8px;">
               <div class="row justify-between items-center q-mb-md">
                 <div>
                   <h4 class="q-ma-none text-weight-bold text-grey-9">{{ prod.nombre }}</h4>
@@ -197,7 +197,7 @@ const closeModal = () => {
                 </p>
                 <div class="rollo-detail" v-for="rollo in prod.rolesTransferencia" :key="rollo.indice">
                   <span class="rollo-detail-text">Rollo #{{ rollo.indice + 1 }}: <strong>{{ formatNumber(rollo.cantidad)
-                      }} {{ prod.medida_ind }}</strong></span>
+                  }} {{ prod.medida_ind }}</strong></span>
                 </div>
               </div>
             </div>
@@ -237,7 +237,7 @@ const closeModal = () => {
 
 <style scoped>
 .bg-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
 }
 
 :deep(.space-y-4)>*+* {
@@ -246,14 +246,14 @@ const closeModal = () => {
 
 .rollo-detail {
   padding: 0.5rem 0.75rem;
-  background: #e0e7ff;
-  border-left: 3px solid #667eea;
+  background: #fff8e6;
+  border-left: 3px solid #d9a441;
   border-radius: 4px;
   margin-top: 0.5rem;
   font-size: 0.85rem;
 }
 
 .rollo-detail-text {
-  color: #3730a3;
+  color: #8b5e3c;
 }
 </style>
