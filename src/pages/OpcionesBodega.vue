@@ -30,7 +30,7 @@ onMounted(() => {
         <p>Añadir productos nuevos al inventario actual.</p>
         <router-link to="/productos" class="btn">Entrar</router-link>
       </div>
-      <div class="card" v-if="datos?.rol === 'visor'">
+      <div class="card">
         <span class="icon">📦</span>
         <h3>Detalles de Inventario</h3>
         <p>Ver y editar metros disponibles de cada rollo.</p>
