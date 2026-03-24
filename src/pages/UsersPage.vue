@@ -277,6 +277,11 @@ h1 {
   color: #388e3c;
 }
 
+.rol-asistente {
+  background: #fff3e0;
+  color: #ff9800;
+}
+
 .acciones {
   display: flex;
   gap: 0.5rem;
