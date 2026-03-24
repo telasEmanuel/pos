@@ -108,6 +108,12 @@ onMounted(async (): Promise<void> => {
 </template>
 
 <style scoped>
+h2 {
+  color: #333;
+  font-size: 1.5rem;
+  margin: 0;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;

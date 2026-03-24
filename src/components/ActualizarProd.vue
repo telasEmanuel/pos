@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import api from '../api/axios'
 
 const props = defineProps({
@@ -14,11 +14,23 @@ const form = ref({
   precio: 0,
   precio_tap: 0,
   precio_comp: 0,
-  descripcion: ''
+  descripcion: '',
+  categoria_id: 0
 })
 
 const loading = ref(false)
 const error = ref('')
+const categorias = ref<Array<{ id: number; nombre: string }>>([])
+
+// Cargar categorías al montar el componente
+onMounted(async () => {
+  try {
+    const res = await api.get('categorias')
+    categorias.value = res.data || []
+  } catch (err) {
+    console.error('Error cargando categorías:', err)
+  }
+})
 
 // Watch para llenar el formulario cuando se selecciona un producto
 watch(() => props.producto, (newProducto) => {
@@ -28,7 +40,8 @@ watch(() => props.producto, (newProducto) => {
       precio: newProducto.precio || 0,
       precio_tap: newProducto.precio_tap || 0,
       precio_comp: newProducto.precio_comp || 0,
-      descripcion: newProducto.descripcion || ''
+      descripcion: newProducto.descripcion || '',
+      categoria_id: newProducto.categoria_id || 0
     }
   }
 }, { immediate: true })
@@ -53,7 +66,8 @@ const actualizarProducto = async () => {
       precio: form.value.precio,
       precio_tap: form.value.precio_tap,
       precio_comp: form.value.precio_comp,
-      descripcion: form.value.descripcion
+      descripcion: form.value.descripcion,
+      categoria_id: form.value.categoria_id
     })
 
     emit('updated')
@@ -105,6 +119,16 @@ const actualizarProducto = async () => {
           <label for="precio_comp">Precio Compra:</label>
           <input type="number" id="precio_comp" v-model.number="form.precio_comp" min="0" step="0.01" required
             :disabled="loading" placeholder="0.00">
+        </div>
+
+        <div class="form-group">
+          <label for="categoria">Categoría:</label>
+          <select id="categoria" v-model.number="form.categoria_id" :disabled="loading">
+            <option :value="0" disabled>Selecciona una categoría</option>
+            <option v-for="cat in categorias" :key="cat.id" :value="cat.id">
+              {{ cat.nombre }}
+            </option>
+          </select>
         </div>
 
         <div v-if="error" class="error-message">

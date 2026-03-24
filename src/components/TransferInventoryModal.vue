@@ -17,7 +17,16 @@ interface ProductoTransferencia {
     indice: number;
     cantidad: number;
     estado: string;
+    id?: number;
   }>;
+}
+
+interface TransferenciaData {
+  inventario_id: number;
+  cantidad: number;
+  desde_bodega: number;
+  hacia_bodega: number;
+  detalles_ids?: number[];
 }
 
 interface Props {
@@ -78,12 +87,24 @@ const processTransfer = async () => {
 
   try {
     // Preparar datos para la transferencia
-    const transferData = productosConCantidad.map(p => ({
-      inventario_id: p.id,
-      cantidad: p.cantidadTransferencia,
-      desde_bodega: p.bodega_id,
-      hacia_bodega: 1 // Tienda
-    }));
+    const transferData = productosConCantidad.map(p => {
+      const transferencia: TransferenciaData = {
+        inventario_id: p.id,
+        cantidad: p.cantidadTransferencia,
+        desde_bodega: p.bodega_id,
+        hacia_bodega: 1 // Tienda
+      };
+
+      // Si hay rollos/detalles seleccionados, enviar sus IDs
+      if (Array.isArray(p.rolesTransferencia) && p.rolesTransferencia.length > 0) {
+        // Mapear los IDs de los detalles seleccionados
+        transferencia.detalles_ids = p.rolesTransferencia
+          .map(r => r.id)
+          .filter(id => id !== undefined); // Filtrar solo los que tienen ID
+      }
+
+      return transferencia;
+    });
 
     // Hacer la llamada API
     await api.post('transferencias', {
@@ -176,7 +197,7 @@ const closeModal = () => {
                 </p>
                 <div class="rollo-detail" v-for="rollo in prod.rolesTransferencia" :key="rollo.indice">
                   <span class="rollo-detail-text">Rollo #{{ rollo.indice + 1 }}: <strong>{{ formatNumber(rollo.cantidad)
-                  }} {{ prod.medida_ind }}</strong></span>
+                      }} {{ prod.medida_ind }}</strong></span>
                 </div>
               </div>
             </div>

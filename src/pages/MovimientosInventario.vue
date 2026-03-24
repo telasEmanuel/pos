@@ -123,6 +123,12 @@ export default defineComponent({
 </template>
 
 <style scoped>
+h1 {
+  color: #333;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
 .movimientos-inventario {
   padding: 2rem;
   max-width: 1200px;

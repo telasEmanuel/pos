@@ -96,6 +96,12 @@ onMounted((): void => {
 </template>
 
 <style scoped>
+h1 {
+  color: #333;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
 .container {
   max-width: 800px;
   margin: 0 auto;

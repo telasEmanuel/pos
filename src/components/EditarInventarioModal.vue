@@ -4,6 +4,7 @@ import api from 'src/api/axios'
 
 interface Inventario {
   id: number
+  producto_id?: number
   producto?: { nombre: string }
   rollos?: number
   cantidad?: number
@@ -34,7 +35,7 @@ const form = ref({
   rollos: 0,
   cantidad: 0,
   cantidad_piezas: 0,
-  bodega_id: 1,
+  bodega_id: 0,
   medida_gru: '',
   medida_ind: ''
 })
@@ -50,7 +51,8 @@ watch(
       form.value.rollos = newExistencia.rollos || 0
       form.value.cantidad = newExistencia.cantidad || 0
       form.value.cantidad_piezas = newExistencia.cantidad_piezas || 0
-      form.value.bodega_id = newExistencia.bodega_id || 1
+      // No cargar bodega_id para que muestre "Selecciona una bodega" inicialmente
+      // form.value.bodega_id = newExistencia.bodega_id || 0
       form.value.medida_gru = newExistencia.medida_gru || ''
       form.value.medida_ind = newExistencia.medida_ind || ''
     }
@@ -107,14 +109,7 @@ const actualizarInventario = async () => {
         <div class="form-group-row">
           <div class="form-group">
             <label for="rollos">Control 1:</label>
-            <input
-              type="number"
-              id="rollos"
-              v-model.number="form.rollos"
-              min="0"
-              required
-              :disabled="loading"
-            />
+            <input type="number" id="rollos" v-model.number="form.rollos" min="0" required :disabled="loading" />
           </div>
 
           <div class="form-group">
@@ -135,15 +130,8 @@ const actualizarInventario = async () => {
         <div class="form-group-row">
           <div class="form-group">
             <label for="cantidad">Control 2:</label>
-            <input
-              type="number"
-              id="cantidad"
-              v-model.number="form.cantidad"
-              min="0"
-              step="0.01"
-              required
-              :disabled="loading"
-            />
+            <input type="number" id="cantidad" v-model.number="form.cantidad" min="0" step="0.01" required
+              :disabled="loading" />
           </div>
 
           <div class="form-group">
@@ -175,8 +163,9 @@ const actualizarInventario = async () => {
 
         <!-- Bodega -->
         <div class="form-group">
-          <label for="bodega">Bodega:</label>
+          <label for="bodega">Bodega: (Para cambiar un producto de bodega)</label>
           <select id="bodega" v-model.number="form.bodega_id" :disabled="loading">
+            <option :value="0" disabled>Selecciona una bodega</option>
             <option :value="1">Tienda</option>
             <option :value="2">Bodega</option>
           </select>
@@ -232,6 +221,7 @@ const actualizarInventario = async () => {
     transform: translateY(40px) scale(0.97);
     opacity: 0;
   }
+
   to {
     transform: none;
     opacity: 1;

@@ -831,7 +831,7 @@ watch(
               </div>
 
               <!-- Action Buttons (Editar y Eliminar) -->
-              <div class="card-actions">
+              <div class="card-actions" v-if="datos?.rol === 'visor'">
                 <button @click="abrirEditModal(prod)" class="btn-editar">Editar</button>
                 <button @click="eliminarInventario(prod.id)" class="btn-eliminar">Eliminar</button>
               </div>

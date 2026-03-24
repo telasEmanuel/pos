@@ -70,7 +70,6 @@ const statsCalculadas = computed(() => {
   let debito = 0;
   let credito = 0;
   let transferencia = 0;
-  let mixto = 0;
   let usd = 0;
 
   ventas.value.forEach(venta => {
@@ -78,7 +77,27 @@ const statsCalculadas = computed(() => {
     const comentarios = venta.comentarios || '';
     const total = Number(venta.total) || 0;
 
-    if (metodoPago === 'EFECTIVO') {
+    // Función auxiliar para parsear monto de los comentarios
+    const parseAmount = (regex: RegExp): number => {
+      const match = comentarios.match(regex);
+      if (match && match[1]) {
+        return parseFloat(match[1]);
+      }
+      return 0;
+    };
+
+    // Si es pago MIXTO, parsear el desglose detallado
+    if (metodoPago === 'MIXTO' && comentarios.includes('[Detalle Pago:')) {
+      const pPesos = parseAmount(/Pesos:\s*\$([\d.]+)/);
+      const pUSD = parseAmount(/USD:\s*([\d.]+)/);
+      const pTarjeta = parseAmount(/Tarjeta:\s*\$([\d.]+)/);
+      const pTransf = parseAmount(/Transf:\s*\$([\d.]+)/);
+
+      efectivo += pPesos;
+      usd += pUSD;
+      debito += pTarjeta;  // Tarjeta en MIXTO cuenta como débito
+      transferencia += pTransf;
+    } else if (metodoPago === 'EFECTIVO') {
       efectivo += total;
     } else if (metodoPago === 'DEBITO') {
       debito += total;
@@ -91,20 +110,19 @@ const statsCalculadas = computed(() => {
       } else if (comentarios.includes('[Tipo Tarjeta: CREDITO]')) {
         credito += total;
       } else {
-        // Si no se especifica, asumir que es tarjeta genérica (débito por defecto)
+        // Si no se especifica, asumir que es débito por defecto
         debito += total;
       }
     } else if (metodoPago === 'TRANSFERENCIA') {
       transferencia += total;
-    } else if (metodoPago === 'MIXTO') {
-      // Pago mixto (múltiples métodos)
-      mixto += total;
     }
 
-    // Extraer USD de los comentarios si existen
-    const usdMatch = comentarios.match(/USD:\s*([\d.]+)/i);
-    if (usdMatch && usdMatch[1]) {
-      usd += parseFloat(usdMatch[1]);
+    // Extraer USD adicional de los comentarios si existen (para pagos no-MIXTO)
+    if (metodoPago !== 'MIXTO') {
+      const usdMatch = comentarios.match(/USD:\s*([\d.]+)/i);
+      if (usdMatch && usdMatch[1]) {
+        usd += parseFloat(usdMatch[1]);
+      }
     }
   });
 
@@ -114,9 +132,8 @@ const statsCalculadas = computed(() => {
     credito,
     tarjeta: debito + credito, // Total de tarjetas
     transferencia,
-    mixto,
     usd,
-    granTotal: efectivo + debito + credito + transferencia + mixto
+    granTotal: efectivo + debito + credito + transferencia
   };
 });
 const loading = ref(true);
@@ -764,7 +781,6 @@ const ventasFiltradasPorMetodo = computed(() => {
   let contEfectivo = 0;
   let contTarjeta = 0;
   let contTransferencia = 0;
-  let contMixto = 0;
   let contUSD = 0;
 
   ventasFiltradas.value.forEach(venta => {
@@ -773,12 +789,10 @@ const ventasFiltradasPorMetodo = computed(() => {
 
     if (metodoPago === 'EFECTIVO') {
       contEfectivo++;
-    } else if (metodoPago === 'TARJETA' || metodoPago === 'DEBITO' || metodoPago === 'CREDITO') {
+    } else if (metodoPago === 'TARJETA' || metodoPago === 'DEBITO' || metodoPago === 'CREDITO' || metodoPago === 'MIXTO') {
       contTarjeta++;
     } else if (metodoPago === 'TRANSFERENCIA') {
       contTransferencia++;
-    } else if (metodoPago === 'MIXTO') {
-      contMixto++;
     }
 
     const usdMatch = comentarios.match(/USD:\s*([\d.]+)/i);
@@ -791,7 +805,6 @@ const ventasFiltradasPorMetodo = computed(() => {
     efectivo: contEfectivo,
     tarjeta: contTarjeta,
     transferencia: contTransferencia,
-    mixto: contMixto,
     usd: contUSD
   };
 });
@@ -960,19 +973,6 @@ onMounted(async () => {
           <div class="stat-breakdown">{{ ventasFiltradasPorMetodo.transferencia }} venta{{
             ventasFiltradasPorMetodo.transferencia !== 1 ? 's' : '' }}</div>
           <q-tooltip>Click para filtrar ventas por transferencia</q-tooltip>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="mini-stat-card" :class="{ 'active-filter': filtroTipoPago === 'MIXTO' }"
-          @click="toggleFiltroTipoPago('MIXTO')">
-          <div class="stat-label text-indigo-8">
-            <q-icon name="shuffle" /> Mixto
-          </div>
-          <div class="stat-amount">{{ formatCurrency(statsCalculadas.mixto) }}</div>
-          <div class="stat-breakdown">{{ ventasFiltradasPorMetodo.mixto }} venta{{ ventasFiltradasPorMetodo.mixto !== 1
-            ?
-            's' : '' }}</div>
-          <q-tooltip>Click para filtrar ventas con pago mixto</q-tooltip>
         </div>
       </div>
       <div class="col-6 col-md-3">

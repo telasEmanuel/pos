@@ -181,7 +181,7 @@ onMounted(async () => {
               <div v-for="producto in productosFiltrados" :key="producto.id" @click="seleccionarProducto(producto)"
                 class="sugerencia-item">
                 <div class="producto-nombre">{{ producto.nombre }}</div>
-                <div class="producto-descripcion">{{ producto.descripcion || 'Sin descripción' }}</div>
+                <div class="producto-descripcion">{{ producto.descripcion || 'Sin ficha técnica' }}</div>
               </div>
             </div>
 
@@ -275,6 +275,12 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+h2 {
+  color: #333;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;

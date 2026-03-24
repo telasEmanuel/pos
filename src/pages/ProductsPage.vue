@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import api from '../api/axios'
+import { useQuasar } from 'quasar'
 import CrearProducto from '../components/CrearProducto.vue'
 import CrearInventario from '../components/CrearInventario.vue';
 import UpdateProd from '../components/ActualizarProd.vue';
@@ -12,6 +13,7 @@ const mostrarInventarioModal = ref(false)
 const loading = ref(true)
 const loadingMore = ref(false)
 const showEditModal = ref(false)
+const $q = useQuasar()
 type ProductType = { id?: number; nombre?: string; descripcion?: string; precio?: number; precio_tap?: number; precio_comp?: number; categoria_id?: number }
 const productoSeleccionado = ref<ProductType | null>(null)
 const cursor = ref<string | null>(null)
@@ -22,8 +24,16 @@ const categoriaSeleccionada = ref('')
 const terminoBusqueda = ref('')
 
 const onInventarioCreado = (): void => {
-  alert('Inventario creado exitosamente');
-  window.location.reload();
+  $q.notify({
+    message: 'Inventario creado exitosamente',
+    color: 'positive',
+    icon: 'add_circle',
+    position: 'top',
+  })
+  cerrarModalInventario()
+  cursor.value = null
+  hasMore.value = true
+  void cargarProductos()
 };
 
 const debounce = (fn: (...args: unknown[]) => void, delay = 300): ((...args: unknown[]) => void) => {
@@ -62,7 +72,15 @@ const limpiarBusqueda = (): void => {
 const productoCreado = (nuevoProducto: { id: number; nombre: string }): void => {
   console.log('Producto creado:', nuevoProducto)
   cerrarModalProducto()
-  window.location.reload()
+  $q.notify({
+    message: 'Producto creado correctamente',
+    color: 'positive',
+    icon: 'add_circle',
+    position: 'top',
+  })
+  cursor.value = null
+  hasMore.value = true
+  void cargarProductos()
 }
 
 const abrirModalProducto = (): void => {
@@ -92,8 +110,15 @@ const cerrarEditModal = (): void => {
 }
 
 const onProductoActualizado = (): void => {
-  alert('Producto actualizado exitosamente')
-  void cargarProductos() // Recargar datos
+  $q.notify({
+    message: 'Producto actualizado exitosamente',
+    color: 'positive',
+    icon: 'check_circle',
+    position: 'top',
+  })
+  cursor.value = null
+  hasMore.value = true
+  void cargarProductos()
 }
 
 // Función para eliminar producto
@@ -104,11 +129,24 @@ const eliminarProducto = async (id: number): Promise<void> => {
 
   try {
     await api.delete(`productos/${id}`)
-    alert('Producto eliminado correctamente')
-    await cargarProductos() // Recargar datos
+    $q.notify({
+      message: 'Producto eliminado correctamente',
+      color: 'positive',
+      icon: 'check_circle',
+      position: 'top',
+    })
+    // Recargar datos sin hacer reload
+    cursor.value = null
+    hasMore.value = true
+    await cargarProductos()
   } catch (err) {
     console.error('Error al eliminar producto:', err)
-    alert('Error al eliminar el producto')
+    $q.notify({
+      message: 'Error al eliminar el producto',
+      color: 'negative',
+      icon: 'error',
+      position: 'top',
+    })
   }
 }
 
@@ -266,6 +304,12 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+h1 {
+  color: #333;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
 .tabla {
   width: 100%;
   border-collapse: collapse;

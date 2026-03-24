@@ -50,7 +50,7 @@ const crearCategoria = async () => {
           <input v-model="nombre" required />
         </div>
         <div>
-          <label>Descripción: (opcional)</label>
+          <label>Ficha técnica: (opcional)</label>
           <input v-model="descripcion" />
         </div>
         <button type="submit">Crear</button>
@@ -62,6 +62,12 @@ const crearCategoria = async () => {
 </template>
 
 <style scoped>
+h2 {
+  color: #333;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;

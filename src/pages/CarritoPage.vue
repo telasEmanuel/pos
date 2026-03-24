@@ -365,16 +365,26 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
       }
     }
 
+    // Construir comentario con desglose de pago para pagos MIXTOS
+    let comentariosConDesglose = comentarios.value;
+    if (mpago === 'MIXTO' && pagoDetalle) {
+      const desglosePago = `[Detalle Pago: Pesos: $${pagoDetalle.efectivo} USD: ${pagoDetalle.dolares} (Tasa: ${pagoDetalle.tasaCambio}) Tarjeta: $${pagoDetalle.tarjeta} Transf: $${pagoDetalle.transferencia}]`;
+      comentariosConDesglose = comentariosConDesglose
+        ? `${desglosePago} ${comentariosConDesglose}`
+        : desglosePago;
+    }
+
     const payload = {
       cliente: clienteParaVenta,
       total: parseDecimal(total.value),
       detallesVenta,
       bodega_id: 1,
-      comentarios: comentarios.value,
+      comentarios: comentariosConDesglose,
       metodo_pago: mpago,
       usuario_id: authStore.user?.id || authStore.user?.usuario_id || null,
       usuario_username: nombreVendedor,
       requiere_factura: requiereFactura,
+      pagoDetalle,
     };
 
     const resp = await api.post('ventas', payload);

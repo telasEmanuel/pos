@@ -208,6 +208,12 @@ watch(modo, () => {
 </template>
 
 <style scoped>
+h2 {
+  color: #333;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
 .contenedor {
   max-width: 1000px;
   margin: 2rem auto;

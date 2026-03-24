@@ -56,7 +56,7 @@ const productos = ref<Producto[]>([])
 const categoria = ref<Categoria | null>(null)
 const categoriaSeleccionada = ref<string | number>('')
 const loading = ref(false)
-const datos = ref<{ email?: string } | null>(null);
+const datos = ref<{ rol?: string } | null>(null);
 const authStore = useAuthStore();
 const showTransferModal = ref(false)
 const showEditModal = ref(false)
@@ -161,11 +161,14 @@ const productosSeleccionados = computed(() => {
         cantidadTransferencia: cantidadTotal,
         medida_ind: prod.medida_ind,
         precio_comp: prod.precio_comp,
-        rolesTransferencia: rolosSeleccionados.map(({ detalle, idx }) => ({
-          indice: idx,
-          cantidad: detalle.cantidad,
-          estado: detalle.estado
-        }))
+        rolesTransferencia: rolosSeleccionados
+          .filter(({ detalle }) => detalle.id !== undefined)  // Solo incluir detalles con ID
+          .map(({ detalle, idx }) => ({
+            indice: idx,
+            cantidad: detalle.cantidad,
+            estado: detalle.estado,
+            id: detalle.id as number  // El filtro anterior garantiza que id existe
+          }))
       })
     }
     // OPCIÓN 2: Productos sin detalles - input simple
@@ -282,6 +285,7 @@ onMounted(() => {
   }
   void cargarCategoria()
   void cargarProductos()
+  datos.value = authStore.user;
 })
 
 watch(() => props.categoryId, (newVal) => {
@@ -310,7 +314,7 @@ watch(() => props.categoryId, (newVal) => {
     </div>
 
     <!-- Valor Almacenado -->
-    <div class="valor-almacenado-container" v-if="datos?.email === 'visor'">
+    <div class="valor-almacenado-container" v-if="datos?.rol === 'visor'">
       <div class="valor-almacenado-card">
         <div class="valor-content">
           <p class="valor-label">Valor Almacenado</p>
@@ -407,7 +411,7 @@ watch(() => props.categoryId, (newVal) => {
               </div>
 
               <!-- Action Buttons (Editar y Eliminar) -->
-              <div class="card-actions">
+              <div class="card-actions" v-if="datos?.rol === 'visor'">
                 <button @click="abrirEditModal(prod)" class="btn-editar">Editar</button>
                 <button @click="eliminarInventario(prod.id)" class="btn-eliminar">Eliminar</button>
               </div>

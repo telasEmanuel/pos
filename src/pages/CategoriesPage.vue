@@ -28,12 +28,14 @@ const onCategoriaCreada = (): void => {
   alert('Categoría creada exitosamente')
   void cargarCategorias()
   cerrarCreateModal()
+  window.location.reload() // Recargar la página para reflejar cambios
 }
 
 const onCategoriaActualizada = (): void => {
   alert('Categoría actualizada exitosamente')
   void cargarCategorias()
   cerrarEditModal()
+  window.location.reload() // Recargar la página para reflejar cambios
 }
 
 const abrirEditModal = (categoria: { id: number; nombre: string; descripcion?: string }): void => {
@@ -51,6 +53,7 @@ const eliminarCategoria = async (id: number): Promise<void> => {
     await api.delete(`categorias/${id}`)
     alert('Categoría eliminada correctamente')
     await cargarCategorias() // Recargar datos
+    window.location.reload() // Recargar la página para reflejar cambios
   } catch (err) {
     console.error('Error al eliminar categoría:', err)
     alert('Error al eliminar la categoría')
@@ -120,6 +123,12 @@ onMounted((): void => {
 </template>
 
 <style scoped>
+h1 {
+  color: #333;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
 .lista-categorias {
   padding: 1rem;
 }
