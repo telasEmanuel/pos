@@ -357,7 +357,7 @@ const loadProductos = async () => {
 // Validate password for viewer role
 const validatePassword = () => {
   const correctPassword = import.meta.env.VITE_CARRITO || 'hola';
-  
+
   if (passwordInput.value === correctPassword) {
     passwordAuthenticated.value = true;
     showPasswordDialog.value = false;
@@ -372,7 +372,7 @@ const validatePassword = () => {
       position: 'top'
     });
     passwordInput.value = '';
-    
+
     if (passwordAttempts.value >= maxAttempts) {
       $q.dialog({
         title: 'Acceso Denegado',
@@ -897,7 +897,7 @@ onMounted(async () => {
   filtroTipoPago.value = null;
   filtroFactura.value = null;
   await loadUsuarios();
-  
+
   // Check if user is viewer and requires password
   if (datos.value?.rol === 'visor') {
     passwordAuthenticated.value = false;
@@ -905,7 +905,7 @@ onMounted(async () => {
   } else {
     void loadVentas();
   }
-  
+
   void loadProductos();
 });
 
@@ -923,15 +923,8 @@ onMounted(async () => {
 
       <q-card-section>
         <p class="text-grey-7 q-mb-md">Esta sección requiere una contraseña para usuarios visualizadores.</p>
-        <q-input
-          v-model="passwordInput"
-          type="password"
-          filled
-          dense
-          label="Ingrese la contraseña"
-          @keyup.enter="validatePassword"
-          autofocus
-        >
+        <q-input v-model="passwordInput" type="password" filled dense label="Ingrese la contraseña"
+          @keyup.enter="validatePassword" autofocus>
           <template v-slot:prepend>
             <q-icon name="vpn_key" />
           </template>
