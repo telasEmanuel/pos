@@ -56,6 +56,13 @@ const authStore = useAuthStore();
 const datos = ref<{ rol?: string } | null>(null);
 const usuarios = ref<Usuario[]>([]);
 const usuarioSeleccionado = ref<number | null>(null);
+
+// Password protection for viewer role
+const showPasswordDialog = ref(false);
+const passwordInput = ref('');
+const passwordAuthenticated = ref(false);
+const passwordAttempts = ref(0);
+const maxAttempts = 3;
 const stats = ref({
   efectivo: 0,
   tarjeta: 0,
@@ -345,6 +352,43 @@ const loadProductos = async () => {
   } catch (error) {
     console.error('Error al cargar productos:', error);
   }
+};
+
+// Validate password for viewer role
+const validatePassword = () => {
+  const correctPassword = import.meta.env.VITE_CARRITO || 'hola';
+  
+  if (passwordInput.value === correctPassword) {
+    passwordAuthenticated.value = true;
+    showPasswordDialog.value = false;
+    passwordInput.value = '';
+    void loadVentas();
+  } else {
+    passwordAttempts.value++;
+    $q.notify({
+      message: `Contraseña incorrecta. Intentos restantes: ${maxAttempts - passwordAttempts.value}`,
+      color: 'negative',
+      icon: 'error',
+      position: 'top'
+    });
+    passwordInput.value = '';
+    
+    if (passwordAttempts.value >= maxAttempts) {
+      $q.dialog({
+        title: 'Acceso Denegado',
+        message: 'Se alcanzó el número máximo de intentos. Regresando al inicio...',
+        ok: true
+      }).onOk(() => {
+        authStore.logout();
+        window.location.href = '/';
+      });
+    }
+  }
+};
+
+const handleCancelPassword = () => {
+  authStore.logout();
+  window.location.href = '/';
 };
 
 const loadUsuarios = async () => {
@@ -853,14 +897,58 @@ onMounted(async () => {
   filtroTipoPago.value = null;
   filtroFactura.value = null;
   await loadUsuarios();
-  void loadVentas();
+  
+  // Check if user is viewer and requires password
+  if (datos.value?.rol === 'visor') {
+    passwordAuthenticated.value = false;
+    showPasswordDialog.value = true;
+  } else {
+    void loadVentas();
+  }
+  
   void loadProductos();
 });
 
 </script>
 
 <template>
-  <q-page class="corte-page q-pa-md">
+  <!-- Password Protection Dialog for Viewer Role -->
+  <q-dialog v-model="showPasswordDialog" persistent>
+    <q-card style="min-width: 400px">
+      <q-card-section class="row items-center q-pb-none">
+        <q-icon name="lock" color="primary" size="2rem" class="q-mr-md" />
+        <span class="text-h6">Acceso Restringido</span>
+        <q-space />
+      </q-card-section>
+
+      <q-card-section>
+        <p class="text-grey-7 q-mb-md">Esta sección requiere una contraseña para usuarios visualizadores.</p>
+        <q-input
+          v-model="passwordInput"
+          type="password"
+          filled
+          dense
+          label="Ingrese la contraseña"
+          @keyup.enter="validatePassword"
+          autofocus
+        >
+          <template v-slot:prepend>
+            <q-icon name="vpn_key" />
+          </template>
+        </q-input>
+        <p v-if="passwordAttempts > 0" class="text-caption text-negative q-mt-sm">
+          Intentos restantes: {{ maxAttempts - passwordAttempts }}
+        </p>
+      </q-card-section>
+
+      <q-card-actions align="right">
+        <q-btn flat label="Cancelar" color="primary" @click="handleCancelPassword" />
+        <q-btn label="Aceptar" color="primary" @click="validatePassword" :loading="false" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <q-page v-if="passwordAuthenticated || datos?.rol !== 'visor'" class="corte-page q-pa-md">
     <!-- Header -->
     <div class="row items-center justify-between q-mb-lg header-section">
       <div>
@@ -1238,6 +1326,15 @@ onMounted(async () => {
 
     <!-- Receipt Printer Component (hidden, only for printing) -->
     <ReceiptPrinter ref="receiptPrinter" :data="lastReceipt" />
+  </q-page>
+
+  <!-- Unauthorized Message for Viewer without Password -->
+  <q-page v-else class="corte-page q-pa-md row items-center justify-center">
+    <div class="text-center">
+      <q-icon name="lock" color="primary" size="5rem" />
+      <h3 class="text-h5 text-grey-8 q-mt-md">Acceso Restringido</h3>
+      <p class="text-grey-6">Debes ingresar la contraseña para acceder a esta sección.</p>
+    </div>
   </q-page>
 </template>
 
