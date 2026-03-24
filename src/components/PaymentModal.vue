@@ -77,15 +77,19 @@ watch(metodoPago, (nuevoMetodo) => {
   if (nuevoMetodo === 'TRANSFERENCIA') montoTransferencia.value = props.total;
 });
 
-const totalUSDEnPesos = computed(() => +(montoUSD.value * tasaCambio.value).toFixed(2));
+const totalUSDEnPesos = computed(() => {
+  const usd = Number(montoUSD.value || 0);
+  const tasa = Number(tasaCambio.value || 0);
+  return +(usd * tasa).toFixed(2);
+});
 
 const totalPagado = computed(() => {
-  return +(
-    montoPesos.value +
-    totalUSDEnPesos.value +
-    montoTarjeta.value +
-    montoTransferencia.value
-  ).toFixed(2);
+  const pesos = Number(montoPesos.value || 0);
+  const usdPesos = Number(totalUSDEnPesos.value || 0);
+  const tarjeta = Number(montoTarjeta.value || 0);
+  const transferencia = Number(montoTransferencia.value || 0);
+  const suma = pesos + usdPesos + tarjeta + transferencia;
+  return +suma.toFixed(2);
 });
 
 const faltante = computed(() => {

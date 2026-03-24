@@ -332,7 +332,6 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
   const detallesVenta = carrito.value.map((i) => ({
     producto_id: Number(i.productoId),
     cantidad: Number(i.cantidad),
-    medida: i.medida || 'pieza',
     precio_unitario: esPrecioTap.value ? Number(i.precio_tap ?? 0) : Number(i.precio ?? 0),
   }));
 
@@ -376,7 +375,7 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
 
     const payload = {
       cliente: clienteParaVenta,
-      total: parseDecimal(total.value),
+      total: totalParaRecibo, // Usar el total capturado ANTES de limpiar, no total.value que puede cambiar
       detallesVenta,
       bodega_id: 1,
       comentarios: comentariosConDesglose,

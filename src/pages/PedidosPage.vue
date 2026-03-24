@@ -150,7 +150,6 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
       return {
         producto_id: Number(p.productoId),
         cantidad: typeof p.cantidad === 'string' ? parseFloat(p.cantidad) : Number(p.cantidad),
-        medida: getMedidaPara(p),
         precio_unitario: Number(p.precio_unitario || 0),
       };
     });
