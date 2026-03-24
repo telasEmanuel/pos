@@ -1,3 +1,15 @@
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useAuthStore } from 'src/stores/auth';
+
+const datos = ref<{ nombre?: string, rol?: string } | null>(null);
+const authStore = useAuthStore();
+
+onMounted(() => {
+  datos.value = authStore.user;
+})
+</script>
+
 <template>
   <div class="home-page">
     <!-- <header>
@@ -18,13 +30,13 @@
         <p>Añadir productos nuevos al inventario actual.</p>
         <router-link to="/productos" class="btn">Entrar</router-link>
       </div>
-      <div class="card">
+      <div class="card" v-if="datos?.rol === 'visor'">
         <span class="icon">📦</span>
         <h3>Detalles de Inventario</h3>
         <p>Ver y editar metros disponibles de cada rollo.</p>
         <router-link to="/detalles-inventario" class="btn">Entrar</router-link>
       </div>
-      <div class="card">
+      <div class="card" v-if="datos?.rol === 'visor'">
         <span class="icon">👥</span>
         <h3>Administrar usuarios</h3>
         <p>Crear y gestionar usuarios del sistema.</p>
@@ -36,8 +48,8 @@
         <p>Consulta de órdenes de compra.</p>
         <router-link to="/ordenes" class="btn">Entrar</router-link>
       </div>
-      <div class="card">
-        <span class="icon">💸</span>
+      <div class="card" v-if="datos?.rol === 'visor'">
+        <span class="icon">📊</span>
         <h3>Ver ventas</h3>
         <p>Visualiza todas las ventas de productos.</p>
         <router-link to="/ventas" class="btn">Entrar</router-link>
