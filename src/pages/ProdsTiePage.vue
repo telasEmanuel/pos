@@ -743,7 +743,7 @@ watch(
                     </div>
                     <span class="unit-label q-ml-md text-caption text-weight-medium" style="min-width: 45px;">{{
                       p.medida
-                    }}</span>
+                      }}</span>
                     <q-btn icon="delete" flat round dense color="negative" size="md"
                       @click.stop="removeItem(p.productoId)" @mousedown.stop @touchstart.stop class="q-ml-sm" />
                   </div>
@@ -757,7 +757,7 @@ watch(
             <div class="row justify-between items-center q-mb-md">
               <span class="text-subtitle1 text-weight-bold">Total:</span>
               <span class="text-h6 text-primary text-weight-bolder gradient-text">${{ formatNumber(totalPedido)
-              }}</span>
+                }}</span>
             </div>
             <div class="row q-col-gutter-sm no-wrap">
               <div class="col-4">
@@ -843,7 +843,7 @@ watch(
                   <span class="detail-val">{{ formatNumber(detalle.cantidad) }} {{ prod.medida_ind }}</span>
                   <span class="detail-status" :class="detalle.estado?.toLowerCase()">{{
                     detalle.estado
-                    }}</span>
+                  }}</span>
                 </div>
               </div>
             </div>

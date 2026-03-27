@@ -78,7 +78,7 @@ onMounted(() => {
         <p>Crear secciones para organizar las categorías.</p>
         <router-link to="/secciones" class="btn">Entrar</router-link>
       </div>
-    </section> 
+    </section>
     <footer>
       <small>&copy; 2026 Telas Emanuel · Telas Emanuel App</small>
     </footer>

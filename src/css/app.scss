@@ -6,12 +6,25 @@
 // ============================================
 :root {
   // Primary gradient colors
-  --color-brand-primary: #FFD54F;      // Amarillo dorado
-  --color-brand-secondary: #8B5E3C;    // Marrón profundo
-  
+  --color-brand-primary: #ffd54f; // Amarillo dorado
+  --color-brand-secondary: #8b5e3c; // Marrón profundo
+
   // Gradient combinations
-  --gradient-brand-135: linear-gradient(135deg, var(--color-brand-primary) 0%, var(--color-brand-secondary) 100%);
-  --gradient-brand-90: linear-gradient(90deg, var(--color-brand-primary) 0%, var(--color-brand-secondary) 100%);
+  --gradient-brand-135: linear-gradient(
+    135deg,
+    var(--color-brand-primary) 0%,
+    var(--color-brand-secondary) 100%
+  );
+  --gradient-brand-90: linear-gradient(
+    90deg,
+    var(--color-brand-primary) 0%,
+    var(--color-brand-secondary) 100%
+  );
   --gradient-brand-light: linear-gradient(135deg, #ffe8c2 0%, var(--color-brand-primary) 100%);
-  --gradient-brand-vibrant: linear-gradient(135deg, var(--color-brand-primary) 0%, var(--color-brand-secondary) 50%, #ffe8c2 100%);
+  --gradient-brand-vibrant: linear-gradient(
+    135deg,
+    var(--color-brand-primary) 0%,
+    var(--color-brand-secondary) 50%,
+    #ffe8c2 100%
+  );
 }

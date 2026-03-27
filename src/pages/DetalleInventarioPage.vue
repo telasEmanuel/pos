@@ -241,7 +241,7 @@ onMounted(() => {
                 <tr class="total-row">
                   <td colspan="1"><strong>Total</strong></td>
                   <td><strong>{{ obtenerTotalMetros(inventario.detalles).toFixed(2) }} {{ inventario.medida_ind
-                      }}</strong></td>
+                  }}</strong></td>
                   <td colspan="2"></td>
                 </tr>
               </tfoot>

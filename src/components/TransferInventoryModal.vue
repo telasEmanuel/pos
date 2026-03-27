@@ -143,8 +143,7 @@ const closeModal = () => {
   <q-dialog :model-value="show" @update:model-value="closeModal" position="bottom" full-width>
     <q-card style="min-height: 60vh; max-height: 90vh; display: flex; flex-direction: column;">
       <!-- Header -->
-      <q-card-section class="bg-gradient text-white q-pa-md"
-        style="background: var(--gradient-brand-135);">
+      <q-card-section class="bg-gradient text-white q-pa-md" style="background: var(--gradient-brand-135);">
         <div class="row items-center justify-between">
           <div>
             <h2 class="q-ma-none text-h5" style="font-weight: 800;">🚚 Transferencia de Inventario</h2>
@@ -197,7 +196,7 @@ const closeModal = () => {
                 </p>
                 <div class="rollo-detail" v-for="rollo in prod.rolesTransferencia" :key="rollo.indice">
                   <span class="rollo-detail-text">Rollo #{{ rollo.indice + 1 }}: <strong>{{ formatNumber(rollo.cantidad)
-                  }} {{ prod.medida_ind }}</strong></span>
+                      }} {{ prod.medida_ind }}</strong></span>
                 </div>
               </div>
             </div>

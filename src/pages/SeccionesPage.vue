@@ -136,13 +136,8 @@ onMounted((): void => {
     <CrearSeccion :visible="showCreateModal" @close="cerrarCreateModal" @seccionCreada="onSeccionCreada" />
 
     <!-- Modal para editar sección -->
-    <UpdateSeccion
-      v-if="seccionSeleccionada"
-      :visible="showEditModal"
-      :seccion="seccionSeleccionada"
-      @close="cerrarEditModal"
-      @seccionActualizada="onSeccionActualizada"
-    />
+    <UpdateSeccion v-if="seccionSeleccionada" :visible="showEditModal" :seccion="seccionSeleccionada"
+      @close="cerrarEditModal" @seccionActualizada="onSeccionActualizada" />
   </div>
 </template>
 

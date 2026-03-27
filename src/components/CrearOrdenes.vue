@@ -393,7 +393,8 @@ onMounted(async (): Promise<void> => {
 </template>
 
 <style scoped>
-h2, h3 {
+h2,
+h3 {
   color: #333;
   font-size: 1.5rem;
   margin: 0;

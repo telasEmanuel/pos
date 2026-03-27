@@ -102,7 +102,7 @@ onMounted((): void => {
           <tr v-for="categoria in categorias" :key="categoria.id">
             <td>{{ categoria.id }}</td>
             <td>{{ categoria.nombre }}</td>
-            <td>{{ categoria.descripcion || 'Sin ficha técnica  ' }}</td>
+            <td>{{ categoria.descripcion || 'Sin ficha técnica ' }}</td>
             <td><button @click="abrirEditModal(categoria)" class="btn-editar">Editar</button></td>
             <td><button @click="eliminarCategoria(categoria.id)" class="btn-eliminar">Eliminar</button></td>
           </tr>
