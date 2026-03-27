@@ -115,8 +115,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <h1 class="main-title">Existencias</h1>
-
     <!-- Mostrar secciones con categorías agrupadas -->
     <div v-for="seccion in secciones" :key="seccion.id" class="seccion-container q-mb-lg">
       <h2 class="seccion-title">{{ seccion.nombre }}</h2>
