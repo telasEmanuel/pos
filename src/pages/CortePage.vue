@@ -1249,11 +1249,11 @@ onMounted(async () => {
 
 /* Premium Gradient Utilities */
 .gradient-bg {
-  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
+  background: var(--gradient-brand-135);
 }
 
 .text-primary {
-  color: #8B5E3C !important;
+  color: var(--color-brand-secondary) !important;
 }
 
 .border-gradient {
@@ -1268,7 +1268,7 @@ onMounted(async () => {
   left: 0;
   width: 4px;
   height: 100%;
-  background: linear-gradient(to bottom, #FFD54F, #8B5E3C);
+  background: linear-gradient(to bottom, var(--color-brand-primary), var(--color-brand-secondary));
 }
 
 /* KPI Cards */
@@ -1358,8 +1358,8 @@ onMounted(async () => {
 }
 
 .mini-stat-card.active-filter {
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
-  border-color: #d9a441;
+  background: var(--gradient-brand-135);
+  border-color: var(--color-brand-primary);
   box-shadow: 0 4px 20px rgba(217, 164, 65, 0.4);
   transform: translateY(-2px) scale(1.02);
 }
@@ -1456,7 +1456,7 @@ onMounted(async () => {
 }
 
 .debito-title {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: var(--gradient-brand-135);
   color: white;
 }
 

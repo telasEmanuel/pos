@@ -847,11 +847,11 @@ const formatValue = (value: unknown): string => {
 }
 
 .bg-gradient {
-  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
+  background: var(--gradient-brand-135);
 }
 
 .btn-gold {
-  background: linear-gradient(90deg, #FFD54F 0%, #8B5E3C 100%) !important;
+  background: var(--gradient-brand-90) !important;
   color: white !important;
 }
 
@@ -865,7 +865,7 @@ const formatValue = (value: unknown): string => {
 }
 
 .border-gold {
-  border: 2px solid #FFD54F;
+  border: 2px solid var(--color-brand-primary);
 }
 
 .bg-gold-light {
@@ -873,11 +873,11 @@ const formatValue = (value: unknown): string => {
 }
 
 .text-gold-dark {
-  color: #8B5E3C;
+  color: var(--color-brand-secondary);
 }
 
 .btn-gold-preview {
-  background: linear-gradient(90deg, #FFD54F 0%, #8B5E3C 100%) !important;
+  background: var(--gradient-brand-90) !important;
   color: white !important;
 }
 
@@ -895,7 +895,7 @@ const formatValue = (value: unknown): string => {
 }
 
 .text-positive {
-  color: #21ba45;
+  color: var(--color-brand-primary);
   font-weight: bold;
 }
 

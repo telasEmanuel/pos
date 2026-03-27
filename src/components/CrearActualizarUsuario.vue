@@ -291,8 +291,8 @@ const cerrar = () => {
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #4f8cff;
-  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.1);
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 3px rgba(217, 164, 65, 0.1);
 }
 
 .error-message {
@@ -332,12 +332,12 @@ const cerrar = () => {
 }
 
 .btn-save {
-  background: #4f8cff;
+  background: var(--gradient-brand-90);
   color: white;
 }
 
 .btn-save:hover {
-  background: #2563eb;
+  background: var(--color-brand-secondary);
 }
 
 .btn-save:disabled {

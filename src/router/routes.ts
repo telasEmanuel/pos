@@ -23,6 +23,7 @@ import {
   Productos,
   DetalleInventario,
   Historial,
+  Secciones,
 } from '../pages/index';
 
 const routes: RouteRecordRaw[] = [
@@ -143,6 +144,14 @@ const routes: RouteRecordRaw[] = [
     component: categoriesPage,
     meta: {
       title: 'Categorías de productos',
+      layout: MainLayout,
+    },
+  },
+  {
+    path: '/secciones',
+    component: Secciones,
+    meta: {
+      title: 'Gestión de Secciones',
       layout: MainLayout,
     },
   },

@@ -7,6 +7,16 @@ interface Categoria {
   id: number
   nombre: string
   descripcion: string
+  seccion_id?: number
+  orden?: number
+}
+
+interface Seccion {
+  id: number
+  nombre: string
+  descripcion?: string
+  orden: number
+  categorias: Categoria[]
 }
 
 interface Producto {
@@ -26,6 +36,7 @@ interface Producto {
 }
 
 const existencias = ref<unknown[]>([]);
+const secciones = ref<Seccion[]>([]);
 const categorias = ref<Categoria[]>([]);
 const productos = ref<Producto[]>([]);
 const loading = ref(false);
@@ -54,11 +65,13 @@ const mostrarExistencias = async () => {
 
 const cargarCategorias = async () => {
   try {
-    const response = await api.get('categorias');
-    categorias.value = response.data;
-    console.log(categorias.value)
+    const response = await api.get('secciones');
+    secciones.value = response.data;
+    // Flatten todas las categorías de todas las secciones para mantener compatibilidad
+    categorias.value = secciones.value.flatMap(s => s.categorias || []);
+    console.log(secciones.value)
   } catch (err) {
-    console.error('Error al cargar categorías', err);
+    console.error('Error al cargar secciones', err);
   }
 };
 
@@ -103,13 +116,18 @@ onMounted(() => {
     </div>
 
     <h1 class="main-title">Existencias</h1>
-    <section class="actions">
-      <router-link v-for="cat in categorias" :key="cat.id"
-        :to="{ name: 'ConfiguracionPorCategoria', params: { categoryId: cat.id }, query: { technicalCard: cat.descripcion } }"
-        class="card">
-        <p class="sections">{{ cat.nombre }}</p>
-      </router-link>
-    </section>
+
+    <!-- Mostrar secciones con categorías agrupadas -->
+    <div v-for="seccion in secciones" :key="seccion.id" class="seccion-container q-mb-lg">
+      <h2 class="seccion-title">{{ seccion.nombre }}</h2>
+      <section class="actions">
+        <router-link v-for="cat in seccion.categorias" :key="cat.id"
+          :to="{ name: 'ConfiguracionPorCategoria', params: { categoryId: cat.id }, query: { technicalCard: cat.descripcion } }"
+          class="card">
+          <p class="sections">{{ cat.nombre }}</p>
+        </router-link>
+      </section>
+    </div>
   </main>
 </template>
 
@@ -168,13 +186,13 @@ onMounted(() => {
 }
 
 .breadcrumb-item {
-  color: #007bff;
+  color: var(--color-brand-primary);
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .breadcrumb-item:hover {
-  color: #0056b3;
+  color: var(--color-brand-secondary);
   text-decoration: underline;
 }
 
@@ -199,7 +217,7 @@ onMounted(() => {
 }
 
 .valor-total-card {
-  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
+  background: var(--gradient-brand-135);
   border-radius: 20px;
   box-shadow: 0 10px 30px rgba(255, 213, 79, 0.3);
   padding: 2rem 3rem;
@@ -247,5 +265,21 @@ onMounted(() => {
   font-weight: 800;
   line-height: 1;
   letter-spacing: -1px;
+}
+
+.seccion-container {
+  padding: 0 2rem;
+}
+
+.seccion-title {
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #333;
+  margin: 2rem 0 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 3px solid #FFD54F;
+  display: inline-block;
+  width: 100%;
 }
 </style>

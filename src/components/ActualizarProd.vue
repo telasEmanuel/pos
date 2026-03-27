@@ -186,7 +186,7 @@ const actualizarProducto = async () => {
 
 .modal h2 {
   margin-bottom: 1rem;
-  color: #2563eb;
+  color: var(--color-brand-primary);
   font-weight: 600;
   text-align: center;
   font-size: 1.15rem;
@@ -201,7 +201,7 @@ const actualizarProducto = async () => {
 
 .producto-info p {
   margin: 0;
-  color: #2563eb;
+  color: var(--color-brand-primary);
   font-weight: 500;
 }
 
@@ -230,7 +230,7 @@ const actualizarProducto = async () => {
 
 .form-group input:focus,
 .form-group select:focus {
-  border-color: #4f8cff;
+  border-color: var(--color-brand-primary);
   outline: none;
   background: #fff;
 }
@@ -269,12 +269,12 @@ const actualizarProducto = async () => {
 }
 
 .btn-primary {
-  background: #4f8cff;
+  background: var(--gradient-brand-90);
   color: #fff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--color-brand-secondary);
   transform: translateY(-2px);
 }
 
@@ -285,12 +285,12 @@ const actualizarProducto = async () => {
 }
 
 .btn-secondary {
-  background: #f3f4f6;
-  color: #333;
+  background: #FFF9E6;
+  color: var(--color-brand-secondary);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: #FFE8B6;
   transform: translateY(-2px);
 }
 

@@ -139,14 +139,14 @@ h1 {
 }
 
 #botonsito {
-  background: #4f8cff;
+  background: var(--gradient-brand-90);
   color: #fff;
   padding: 0.5rem 1.5rem;
   border: none;
   border-radius: 8px;
   font-size: 0.9rem;
   font-weight: 200;
-  box-shadow: 0 2px 8px rgba(79, 140, 255, 0.10);
+  box-shadow: 0 2px 8px rgba(217, 164, 65, 0.10);
   cursor: pointer;
   transition: background 0.18s, transform 0.12s;
   margin-top: 5px;
@@ -155,7 +155,7 @@ h1 {
 }
 
 #botonsito:hover {
-  background: #2563eb;
+  background: var(--color-brand-secondary);
   transform: translateY(-2px) scale(1.03);
 }
 </style>

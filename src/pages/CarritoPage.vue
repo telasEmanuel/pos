@@ -691,7 +691,7 @@ onMounted(() => {
 
 .pos-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #ffeb99 0%, #ffffff 50%, #8b5e3c 100%);
+  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
   padding: 2rem;
   position: relative;
   overflow: hidden;
@@ -805,7 +805,7 @@ onMounted(() => {
 .search-input:focus+.search-icon {
   color: #fff;
   transform: translateY(-50%) scale(1.05);
-  background: linear-gradient(135deg, #d9a441, #8b5e3c);
+  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
   box-shadow: 0 10px 28px rgba(139, 94, 60, 0.22);
 }
 
@@ -826,7 +826,7 @@ onMounted(() => {
 }
 
 .suggestions-container::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
+  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
   border-radius: 10px;
 }
 
@@ -867,7 +867,7 @@ onMounted(() => {
 }
 
 .producto-card:hover {
-  border-color: #d9a441;
+  border-color: var(--color-brand-primary);
   transform: translateY(-4px) scale(1.02);
   box-shadow:
     0 12px 30px rgba(139, 94, 60, 0.18),
@@ -882,7 +882,7 @@ onMounted(() => {
 .producto-nombre {
   font-size: 1rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
+  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -905,7 +905,7 @@ onMounted(() => {
 .producto-precio {
   font-size: 1.25rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #ffe8c2 0%, #d9a441 100%);
+  background: linear-gradient(135deg, #ffe8c2 0%, #FFD54F 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -978,7 +978,7 @@ onMounted(() => {
   margin: 0;
   font-size: 1.75rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
+  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -986,7 +986,7 @@ onMounted(() => {
 
 .item-count {
   padding: 0.5rem 1.25rem;
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
+  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
   border-radius: 30px;
   font-size: 0.875rem;
   font-weight: 700;
@@ -1024,7 +1024,7 @@ onMounted(() => {
 }
 
 .cart-content::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
+  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
   border-radius: 10px;
 }
 
@@ -1051,7 +1051,7 @@ onMounted(() => {
   left: 0;
   width: 4px;
   height: 100%;
-  background: linear-gradient(180deg, #d9a441 0%, #8b5e3c 50%, #ffe8c2 100%);
+  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
   transform: scaleY(0);
   transition: transform 0.3s;
   transform-origin: top;
@@ -1062,7 +1062,7 @@ onMounted(() => {
 }
 
 .cart-item:hover {
-  border-color: #d9a441;
+  border-color: var(--color-brand-primary);
   box-shadow:
     0 8px 24px rgba(139, 94, 60, 0.18),
     0 0 0 1px rgba(139, 94, 60, 0.06) inset;
@@ -1110,7 +1110,7 @@ onMounted(() => {
   width: 40px;
   height: 40px;
   border: none;
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
+  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
   border-radius: 12px;
   cursor: pointer;
   font-size: 1.25rem;
@@ -1166,7 +1166,7 @@ onMounted(() => {
 .item-total {
   font-size: 1.375rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #ffe8c2 0%, #d9a441 100%);
+  background: var(--gradient-brand-light);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1229,7 +1229,7 @@ onMounted(() => {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
+  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1267,7 +1267,7 @@ onMounted(() => {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
+  background: var(--gradient-brand-135);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1316,7 +1316,7 @@ onMounted(() => {
 .total-amount {
   font-size: 2.25rem;
   font-weight: 900;
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 50%, #ffe8c2 100%);
+  background: var(--gradient-brand-vibrant);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1367,7 +1367,7 @@ onMounted(() => {
 }
 
 .client-input-wrapper:focus-within {
-  border-color: #d9a441;
+  border-color: var(--color-brand-primary);
   box-shadow: 0 10px 26px rgba(139, 94, 60, 0.16);
   transform: translateY(-1px);
 }
@@ -1410,7 +1410,7 @@ onMounted(() => {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 50%, #ffe8c2 100%);
+  background: var(--gradient-brand-vibrant);
   color: #3d2816;
   box-shadow:
     0 14px 36px rgba(139, 94, 60, 0.22),
@@ -1454,16 +1454,17 @@ onMounted(() => {
 }
 
 .btn-secondary {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  border: 1px solid rgba(79, 70, 229, 0.12);
-  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.06);
+  background: linear-gradient(180deg, #FFF9E6 0%, #FFE8B6 100%);
+  border: 1px solid var(--color-brand-primary);
+  color: var(--color-brand-secondary);
+  box-shadow: 0 6px 18px rgba(217, 164, 65, 0.06);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #ffffff 0%, #f0f6ff 100%);
-  border-color: rgba(79, 70, 229, 0.28);
+  background: linear-gradient(180deg, #FFE8B6 0%, #FFD54F 100%);
+  border-color: var(--color-brand-secondary);
   transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(79, 70, 229, 0.12);
+  box-shadow: 0 12px 28px rgba(217, 164, 65, 0.12);
 }
 
 .btn-secondary:disabled {

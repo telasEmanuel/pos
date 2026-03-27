@@ -316,7 +316,7 @@ const handleConfirm = () => {
 
 .modal-header {
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
+  background: var(--gradient-brand-135);
   color: white;
   display: flex;
   justify-content: space-between;
@@ -448,7 +448,7 @@ const handleConfirm = () => {
 
 .method-tab.active {
   background: white;
-  color: #8b5e3c;
+  color: var(--color-brand-secondary);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
@@ -555,9 +555,9 @@ const handleConfirm = () => {
 }
 
 .card-type-btn.active {
-  border-color: #d9a441;
+  border-color: var(--color-brand-primary);
   background: linear-gradient(135deg, rgba(217, 164, 65, 0.15) 0%, rgba(139, 94, 60, 0.1) 100%);
-  color: #8b5e3c;
+  color: var(--color-brand-secondary);
   font-weight: 700;
 }
 
@@ -640,7 +640,7 @@ const handleConfirm = () => {
   flex: 1;
   padding: 0.75rem;
   border: none;
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
+  background: var(--gradient-brand-135);
   color: white;
   border-radius: 12px;
   font-weight: 700;
@@ -694,7 +694,7 @@ const handleConfirm = () => {
   width: 1.25rem;
   height: 1.25rem;
   cursor: pointer;
-  accent-color: #8b5e3c;
+  accent-color: var(--color-brand-secondary);
 }
 
 .factura-checkbox label {

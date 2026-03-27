@@ -583,7 +583,7 @@ watch(() => props.categoryId, (newVal) => {
 }
 
 .breadcrumb-item:hover {
-  color: #3b82f6;
+  color: var(--color-brand-primary);
 }
 
 .breadcrumb-separator {
@@ -808,7 +808,7 @@ watch(() => props.categoryId, (newVal) => {
   display: block;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #d9a441;
+  color: var(--color-brand-primary);
   margin-bottom: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -823,11 +823,11 @@ watch(() => props.categoryId, (newVal) => {
 .transfer-input {
   flex: 1;
   padding: 0.75rem;
-  border: 2px solid #d9a441;
+  border: 2px solid var(--color-brand-primary);
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
-  color: #d9a441;
+  color: var(--color-brand-primary);
   background: white;
   transition: all 0.2s;
 }
@@ -860,7 +860,7 @@ watch(() => props.categoryId, (newVal) => {
 .btn-toggle-detalles {
   width: 100%;
   padding: 0.875rem;
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
+  background: var(--gradient-brand-135);
   color: white;
   border: none;
   font-weight: 700;
@@ -929,12 +929,12 @@ watch(() => props.categoryId, (newVal) => {
 }
 
 .rollo-item:hover {
-  border-color: #d9a441;
+  border-color: var(--color-brand-primary);
   background: #f8f9fc;
 }
 
 .rollo-item.selected {
-  border-color: #d9a441;
+  border-color: var(--color-brand-primary);
   background: #f0f4ff;
 }
 
@@ -942,7 +942,7 @@ watch(() => props.categoryId, (newVal) => {
   width: 1.25rem;
   height: 1.25rem;
   cursor: pointer;
-  accent-color: #d9a441;
+  accent-color: var(--color-brand-primary);
   flex-shrink: 0;
 }
 
@@ -970,7 +970,7 @@ watch(() => props.categoryId, (newVal) => {
 
 .rollo-qty {
   font-weight: 600;
-  color: #d9a441;
+  color: var(--color-brand-primary);
   min-width: 100px;
 }
 
@@ -1025,7 +1025,7 @@ watch(() => props.categoryId, (newVal) => {
   display: block;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #d9a441;
+  color: var(--color-brand-primary);
   margin-bottom: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1041,7 +1041,7 @@ watch(() => props.categoryId, (newVal) => {
 .input-simple {
   flex: 1;
   padding: 0.875rem;
-  border: 2px solid #d9a441;
+  border: 2px solid var(--color-brand-primary);
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 700;
@@ -1110,7 +1110,7 @@ watch(() => props.categoryId, (newVal) => {
   align-items: center;
   gap: 0.5rem;
   padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
+  background: var(--gradient-brand-135);
   color: white;
   border: none;
   border-radius: 16px;

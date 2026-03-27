@@ -116,7 +116,7 @@ const crearProveedor = async () => {
 
 .modal h2 {
   margin-bottom: 1.2rem;
-  color: #2563eb;
+  color: var(--color-brand-primary);
   font-weight: 600;
   text-align: center;
 }
@@ -144,13 +144,13 @@ const crearProveedor = async () => {
 }
 
 .modal input:focus {
-  border-color: #4f8cff;
+  border-color: var(--color-brand-primary);
   outline: none;
   background: #fff;
 }
 
 .modal button[type="submit"] {
-  background: #4f8cff;
+  background: var(--gradient-brand-90);
   color: #fff;
   border: none;
   padding: 0.7rem 1.5rem;
@@ -163,12 +163,12 @@ const crearProveedor = async () => {
 }
 
 .modal button[type="submit"]:hover {
-  background: #2563eb;
+  background: var(--color-brand-secondary);
 }
 
 .modal button[type="button"] {
-  background: #f3f4f6;
-  color: #333;
+  background: #FFF9E6;
+  color: var(--color-brand-secondary);
   border: none;
   padding: 0.7rem 1.5rem;
   border-radius: 8px;

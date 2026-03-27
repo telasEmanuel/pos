@@ -72,7 +72,13 @@ onMounted(() => {
         <p>Administrar cambios en los precios de productos.</p>
         <router-link to="/calculadora" class="btn">Entrar</router-link>
       </div>
-    </section>
+      <div class="card">
+        <span class="icon">🗂️</span>
+        <h3>Crear secciones</h3>
+        <p>Crear secciones para organizar las categorías.</p>
+        <router-link to="/secciones" class="btn">Entrar</router-link>
+      </div>
+    </section> 
     <footer>
       <small>&copy; 2026 Telas Emanuel · Telas Emanuel App</small>
     </footer>
@@ -157,7 +163,7 @@ header {
 
 .btn {
   margin-top: 12px;
-  background: #4f8cff;
+  background: var(--gradient-brand-90);
   color: #fff;
   padding: 10px 24px;
   border-radius: 8px;
@@ -171,7 +177,7 @@ header {
 }
 
 .btn:hover {
-  background: #2563eb;
+  background: var(--color-brand-secondary);
   transform: scale(1.05);
 }
 

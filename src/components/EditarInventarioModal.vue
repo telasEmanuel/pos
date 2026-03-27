@@ -230,7 +230,7 @@ const actualizarInventario = async () => {
 
 .modal h2 {
   margin-bottom: 1rem;
-  color: #2563eb;
+  color: var(--color-brand-primary);
   font-weight: 600;
   text-align: center;
   font-size: 1.15rem;
@@ -245,7 +245,7 @@ const actualizarInventario = async () => {
 
 .producto-info p {
   margin: 0;
-  color: #2563eb;
+  color: var(--color-brand-primary);
   font-weight: 500;
 }
 
@@ -286,7 +286,7 @@ const actualizarInventario = async () => {
 
 .form-group input:focus,
 .form-group select:focus {
-  border-color: #4f8cff;
+  border-color: var(--color-brand-primary);
   outline: none;
   background: #fff;
 }
@@ -325,18 +325,18 @@ const actualizarInventario = async () => {
 }
 
 .btn-primary {
-  background: #2563eb;
+  background: var(--gradient-brand-90);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--color-brand-secondary);
 }
 
 .btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: #FFF9E6;
+  color: var(--color-brand-secondary);
+  border: 1px solid var(--color-brand-primary);
 }
 
 .btn-secondary:hover:not(:disabled) {

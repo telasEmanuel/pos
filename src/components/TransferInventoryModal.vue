@@ -144,7 +144,7 @@ const closeModal = () => {
     <q-card style="min-height: 60vh; max-height: 90vh; display: flex; flex-direction: column;">
       <!-- Header -->
       <q-card-section class="bg-gradient text-white q-pa-md"
-        style="background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);">
+        style="background: var(--gradient-brand-135);">
         <div class="row items-center justify-between">
           <div>
             <h2 class="q-ma-none text-h5" style="font-weight: 800;">🚚 Transferencia de Inventario</h2>
@@ -160,7 +160,7 @@ const closeModal = () => {
           <!-- Productos a transferir -->
           <div v-if="productos.length" class="space-y-4">
             <div v-for="prod in productos" :key="prod.id" class="product-item"
-              style="background: #f8f9fa; border-left: 4px solid #d9a441; padding: 1rem; border-radius: 8px;">
+              style="background: #f8f9fa; border-left: 4px solid var(--color-brand-primary); padding: 1rem; border-radius: 8px;">
               <div class="row justify-between items-center q-mb-md">
                 <div>
                   <h4 class="q-ma-none text-weight-bold text-grey-9">{{ prod.nombre }}</h4>
@@ -237,7 +237,7 @@ const closeModal = () => {
 
 <style scoped>
 .bg-gradient {
-  background: linear-gradient(135deg, #d9a441 0%, #8b5e3c 100%);
+  background: var(--gradient-brand-135);
 }
 
 :deep(.space-y-4)>*+* {
@@ -247,13 +247,13 @@ const closeModal = () => {
 .rollo-detail {
   padding: 0.5rem 0.75rem;
   background: #fff8e6;
-  border-left: 3px solid #d9a441;
+  border-left: 3px solid var(--color-brand-primary);
   border-radius: 4px;
   margin-top: 0.5rem;
   font-size: 0.85rem;
 }
 
 .rollo-detail-text {
-  color: #8b5e3c;
+  color: var(--color-brand-secondary);
 }
 </style>

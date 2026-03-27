@@ -80,7 +80,7 @@ const limpiar = () => {
 
 .calculadora-container h2 {
   text-align: center;
-  color: #2563eb;
+  color: var(--color-brand-primary);
   margin-bottom: 1.5rem;
   font-weight: 600;
 }
@@ -113,10 +113,10 @@ const limpiar = () => {
 }
 
 .input-group input:focus {
-  border-color: #4f8cff;
+  border-color: var(--color-brand-primary);
   outline: none;
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(217, 164, 65, 0.1);
 }
 
 .button-group {
@@ -138,12 +138,12 @@ const limpiar = () => {
 }
 
 .btn-calcular {
-  background: #4f8cff;
+  background: var(--gradient-brand-90);
   color: #fff;
 }
 
 .btn-calcular:hover {
-  background: #2563eb;
+  background: var(--color-brand-secondary);
   transform: translateY(-2px);
 }
 
@@ -160,7 +160,7 @@ const limpiar = () => {
 .resultado {
   margin-top: 1.5rem;
   padding: 1rem;
-  background: linear-gradient(135deg, #10b981, #065f46);
+  background: var(--gradient-brand-135);
   border-radius: 12px;
   text-align: center;
   animation: fadeIn 0.3s;

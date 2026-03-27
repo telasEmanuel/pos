@@ -265,8 +265,8 @@ h2 {
 }
 
 .input-fecha:focus {
-  box-shadow: 0 0 0 2px #007bff44;
-  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(255, 213, 79, 0.27);
+  border-color: var(--color-brand-primary);
 }
 
 .input-estilizado {
@@ -280,13 +280,13 @@ h2 {
 }
 
 .input-estilizado:focus {
-  box-shadow: 0 0 0 2px #007bff44;
-  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(255, 213, 79, 0.27);
+  border-color: var(--color-brand-primary);
 }
 
 .btn {
   padding: 10px 20px;
-  background-color: #1a73e8;
+  background: var(--gradient-brand-90);
   color: white;
   border: none;
   border-radius: 999px;
@@ -296,7 +296,7 @@ h2 {
 }
 
 .btn:hover {
-  background-color: #1558d6;
+  background: var(--color-brand-secondary);
 }
 
 .btn-eliminar {

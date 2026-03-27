@@ -36,13 +36,13 @@
 }
 
 .breadcrumb-item {
-  color: #007bff;
+  color: var(--color-brand-primary);
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .breadcrumb-item:hover {
-  color: #0056b3;
+  color: var(--color-brand-secondary);
   text-decoration: underline;
 }
 

@@ -824,11 +824,11 @@ watch(
               <div v-if="prod.cantidadPedido > 0" class="selected-badge">✓ Seleccionado</div>
 
               <!-- Toggle Details -->
-              <div class="card-footer" v-if="prod.detalles && prod.detalles.length">
+              <!--<div class="card-footer" v-if="prod.detalles && prod.detalles.length">
                 <button class="btn-details" @click="prod.showDetails = !prod.showDetails">
                   {{ prod.showDetails ? 'Ocultar' : 'Ver' }} Detalles
                 </button>
-              </div>
+              </div>-->
 
               <!-- Action Buttons (Editar y Eliminar) -->
               <div class="card-actions" v-if="datos?.rol === 'visor'">
@@ -899,7 +899,7 @@ watch(
 }
 
 .valor-almacenado-card {
-  background: linear-gradient(135deg, #FFD54F 0%, #8B5E3C 100%);
+  background: var(--gradient-brand-135);
   border-radius: 20px;
   box-shadow: 0 10px 30px rgba(255, 213, 79, 0.3);
   padding: 2rem 3rem;
@@ -1001,7 +1001,7 @@ watch(
   left: 0;
   right: 0;
   height: 6px;
-  background: linear-gradient(135deg, #ffd54f 0%, #8b5e3c 100%);
+  background: var(--gradient-brand-135);
 }
 
 .card-header {
@@ -1120,7 +1120,7 @@ watch(
   height: 40px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #ffd54f 0%, #8b5e3c 100%);
+  background: var(--gradient-brand-135);
   color: white;
   font-size: 1.5rem;
   font-weight: bold;
@@ -1202,7 +1202,7 @@ watch(
 }
 
 .btn-editar {
-  background: linear-gradient(135deg, #ffd54f 0%, #8b5e3c 100%);
+  background: var(--gradient-brand-135);
   color: white;
   padding: 0.5rem 1rem;
   border: none;
@@ -1318,7 +1318,7 @@ watch(
 .handle-bar {
   width: 32px;
   height: 4px;
-  background: linear-gradient(90deg, #FFD54F 0%, #8B5E3C 100%);
+  background: var(--gradient-brand-90);
   border-radius: 2px;
 }
 
@@ -1334,7 +1334,7 @@ watch(
 }
 
 .edit-pill {
-  background: linear-gradient(90deg, #FFD54F 0%, #8B5E3C 100%);
+  background: var(--gradient-brand-90);
   color: white;
   padding: 4px 12px;
   border-radius: 999px;
@@ -1428,7 +1428,7 @@ watch(
 }
 
 .breadcrumb-item:hover {
-  color: #3b82f6;
+  color: var(--color-brand-primary);
 }
 
 .breadcrumb-separator {

@@ -289,7 +289,7 @@ h1 {
 }
 
 .btn-recargar {
-  background: #4f8cff;
+  background: var(--gradient-brand-90);
   color: white;
   border: none;
   padding: 0.7rem 1.5rem;
@@ -301,7 +301,7 @@ h1 {
 }
 
 .btn-recargar:hover {
-  background: #2563eb;
+  background: var(--color-brand-secondary);
   transform: translateY(-2px);
 }
 
@@ -335,7 +335,7 @@ h1 {
 
 .filtro-input:focus {
   outline: none;
-  border-color: #4f8cff;
+  border-color: var(--color-brand-primary);
   box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.1);
 }
 
@@ -394,7 +394,7 @@ h1 {
 
 .toggle-icon {
   font-size: 1.2rem;
-  color: #4f8cff;
+  color: var(--color-brand-primary);
   transition: transform 0.2s ease;
 }
 
@@ -437,7 +437,7 @@ h1 {
 
 .input-cantidad:focus {
   outline: none;
-  border-color: #4f8cff;
+  border-color: var(--color-brand-primary);
   box-shadow: 0 0 0 2px rgba(79, 140, 255, 0.1);
 }
 
@@ -516,7 +516,7 @@ h1 {
 }
 
 .btn-agregar-rollo {
-  background: #10b981;
+  background: var(--gradient-brand-90);
   color: white;
   border: none;
   padding: 0.7rem 1.5rem;
@@ -528,7 +528,7 @@ h1 {
 }
 
 .btn-agregar-rollo:hover {
-  background: #059669;
+  background: var(--color-brand-secondary);
   transform: translateY(-2px);
 }
 

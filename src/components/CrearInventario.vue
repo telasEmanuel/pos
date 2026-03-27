@@ -321,7 +321,7 @@ h2 {
 
 .modal h2 {
   margin-bottom: 1.2rem;
-  color: #2563eb;
+  color: var(--color-brand-primary);
   font-weight: 600;
   text-align: center;
 }
@@ -395,9 +395,9 @@ form>div {
   margin-top: 0.5rem;
   padding: 0.5rem;
   background: #ecfdf5;
-  border: 1px solid #10b981;
+  border: 1px solid var(--color-brand-primary);
   border-radius: 6px;
-  color: #065f46;
+  color: var(--color-brand-secondary);
   font-size: 0.875rem;
   display: flex;
   align-items: center;
@@ -405,7 +405,7 @@ form>div {
 }
 
 .check-icon {
-  color: #10b981;
+  color: var(--color-brand-primary);
   font-weight: bold;
 }
 
@@ -439,7 +439,7 @@ select {
 
 input:focus,
 select:focus {
-  border-color: #4f8cff;
+  border-color: var(--color-brand-primary);
   outline: none;
   background: #fff;
 }
@@ -456,7 +456,7 @@ select:focus {
 }
 
 button[type="submit"] {
-  background: #4f8cff;
+  background: var(--gradient-brand-90);
   color: #fff;
   border: none;
   padding: 0.7rem 1.5rem;
@@ -469,7 +469,7 @@ button[type="submit"] {
 }
 
 button[type="submit"]:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--color-brand-secondary);
 }
 
 button[type="submit"]:disabled {

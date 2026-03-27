@@ -75,9 +75,9 @@ const actualizarCategoria = async () => {
         </div>
 
         <div class="form-group">
-          <label for="descripcion">Descripción:</label>
+          <label for="descripcion">Ficha técnica:</label>
           <textarea id="descripcion" v-model="form.descripcion" :disabled="loading"
-            placeholder="Descripción de la categoría" rows="3"></textarea>
+            placeholder="Ficha técnica de la categoría" rows="3"></textarea>
         </div>
 
         <div v-if="error" class="error-message">
@@ -135,7 +135,7 @@ const actualizarCategoria = async () => {
 
 .modal h2 {
   margin-bottom: 1rem;
-  color: #2563eb;
+  color: var(--color-brand-primary);
   font-weight: 600;
   text-align: center;
   font-size: 1.15rem;
@@ -150,7 +150,7 @@ const actualizarCategoria = async () => {
 
 .categoria-info p {
   margin: 0;
-  color: #2563eb;
+  color: var(--color-brand-primary);
   font-weight: 500;
 }
 
@@ -180,7 +180,7 @@ const actualizarCategoria = async () => {
 
 .form-group input:focus,
 .form-group textarea:focus {
-  border-color: #4f8cff;
+  border-color: var(--color-brand-primary);
   outline: none;
   background: #fff;
 }
@@ -224,12 +224,12 @@ const actualizarCategoria = async () => {
 }
 
 .btn-primary {
-  background: #4f8cff;
+  background: var(--gradient-brand-90);
   color: #fff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--color-brand-secondary);
   transform: translateY(-2px);
 }
 
@@ -240,12 +240,12 @@ const actualizarCategoria = async () => {
 }
 
 .btn-secondary {
-  background: #f3f4f6;
-  color: #333;
+  background: #FFF9E6;
+  color: var(--color-brand-secondary);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #e5e7eb;
+  background: #FFE8B6;
   transform: translateY(-2px);
 }
 

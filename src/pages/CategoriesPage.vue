@@ -93,7 +93,7 @@ onMounted((): void => {
           <tr>
             <th>ID</th>
             <th>Nombre</th>
-            <th>Descripción</th>
+            <th>Ficha técnica</th>
             <th>Editar</th>
             <th>Eliminar</th>
           </tr>
@@ -102,7 +102,7 @@ onMounted((): void => {
           <tr v-for="categoria in categorias" :key="categoria.id">
             <td>{{ categoria.id }}</td>
             <td>{{ categoria.nombre }}</td>
-            <td>{{ categoria.descripcion || 'Sin descripción' }}</td>
+            <td>{{ categoria.descripcion || 'Sin ficha técnica  ' }}</td>
             <td><button @click="abrirEditModal(categoria)" class="btn-editar">Editar</button></td>
             <td><button @click="eliminarCategoria(categoria.id)" class="btn-eliminar">Eliminar</button></td>
           </tr>
@@ -157,23 +157,23 @@ button {
   font-size: 1rem;
   border: none;
   border-radius: 6px;
-  background-color: #007bff;
+  background: var(--gradient-brand-90);
   color: white;
   cursor: pointer;
   transition: background 0.2s ease;
 }
 
 button:hover {
-  background-color: #0056b3;
+  background: var(--color-brand-secondary);
 }
 
 .btn-editar {
-  background: #10b981;
+  background: var(--gradient-brand-90);
   margin-right: 0.5rem;
 }
 
 .btn-editar:hover {
-  background: #059669;
+  background: var(--color-brand-secondary);
 }
 
 .btn-eliminar {
@@ -185,13 +185,13 @@ button:hover {
 }
 
 #boton {
-  background: #4f8cff;
+  background: var(--gradient-brand-90);
   padding: 0.7rem 1.5rem;
   font-weight: 600;
   margin-bottom: 1rem;
 }
 
 #boton:hover {
-  background: #2563eb;
+  background: var(--color-brand-secondary);
 }
 </style>

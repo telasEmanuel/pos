@@ -172,7 +172,7 @@ h1 {
 }
 
 .btn-crear {
-  background: #4f8cff;
+  background: var(--gradient-brand-90);
   color: white;
   border: none;
   padding: 0.7rem 1.5rem;
@@ -185,9 +185,9 @@ h1 {
 }
 
 .btn-crear:hover {
-  background: #2563eb;
+  background: var(--color-brand-secondary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(79, 140, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(217, 164, 65, 0.3);
 }
 
 .loading {
@@ -300,12 +300,12 @@ h1 {
 }
 
 .btn-editar {
-  background: #10b981;
+  background: var(--gradient-brand-90);
   color: white;
 }
 
 .btn-editar:hover {
-  background: #059669;
+  background: var(--color-brand-secondary);
   transform: translateY(-2px);
 }
 

@@ -225,7 +225,7 @@ onMounted((): void => {
 
 .modal h2 {
   margin-bottom: 1rem;
-  color: #2563eb;
+  color: var(--color-brand-primary);
   font-weight: 600;
   text-align: center;
   font-size: 1.15rem;
@@ -264,7 +264,7 @@ onMounted((): void => {
 
 .modal input:focus,
 .modal select:focus {
-  border-color: #4f8cff;
+  border-color: var(--color-brand-primary);
   outline: none;
   background: #fff;
 }
@@ -342,14 +342,14 @@ onMounted((): void => {
 
 .form-field input:focus,
 .form-field select:focus {
-  border-color: #4f8cff;
+  border-color: var(--color-brand-primary);
   outline: none;
   background: #ffffff;
   box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.15);
 }
 
 .modal button {
-  background: #4f8cff;
+  background: var(--gradient-brand-90);
   color: #fff;
   border: none;
   padding: 0.5rem 1.1rem;
@@ -363,13 +363,13 @@ onMounted((): void => {
 }
 
 .modal button:hover {
-  background: #2563eb;
+  background: var(--color-brand-secondary);
   transform: translateY(-2px) scale(1.03);
 }
 
 .modal button:last-child {
-  background: #f3f4f6;
-  color: #333;
+  background: #FFF9E6;
+  color: var(--color-brand-secondary);
   margin-right: 0;
 }
 

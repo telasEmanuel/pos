@@ -742,13 +742,13 @@ onUnmounted(() => {
 
 .btn-complete,
 .btn-edit {
-  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  background: var(--gradient-brand-135);
   color: white;
 }
 
 .btn-edit:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+  box-shadow: 0 4px 12px rgba(217, 164, 65, 0.4);
 }
 
 .btn-cancel {

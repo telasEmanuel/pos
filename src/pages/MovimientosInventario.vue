@@ -149,7 +149,7 @@ h1 {
 }
 
 .btn-recargar {
-  background: #4f8cff;
+  background: var(--gradient-brand-90);
   color: white;
   border: none;
   padding: 0.7rem 1.5rem;
@@ -161,7 +161,7 @@ h1 {
 }
 
 .btn-recargar:hover {
-  background: #2563eb;
+  background: var(--color-brand-secondary);
   transform: translateY(-2px);
 }
 
@@ -210,7 +210,7 @@ h1 {
 .tipo-transferencia {
   display: inline-block;
   background: #e3f2fd;
-  color: #1976d2;
+  color: var(--color-brand-primary);
   padding: 0.4rem 0.8rem;
   border-radius: 20px;
   font-size: 0.85rem;

@@ -393,6 +393,12 @@ onMounted(async (): Promise<void> => {
 </template>
 
 <style scoped>
+h2, h3 {
+  color: #333;
+  font-size: 1.5rem;
+  margin: 0;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -429,7 +435,7 @@ onMounted(async (): Promise<void> => {
 
 .modal h2 {
   margin-bottom: 1rem;
-  color: #2563eb;
+  color: var(--color-brand-primary);
   font-weight: 600;
   text-align: center;
 }
@@ -472,7 +478,7 @@ select {
 
 input:focus,
 select:focus {
-  border-color: #4f8cff;
+  border-color: var(--color-brand-primary);
   outline: none;
   background: #fff;
 }
@@ -484,7 +490,7 @@ select:focus {
 }
 
 button[type="submit"] {
-  background: #4f8cff;
+  background: var(--gradient-brand-90);
   color: #fff;
   border: none;
   padding: 0.7rem 1.5rem;
@@ -497,12 +503,12 @@ button[type="submit"] {
 }
 
 button[type="submit"]:hover {
-  background: #2563eb;
+  background: var(--color-brand-secondary);
 }
 
 button[type="button"] {
-  background: #f3f4f6;
-  color: #333;
+  background: #FFF9E6;
+  color: var(--color-brand-secondary);
   border: none;
   padding: 0.7rem 1.5rem;
   border-radius: 8px;
@@ -583,9 +589,9 @@ button[type="button"]:hover {
   margin-top: 0.4rem;
   padding: 0.4rem 0.6rem;
   background: #ecfdf5;
-  border: 1px solid #10b981;
+  border: 1px solid var(--color-brand-primary);
   border-radius: 6px;
-  color: #065f46;
+  color: var(--color-brand-secondary);
   font-size: 0.85rem;
   display: flex;
   align-items: center;
@@ -593,7 +599,7 @@ button[type="button"]:hover {
 }
 
 .check-icon {
-  color: #10b981;
+  color: var(--color-brand-primary);
   font-weight: bold;
 }
 
@@ -623,9 +629,9 @@ button[type="button"]:hover {
 .add-btn {
   width: 100%;
   margin-top: 0.5rem;
-  background: #f0f7ff !important;
-  color: #2563eb !important;
-  border: 1px dashed #2563eb !important;
+  background: #FFF9E6 !important;
+  color: var(--color-brand-primary) !important;
+  border: 1px dashed var(--color-brand-primary) !important;
 }
 
 .detalle-item {

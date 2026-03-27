@@ -12,14 +12,20 @@
 // to match your app's branding.
 // Tip: Use the "Theme Builder" on Quasar's documentation website.
 
-$primary: #1976d2;
-$secondary: #26a69a;
-$accent: #9c27b0;
+$primary: #FFD54F;          // Logo Primary (Amarillo dorado)
+$secondary: #8B5E3C;        // Logo Secondary (Marrón)
+$accent: #DDC686;           // Complementario del logo
 
 $dark: #1d1d1d;
 $dark-page: #121212;
 
-$positive: #21ba45;
+$positive: #FFD54F;         // Logo Primary (green buttons now logo color)
 $negative: #c10015;
 $info: #31ccec;
 $warning: #f2c037;
+
+// Logo Brand Colors
+$logo-primary: #FFD54F;    // Amarillo dorado
+$logo-secondary: #8B5E3C;  // Marrón
+$logo-gradient: linear-gradient(135deg, $logo-primary 0%, $logo-secondary 100%);
+$logo-gradient-90: linear-gradient(90deg, $logo-primary 0%, $logo-secondary 100%);

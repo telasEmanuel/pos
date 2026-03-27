@@ -397,14 +397,22 @@ button {
   font-size: 1rem;
   border: none;
   border-radius: 6px;
-  background-color: #007bff;
+  background: var(--gradient-brand-90);
   color: white;
   cursor: pointer;
   transition: background 0.2s ease;
 }
 
 button:hover {
-  background-color: #0056b3;
+  background: var(--color-brand-secondary);
+}
+
+.btn-eliminar {
+  background: #ef4444;
+}
+
+.btn-eliminar:hover {
+  background: #dc2626;
 }
 
 /*button.limpiar {
