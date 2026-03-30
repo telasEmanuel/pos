@@ -41,7 +41,7 @@ const categorias = ref<Categoria[]>([]);
 const productos = ref<Producto[]>([]);
 const loading = ref(false);
 const authStore = useAuthStore();
-const datos = ref<{ email?: string } | null>(null);
+const datos = ref<{ rol?: string } | null>(null);
 
 const mostrarExistencias = async () => {
   try {
@@ -91,7 +91,7 @@ const formatCurrency = (val: number) => {
 };
 
 onMounted(() => {
-  datos.value = authStore.user as { email: string };
+  datos.value = authStore.user as { rol: string };
   void cargarCategorias();
   void mostrarExistencias();
 });
@@ -106,7 +106,7 @@ onMounted(() => {
     </nav>
 
     <!-- Valor Total Almacenado -->
-    <div class="valor-total-container" v-if="datos?.email === 'visor'">
+    <div class="valor-total-container" v-if="datos?.rol === 'visor'">
       <div class="valor-total-card">
         <div class="valor-content">
           <p class="valor-label">Valor Total Almacenado</p>

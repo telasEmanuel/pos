@@ -98,7 +98,7 @@ const showAllSelected = ref(false);
 const editOrderId = ref<number | null>(null);
 const esPrecioTap = ref(false);
 const enviandoPedido = ref(false);
-const datos = ref<{ email: string } | null>(null);
+const datos = ref<{ rol: string } | null>(null);
 
 const floatingPos = ref({ x: 0, y: 0 });
 const isDragging = ref(false);
@@ -394,7 +394,7 @@ watch(productos, () => guardarTemporal(), { deep: true });
 watch(nombreCliente, () => guardarTemporal());
 
 onMounted(() => {
-  datos.value = authStore.user as { email: string };
+  datos.value = authStore.user as { rol: string };
   void cargarCategorias();
   void mostrarExistencias();
 });
@@ -409,7 +409,7 @@ onMounted(() => {
     </nav>
 
     <!-- Valor Total Almacenado -->
-    <div v-if="datos?.email === 'visor'" class="valor-total-container">
+    <div v-if="datos?.rol === 'visor'" class="valor-total-container">
       <div class="valor-total-card">
         <div class="valor-content">
           <p class="valor-label">Valor Total Almacenado</p>

@@ -411,7 +411,7 @@ watch(() => props.categoryId, (newVal) => {
               </div>
 
               <!-- Action Buttons (Editar y Eliminar) -->
-              <div class="card-actions" v-if="datos?.rol === 'visor'">
+              <div class="card-actions" v-if="datos?.rol === 'visor' || datos?.rol === 'asistente'">
                 <button @click="abrirEditModal(prod)" class="btn-editar">Editar</button>
                 <button @click="eliminarInventario(prod.id)" class="btn-eliminar">Eliminar</button>
               </div>
