@@ -27,7 +27,7 @@ export function useAppUpdate() {
           try {
             await registration.update();
             console.log('✅ Service worker actualizado');
-          } catch (_err) {
+          } catch {
             console.log('⚠️ No se pudo actualizar SW');
           }
 
