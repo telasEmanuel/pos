@@ -117,7 +117,7 @@ onMounted(() => {
 
     <!-- Mostrar secciones con categorías agrupadas -->
     <div v-for="seccion in secciones" :key="seccion.id" class="seccion-container q-mb-lg">
-      <h2 class="seccion-title">{{ seccion.nombre }}</h2>
+      <h2 class="seccion-title">Departamento {{ seccion.nombre }}</h2>
       <section class="actions">
         <router-link v-for="cat in seccion.categorias" :key="cat.id"
           :to="{ name: 'ConfiguracionPorCategoria', params: { categoryId: cat.id }, query: { technicalCard: cat.descripcion } }"
