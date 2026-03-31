@@ -27,7 +27,7 @@ export function useAppUpdate() {
           try {
             await registration.update();
             console.log('✅ Service worker actualizado');
-          } catch (err) {
+          } catch (_err) {
             console.log('⚠️ No se pudo actualizar SW');
           }
 
@@ -137,14 +137,14 @@ export function useAppUpdate() {
       // Chequeos más frecuentes: cada 1 minuto
       const checkInterval = 1 * 60 * 1000;
       let intervalId: ReturnType<typeof setInterval> | null = setInterval(() => {
-        checkForUpdates().catch((err) => console.error('Error en chequeo periódico:', err));
+        void checkForUpdates().catch((err) => console.error('Error en chequeo periódico:', err));
       }, checkInterval);
 
       // Escucha cuando el usuario vuelve a la app (visibilidad)
-      const handleVisibilityChange = async () => {
+      const handleVisibilityChange = () => {
         if (!document.hidden) {
           console.log('📱 App recuperó el foco - verificando actualizaciones');
-          await checkForUpdates();
+          void checkForUpdates().catch((err) => console.error('Error en visibilitychange:', err));
         }
       };
 
