@@ -11,10 +11,11 @@
     "test": "echo \"No test specified\" && exit 0",
     "dev": "quasar dev",
     "dev:electron": "quasar dev -m electron",
-    "build": "quasar build",
-    "build:pwa": "quasar build -m pwa",
-    "build:electron": "quasar build -m electron",
-    "postinstall": "quasar prepare"
+    "build": "quasar build && node update-version.js",
+    "build:pwa": "quasar build -m pwa && node update-version.js",
+    "build:electron": "quasar build -m electron && node update-version.js",
+    "postinstall": "quasar prepare",
+    "update-version": "node update-version.js"
   },
   "dependencies": {
     "@quasar/extras": "^1.16.4",

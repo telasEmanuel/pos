@@ -28,10 +28,11 @@
 <script lang="ts">
 import { LoginPage } from "./pages/index.js";
 import { useAppUpdate } from "./composables/useAppUpdate";
+import { onMounted } from 'vue';
 
 export default {
   setup() {
-    const { hasUpdate, reloadApp: originalReloadApp } = useAppUpdate()
+    const { hasUpdate, checkForUpdates, reloadApp: originalReloadApp } = useAppUpdate()
 
     // Wrapper para manejar el clic de actualizar
     const handleReloadApp = async () => {
@@ -39,7 +40,11 @@ export default {
       try {
         await originalReloadApp()
       } catch (error) {
-        console.error('Error en reloadApp:', error)
+        console.error('❌ Error en reloadApp:', error)
+        // Forzar recarga aunque haya error
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       }
     }
 
@@ -48,6 +53,12 @@ export default {
       console.log('❌ Usuario cerró el banner');
       hasUpdate.value = false
     }
+
+    // Llamar a checkForUpdates cuando el componente se monta
+    onMounted(async () => {
+      console.log('🚀 App montada - ejecutando checkForUpdates()');
+      await checkForUpdates();
+    })
 
     return {
       hasUpdate,

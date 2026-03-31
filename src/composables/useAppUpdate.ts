@@ -14,7 +14,7 @@ export function useAppUpdate() {
   const checkForUpdates = async () => {
     try {
       console.log('🔍 Verificando actualizaciones...');
-      // Agrrega timestamp al URL para evitar cache del navegador
+      // Agrega timestamp al URL para evitar cache del navegador
       const response = await axios.get<VersionData>(`/version.json?t=${Date.now()}`, {
         timeout: 5000,
         headers: {
@@ -23,15 +23,25 @@ export function useAppUpdate() {
       });
 
       const serverVersion = response.data.version;
-      const localVersion = localStorage.getItem('appVersion') || '0';
+      const localVersion = localStorage.getItem('appVersion');
 
       console.log(`📱 PWA Version Check: Local=${localVersion}, Server=${serverVersion}`);
 
+      // Primera visita: inicializar con la versión del servidor
+      if (!localVersion) {
+        console.log('📦 Primera vez: inicializando versión');
+        localStorage.setItem('appVersion', serverVersion);
+        return;
+      }
+
+      // Si hay una nueva versión diferente
       if (serverVersion !== localVersion) {
         console.log('🆕 Nueva versión disponible');
         hasUpdate.value = true;
         updateAvailable.value = true;
-        // NO actualizamos localStorage aquí, solo cuando el usuario hace clic
+      } else {
+        console.log('✅ Usando la última versión');
+        hasUpdate.value = false;
       }
     } catch (error) {
       console.error('⚠️ Error checking for updates:', error);
