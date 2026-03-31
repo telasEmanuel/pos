@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import axios from 'axios';
 
 interface VersionData {
@@ -10,6 +10,51 @@ interface VersionData {
 export function useAppUpdate() {
   const hasUpdate = ref(false);
   const updateAvailable = ref(false);
+
+  /**
+   * Limpia agresivamente todos los service workers y caches obsoletos
+   * Necesario para cuando la app fue instalada con versión anterior
+   */
+  const cleanupServiceWorkers = async () => {
+    try {
+      // Limpia TODOS los service workers registrados
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        console.log(`🔧 Encontrados ${registrations.length} service workers`);
+
+        for (const registration of registrations) {
+          // Intenta actualizar primero
+          try {
+            await registration.update();
+            console.log('✅ Service worker actualizado');
+          } catch (err) {
+            console.log('⚠️ No se pudo actualizar SW');
+          }
+
+          // Luego desregistra versiones obsoletas
+          const isActive = registration === (await navigator.serviceWorker.ready);
+          if (!isActive) {
+            await registration.unregister();
+            console.log('🗑️ Service worker obsoleto desregistrado');
+          }
+        }
+      }
+
+      // Limpia TODOS los caches
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        console.log(`🗑️ Limpiando ${cacheNames.length} caches...`);
+        await Promise.all(
+          cacheNames.map(async (name) => {
+            await caches.delete(name);
+            console.log(`  ✅ Cache "${name}" eliminado`);
+          }),
+        );
+      }
+    } catch (error) {
+      console.error('⚠️ Error limpiando service workers:', error);
+    }
+  };
 
   const checkForUpdates = async () => {
     try {
@@ -31,6 +76,8 @@ export function useAppUpdate() {
       if (!localVersion) {
         console.log('📦 Primera vez: inicializando versión');
         localStorage.setItem('appVersion', serverVersion);
+        // Limpia SWs obsoletos de instalación anterior
+        await cleanupServiceWorkers();
         return;
       }
 
@@ -66,21 +113,8 @@ export function useAppUpdate() {
       console.error('Error actualizando versión:', err);
     }
 
-    // Limpia caches de la PWA
-    if ('caches' in window) {
-      try {
-        console.log('🗑️ Limpiando caches...');
-        const names = await caches.keys();
-        await Promise.all(
-          names.map(async (name) => {
-            await caches.delete(name);
-            console.log(`✅ Cache "${name}" eliminado`);
-          }),
-        );
-      } catch (err) {
-        console.error('Error limpiando caches:', err);
-      }
-    }
+    // Limpia agresivamente todo
+    await cleanupServiceWorkers();
 
     // Limpia sessionStorage pero mantiene localStorage
     sessionStorage.clear();
@@ -92,22 +126,39 @@ export function useAppUpdate() {
     }, 1000);
   };
 
-  // Inicia el chequeo de actualizaciones en el next tick
+  // Inicia el chequeo de actualizaciones
   if (typeof window !== 'undefined') {
-    console.log('⏱️ Inicializando verificador de actualizaciones PWA');
-    // Primer chequeo inmediato
-    checkForUpdates().catch((err) => console.error('Error en chequeo inicial:', err));
+    onMounted(async () => {
+      console.log('🚀 App montada - ejecutando chequeo de actualizaciones');
 
-    // Chequeos periódicos cada 5 minutos
-    const checkInterval = 5 * 60 * 1000;
-    const intervalId = setInterval(() => {
-      checkForUpdates().catch((err) => console.error('Error en chequeo periódico:', err));
-    }, checkInterval);
+      // Primer chequeo inmediato
+      await checkForUpdates();
 
-    // Limpia el intervalo si es necesario (aunque normalmente corre indefinidamente)
-    if (typeof globalThis !== 'undefined') {
-      (globalThis as unknown as Record<string, unknown>).__updateCheckIntervalId = intervalId;
-    }
+      // Chequeos más frecuentes: cada 1 minuto
+      const checkInterval = 1 * 60 * 1000;
+      let intervalId: ReturnType<typeof setInterval> | null = setInterval(() => {
+        checkForUpdates().catch((err) => console.error('Error en chequeo periódico:', err));
+      }, checkInterval);
+
+      // Escucha cuando el usuario vuelve a la app (visibilidad)
+      const handleVisibilityChange = async () => {
+        if (!document.hidden) {
+          console.log('📱 App recuperó el foco - verificando actualizaciones');
+          await checkForUpdates();
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      // Limpieza al desmontar
+      onBeforeUnmount(() => {
+        if (intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      });
+    });
   }
 
   return {
