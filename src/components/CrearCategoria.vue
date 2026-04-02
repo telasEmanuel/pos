@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import api from '../api/axios'
 
 const props = defineProps({
@@ -9,6 +9,8 @@ const emit = defineEmits(['close', 'categoriaCreada'])
 
 const nombre = ref('')
 const descripcion = ref('')
+const seccion_id = ref<number | ''>('')
+const secciones = ref<Array<{ id: number; nombre: string; descripcion: string; orden: number }>>([])
 const error = ref<string | null>(null)
 
 watch(() => props.visible, (newVal) => {
@@ -18,6 +20,7 @@ watch(() => props.visible, (newVal) => {
 const resetForm = () => {
   nombre.value = ''
   descripcion.value = ''
+  seccion_id.value = ''
   error.value = null
 }
 
@@ -25,11 +28,22 @@ const cerrarModal = () => {
   emit('close')
 }
 
+const fetchSecciones = async () => {
+  try {
+    const response = await api.get('secciones')
+    secciones.value = response.data || []
+  } catch (err) {
+    error.value = 'Error al cargar las secciones'
+    console.error(err)
+  }
+}
+
 const crearCategoria = async () => {
   try {
     const response = await api.post('categorias', {
       nombre: nombre.value,
-      descripcion: descripcion.value
+      descripcion: descripcion.value,
+      seccion_id: seccion_id.value
     })
     emit('categoriaCreada', response.data)
     cerrarModal()
@@ -38,6 +52,10 @@ const crearCategoria = async () => {
     console.error(err)
   }
 }
+
+onMounted(async () => {
+  await fetchSecciones()
+})
 </script>
 
 <template>
@@ -52,6 +70,15 @@ const crearCategoria = async () => {
         <div>
           <label>Ficha técnica: (opcional)</label>
           <input v-model="descripcion" />
+        </div>
+        <div>
+          <label>Sección:</label>
+          <select v-model.number="seccion_id" required>
+            <option value="" disabled>Selecciona una sección</option>
+            <option v-for="seccion in secciones" :key="seccion.id" :value="seccion.id">
+              {{ seccion.nombre }}
+            </option>
+          </select>
         </div>
         <button type="submit">Crear</button>
         <button type="button" @click="cerrarModal">Cancelar</button>
@@ -125,7 +152,8 @@ h2 {
   font-weight: 500;
 }
 
-.modal input {
+.modal input,
+.modal select {
   width: 100%;
   padding: 0.55rem 0.7rem;
   border: 1px solid #d1d5db;
@@ -135,7 +163,8 @@ h2 {
   transition: border 0.2s;
 }
 
-.modal input:focus {
+.modal input:focus,
+.modal select:focus {
   border-color: var(--color-brand-primary);
   outline: none;
   background: #fff;

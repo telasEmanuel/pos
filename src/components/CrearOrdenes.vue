@@ -261,29 +261,17 @@ const generarInputsRollos = (index: number): void => {
 
 const fetchProductos = async (): Promise<void> => {
   try {
-    const response = await api.get('inventarios')
-    inventarios.value = response.data
+    const response = await api.get('productos/all')
 
-    // Extraer productos únicos para el select
-    const uniqueProds: Array<{ id: number; nombre: string; descripcion?: string; precio: number }> = []
-    const seenIds = new Set<number>()
-    response.data.forEach((item: { producto?: { id: number; nombre: string; descripcion?: string; precio?: number } }): void => {
-      if (item.producto && !seenIds.has(item.producto.id)) {
-        const prod: { id: number; nombre: string; descripcion?: string; precio: number } = {
-          id: item.producto.id,
-          nombre: item.producto.nombre,
-          precio: item.producto.precio ?? 0
-        }
-        if (item.producto.descripcion !== undefined) {
-          prod.descripcion = item.producto.descripcion
-        }
-        uniqueProds.push(prod)
-        seenIds.add(item.producto.id)
-      }
-    })
-    productos.value = uniqueProds
+    // Mapear respuesta al formato esperado
+    productos.value = response.data.map((item: { id: number; nombre: string; descripcion?: string; precio: string | number;[key: string]: unknown }) => ({
+      id: item.id,
+      nombre: item.nombre,
+      descripcion: item.descripcion || '',
+      precio: typeof item.precio === 'string' ? parseFloat(item.precio) : item.precio
+    }))
   } catch (err) {
-    error.value = 'Error al cargar inventarios'
+    error.value = 'Error al cargar productos'
     console.error(err)
   }
 }
