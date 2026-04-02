@@ -278,6 +278,10 @@ const recargarDatos = async () => {
   await cargarProductos()
 }
 
+const cargarInventario = () => {
+  window.location.reload();
+}
+
 onMounted(() => {
   datos.value = authStore.user;
   if (props.categoryId) {
@@ -327,6 +331,9 @@ watch(() => props.categoryId, (newVal) => {
       <h1 class="main-title">Productos</h1>
       <div v-if="loading">Cargando productos...</div>
       <div v-else>
+        <q-btn flat round dense icon="refresh" @click="cargarInventario" class="q-ml-md" :loading="loading">
+          <q-tooltip>Actualizar</q-tooltip>
+        </q-btn>
         <section v-if="productosFiltrados().length" class="actions">
           <div v-for="prod in productosFiltrados()" :key="prod.id" class="card">
             <div class="card-header">

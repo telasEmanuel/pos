@@ -1,28 +1,31 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import api from '../api/axios'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
-  categoria: { type: Object as () => { id: number; nombre: string; descripcion?: string } | null, required: false }
+  categoria: { type: Object as () => { id: number; nombre: string; descripcion?: string; seccion_id?: number } | null, required: false }
 })
 
 const emit = defineEmits(['close', 'updated'])
 
 const form = ref({
   nombre: '',
-  descripcion: ''
+  descripcion: '',
+  seccion_id: 0
 })
 
 const loading = ref(false)
 const error = ref('')
+const secciones = ref<Array<{ id: number; nombre: string }>>([])
 
 // Watch para llenar el formulario cuando se selecciona una categoría
 watch(() => props.categoria, (newCategoria) => {
   if (newCategoria) {
     form.value = {
       nombre: newCategoria.nombre || '',
-      descripcion: newCategoria.descripcion || ''
+      descripcion: newCategoria.descripcion || '',
+      seccion_id: newCategoria.seccion_id || 0
     }
   }
 }, { immediate: true })
@@ -44,7 +47,8 @@ const actualizarCategoria = async () => {
   try {
     await api.put(`categorias/${props.categoria.id}`, {
       nombre: form.value.nombre,
-      descripcion: form.value.descripcion
+      descripcion: form.value.descripcion,
+      seccion_id: form.value.seccion_id
     })
 
     emit('updated')
@@ -56,6 +60,15 @@ const actualizarCategoria = async () => {
     loading.value = false
   }
 }
+
+onMounted(async () => {
+  try {
+    const res = await api.get('secciones')
+    secciones.value = res.data || []
+  } catch (err) {
+    console.error('Error cargando secciones:', err)
+  }
+})
 </script>
 
 <template>
@@ -78,6 +91,16 @@ const actualizarCategoria = async () => {
           <label for="descripcion">Ficha técnica:</label>
           <textarea id="descripcion" v-model="form.descripcion" :disabled="loading"
             placeholder="Ficha técnica de la categoría" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="seccion">Sección:</label>
+          <select id="seccion" v-model.number="form.seccion_id" :disabled="loading">
+            <option :value="0" disabled>Selecciona una sección</option>
+            <option v-for="seccion in secciones" :key="seccion.id" :value="seccion.id">
+              {{ seccion.nombre }}
+            </option>
+          </select>
         </div>
 
         <div v-if="error" class="error-message">
@@ -167,7 +190,8 @@ const actualizarCategoria = async () => {
 }
 
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+.form-group select {
   width: 100%;
   padding: 0.45rem 0.6rem;
   border: 1px solid #d1d5db;
@@ -179,14 +203,16 @@ const actualizarCategoria = async () => {
 }
 
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-group select:focus {
   border-color: var(--color-brand-primary);
   outline: none;
   background: #fff;
 }
 
 .form-group input:disabled,
-.form-group textarea:disabled {
+.form-group textarea:disabled,
+.form-group select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

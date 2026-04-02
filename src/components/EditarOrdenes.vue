@@ -10,7 +10,9 @@ const props = defineProps({
 const emit = defineEmits(['close', 'edited']);
 
 const estado = ref('pendiente');
-const detalles = ref<Array<{ id?: number; producto_id: number | null; producto_nombre?: string; cantidad: number; rollos: number; precio_unitario: number; bodega?: number }>>([])
+const detalles = ref<Array<{ id?: number; producto_id: number | null; producto_nombre?: string; cantidad: number; rollos: number; precio_unitario: number; bodega: number | null; metros_por_rollo: number[]; metros_guardados: number[]; tipo: string; guardado: boolean; medida_ind?: string; medida_gru?: string }>>([])
+
+
 const proveedor_id = ref<number | null>(null);
 const filtros = ref<Array<{ id: number; nombre: string }>>([])
 
@@ -22,34 +24,109 @@ const productoFiltrado = async (): Promise<void> => {
   console.log(response.data)
 }
 
+const cargarOrdenConProductos = async (nuevaOrden: Record<string, unknown>): Promise<void> => {
+  if (!nuevaOrden || !(nuevaOrden as { id?: number }).id) return;
+
+  estado.value = (nuevaOrden as { estado?: string }).estado || 'pendiente';
+  proveedor_id.value = (nuevaOrden as { proveedor_id?: number }).proveedor_id || null;
+
+  try {
+    const res = await api.get(`ordenes/${(nuevaOrden as { id?: number }).id}`);
+
+    // Intentar cargar metadata de rollos desde sessionStorage
+    let rollosMetadata: Record<string, unknown> = {};
+    const metadataStr = sessionStorage.getItem(`orden_${(nuevaOrden as { id?: number }).id}_rollos`);
+    if (metadataStr) {
+      try {
+        rollosMetadata = JSON.parse(metadataStr);
+      } catch (e) {
+        console.warn('No se pudo parsear metadata de rollos', e);
+      }
+    }
+
+    // Cargar inventarios para buscar metros editados guardados
+    let inventariosConDetalles: Array<{ id: number; producto_id: number; bodega_id: number; medida_ind?: string; medida_gru?: string; detalles?: Array<{ cantidad: number }> }> = [];
+    try {
+      const invRes = await api.get('inventarios');
+      inventariosConDetalles = invRes.data || [];
+    } catch (e) {
+      console.warn('No se pudo cargar inventarios para verificar detalles guardados', e);
+    }
+
+    detalles.value = (res.data.detalles || []).map((d: { id?: number; producto_id: number; cantidad: number; rollos: number; precio_unitario: number }) => {
+      const producto = filtros.value.find(p => p.id === d.producto_id);
+
+      // Obtener metros del metadata de rollos si existen
+      let metros: number[] = [];
+      if ((rollosMetadata as { rollos?: Array<{ producto_id: number; metros: number[] }> }).rollos) {
+        const metros_info = (rollosMetadata as { rollos?: Array<{ producto_id: number; metros: number[] }> }).rollos!.find((r: { producto_id: number }) => r.producto_id === d.producto_id);
+        if (metros_info) {
+          metros = (metros_info as { metros: number[] }).metros || [];
+        }
+      }
+
+      // Si no hay metros pero tiene rollos, inicializar array con ceros
+      if (metros.length === 0 && d.rollos && d.rollos > 0) {
+        metros = new Array(d.rollos).fill(0);
+      }
+
+      // Inicializar metros_guardados como ceros
+      const metrosGuardados: number[] = new Array(metros.length).fill(0);
+
+      // Si es tipo rollos, buscar en inventariodetalle cuántos metros ya fueron guardados
+      if ((d as { tipo?: string }).tipo === 'rollos' && metros.length > 0) {
+        // Buscar inventario para este producto en cualquier bodega
+        const inventariosDelProducto = inventariosConDetalles.filter(inv => inv.producto_id === d.producto_id);
+
+        if (inventariosDelProducto.length > 0) {
+          // Sumar todos los detalles guardados de este producto en todas las bodegas
+          const metrosGuardadosPorRollo = inventariosDelProducto.flatMap(inv => inv.detalles || []);
+          console.log(`📊 Producto ${d.producto_id}: encontrados ${metrosGuardadosPorRollo.length} rollos guardados`);
+
+          // Asignar los metros guardados a cada posición
+          for (let i = 0; i < metrosGuardadosPorRollo.length && i < metrosGuardados.length; i++) {
+            const detalle = metrosGuardadosPorRollo[i];
+            if (detalle) {
+              const cantidad = detalle.cantidad;
+              metrosGuardados[i] = typeof cantidad === 'number' ? cantidad : Number(cantidad);
+            }
+          }
+        }
+      }
+
+      return {
+        id: d.id,
+        producto_id: d.producto_id,
+        producto_nombre: producto ? producto.nombre : `Producto #${d.producto_id}`,
+        cantidad: d.cantidad,
+        rollos: d.rollos,
+        precio_unitario: d.precio_unitario,
+        bodega: (d as { bodega_id?: number }).bodega_id || null,
+        metros_por_rollo: metros,
+        metros_guardados: metrosGuardados,
+        tipo: (d as { tipo?: string }).tipo || 'estandar',
+        guardado: (d as { guardado?: boolean }).guardado === true || false,
+        medida_ind: inventariosConDetalles.find(inv => inv.producto_id === d.producto_id)?.medida_ind || '',
+        medida_gru: inventariosConDetalles.find(inv => inv.producto_id === d.producto_id)?.medida_gru || ''
+      };
+    });
+    loading.value = true;
+  } catch (err) {
+    console.error('Error al cargar detalles de la orden', err);
+    detalles.value = [];
+  }
+};
+
 watch(
   () => props.orden,
   async (nuevaOrden): Promise<void> => {
-    if (nuevaOrden && (nuevaOrden as { id?: number }).id) {
-      estado.value = (nuevaOrden as { estado?: string }).estado || 'pendiente';
-      proveedor_id.value = (nuevaOrden as { proveedor_id?: number }).proveedor_id || null;
-
-      try {
-        const res = await api.get(`ordenes/${(nuevaOrden as { id?: number }).id}`);
-        detalles.value = (res.data.detalles || []).map((d: { id?: number; producto_id: number; cantidad: number; rollos: number; precio_unitario: number; medida_ind?: string; medida_gru?: string }) => {
-          const producto = filtros.value.find(p => p.id === d.producto_id);
-          return {
-            id: d.id,
-            producto_id: d.producto_id,
-            producto_nombre: producto ? producto.nombre : 'Producto no encontrado',
-            cantidad: d.cantidad,
-            rollos: d.rollos,
-            precio_unitario: d.precio_unitario,
-            /*medida_ind: d.medida_ind || '',
-            medida_gru: d.medida_gru || ''*/
-          };
-        });
-        loading.value = true;
-      } catch (err) {
-        console.error('Error al cargar detalles de la orden', err);
-        detalles.value = [];
-      }
+    if (!nuevaOrden) return;
+    // Esperar a que filtros esté cargado ANTES de procesar la orden
+    if (filtros.value.length === 0) {
+      // Si filtros no está cargado, esperar a que se cargue primero
+      return;
     }
+    await cargarOrdenConProductos(nuevaOrden as Record<string, unknown>);
   },
   { immediate: true }
 );
@@ -59,7 +136,20 @@ function agregarDetalle(): void {
     alert("Acción denegada, la orden ya fue recibida.");
     return;
   }
-  detalles.value.push({ producto_id: null, cantidad: 1, rollos: 1, precio_unitario: 0 });
+  detalles.value.push({
+    producto_id: null,
+    producto_nombre: '',
+    cantidad: 1,
+    rollos: 1,
+    precio_unitario: 0,
+    bodega: null,
+    metros_por_rollo: [],
+    metros_guardados: [],
+    tipo: 'estandar',
+    guardado: false,
+    medida_ind: '',
+    medida_gru: ''
+  });
 }
 
 function eliminarDetalle(index: number): void {
@@ -72,36 +162,141 @@ function eliminarDetalle(index: number): void {
 
 const actualizarOrden = async (): Promise<void> => {
   try {
-    // 1. Validar que tengamos al menos un detalle y que no esté marcado como recibido
     if (detalles.value.length === 0) {
       alert("La orden debe tener al menos un producto");
       return;
-    } /*else if (estado.value === 'recibido') {
-      alert("Acción denegada, la orden ya fue recibida.");
-      return;
-    }*/
+    }
 
-    // 2. Buscar la bodega. Si el estado es recibido, necesitamos una bodega válida.
-    // Buscamos en el primer detalle que tenga el campo 'bodega' lleno.
     const primeraBodega = detalles.value.find(d => d.bodega)?.bodega;
+
+    // Preparar detalles para guardar
+    const detallesParaGuardar = detalles.value.map(d => ({
+      producto_id: Number(d.producto_id),
+      cantidad: Number(d.cantidad),
+      rollos: Number(d.rollos),
+      precio_unitario: Number(d.precio_unitario),
+      tipo: d.tipo || 'estandar',
+      metros_por_rollo: d.metros_por_rollo && d.metros_por_rollo.length > 0
+        ? d.metros_por_rollo.filter((m: number) => m > 0)  // ← Solo metros > 0
+        : [],
+      guardado: d.guardado || false
+    }));
 
     const payload = {
       proveedor_id: Number(proveedor_id.value),
       estado: estado.value,
-      // Aseguramos que bodega_id sea un número o null, nunca NaN
       bodega_id: primeraBodega ? Number(primeraBodega) : null,
-      detalles: detalles.value.map(d => ({
-        producto_id: Number(d.producto_id),
-        cantidad: Number(d.cantidad),
-        rollos: Number(d.rollos),
-        precio_unitario: Number(d.precio_unitario)
-      }))
+      detalles: detallesParaGuardar
     };
 
-    console.log("Enviando payload:", payload); // Revisa esto en la consola F12
+    console.log("Enviando payload:", payload);
 
     if (!(props.orden as { id?: number })?.id) throw new Error('Orden no válida');
-    await api.put(`ordenes/${(props.orden as { id?: number }).id}`, payload);
+    const ordenResponse = await api.put(`ordenes/${(props.orden as { id?: number }).id}`, payload);
+    console.log("Orden actualizada:", ordenResponse.data);
+
+    // Si se está marcando como recibido y hay bodega, guardar metros en InventarioDetalle
+    if (estado.value === 'recibido' && primeraBodega) {
+      console.log("📦 Procesando inventario para estado 'recibido'...");
+
+      // Primero, cargar inventarios para mapear producto_id → inventario_id
+      let inventariosDisponibles: Array<{ id: number; producto_id: number; bodega_id: number }> = [];
+      try {
+        const invResponse = await api.get('inventarios');
+        inventariosDisponibles = invResponse.data || [];
+        console.log(`📋 Inventarios cargados: ${inventariosDisponibles.length} registros`);
+      } catch (e) {
+        console.warn('⚠️ No se pudo cargar inventarios:', e);
+      }
+
+      for (const detalle of detalles.value) {
+        // Buscar el inventario_id para este producto y bodega
+        const inventarioMatch = inventariosDisponibles.find(
+          inv => inv.producto_id === detalle.producto_id && inv.bodega_id === primeraBodega
+        );
+
+        if (!inventarioMatch) {
+          console.warn(`❌ No existe inventario para producto ${detalle.producto_id} en bodega ${primeraBodega}`);
+          continue;
+        }
+
+        const inventarioId = inventarioMatch.id;
+        console.log(`✓ Encontrado inventario_id: ${inventarioId} para producto ${detalle.producto_id}`);
+
+        // Caso 1: Producto estándar - guardar cantidad total si es > 0
+        if (detalle.tipo === 'estandar' && detalle.cantidad && Number(detalle.cantidad) > 0) {
+          // Verificar si ya está guardado
+          if (detalle.metros_guardados.length === 0 || (detalle.metros_guardados[0] || 0) === 0) {
+            try {
+              console.log(`📊 Guardando producto estándar ${detalle.producto_id}: ${detalle.cantidad}`);
+              await api.post('inventarios/detalles', {
+                inventario_id: inventarioId,
+                cantidad: Number(detalle.cantidad),
+                estado: 'DISPONIBLE'
+              });
+              // Marcar como guardado
+              detalle.metros_guardados = [Number(detalle.cantidad)];
+              console.log(`✅ Guardado: Producto ${detalle.producto_id}`);
+            } catch (e) {
+              console.warn(`❌ No se pudo guardar detalle de inventario para producto ${detalle.producto_id}:`, e);
+            }
+          }
+        }
+
+        // Caso 2: Producto tipo rollos - guardar solo metros > 0 y que no estén ya guardados
+        if (detalle.tipo === 'rollos' && detalle.metros_por_rollo && detalle.metros_por_rollo.length > 0) {
+          console.log(`🎯 Procesando ${detalle.metros_por_rollo.length} rollos para producto ${detalle.producto_id}`);
+          for (let i = 0; i < detalle.metros_por_rollo.length; i++) {
+            const metros = detalle.metros_por_rollo[i] ?? 0;
+            const metrosYaGuardados = detalle.metros_guardados[i] ?? 0;
+
+            console.log(`  Rollo ${i + 1}: ${metros}m (guardado: ${metrosYaGuardados}m)`);
+
+            // Solo guardar si: metros > 0 AND no estaba guardado antes (o estaba en 0)
+            if (metros > 0 && metrosYaGuardados === 0) {
+              try {
+                console.log(`  📌 Guardando rollo ${i + 1} con ${metros}m...`);
+                const detalleResponse = await api.post('inventarios/detalles', {
+                  inventario_id: inventarioId,
+                  cantidad: metros,
+                  estado: 'DISPONIBLE'
+                });
+                console.log(`  ✅ Rollo ${i + 1} guardado:`, detalleResponse.data);
+                // Marcar este rollo como guardado
+                if (detalle.metros_guardados.length <= i) {
+                  detalle.metros_guardados.push(metros);
+                } else {
+                  detalle.metros_guardados[i] = metros;
+                }
+              } catch (e) {
+                console.warn(`  ❌ No se pudo guardar rollo ${i + 1} para producto ${detalle.producto_id}:`, e);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Guardar metros en sessionStorage para persistencia
+    if (estado.value === 'recibido' && (props.orden as { id?: number })?.id) {
+      const ordenId = (props.orden as { id?: number }).id;
+      const rollosData = detalles.value
+        .filter(d => d.tipo === 'rollos' && d.producto_id && d.metros_por_rollo.length > 0)
+        .map(d => ({
+          producto_id: d.producto_id,
+          metros: d.metros_por_rollo
+        }));
+
+      if (rollosData.length > 0) {
+        const metadata = {
+          orden_id: ordenId,
+          timestamps: new Date().toISOString(),
+          rollos: rollosData
+        };
+        sessionStorage.setItem(`orden_${ordenId}_rollos`, JSON.stringify(metadata));
+        console.log(`💾 Metadata de rollos guardada en sessionStorage para orden ${ordenId}`);
+      }
+    }
 
     emit('edited');
     emit('close');
@@ -113,9 +308,22 @@ const actualizarOrden = async (): Promise<void> => {
   }
 };
 
-onMounted((): void => {
-  void productoFiltrado();
+onMounted(async (): Promise<void> => {
+  await productoFiltrado();
+  // Después de cargar productos, cargar la orden si existe
+  if (props.orden) {
+    await cargarOrdenConProductos(props.orden);
+  }
 })
+
+const generarMetrosInputs = (index: number): void => {
+  const detalle = detalles.value[index];
+  if (detalle && !detalle.metros_por_rollo) {
+    detalle.metros_por_rollo = new Array(detalle.rollos || 1).fill(0);
+  } else if (detalle && detalle.metros_por_rollo.length === 0 && detalle.rollos) {
+    detalle.metros_por_rollo = new Array(detalle.rollos).fill(0);
+  }
+}
 </script>
 
 <template>
@@ -140,21 +348,20 @@ onMounted((): void => {
         <div v-for="(detalle, index) in detalles" :key="detalle.id || index" class="detalle-card">
           <div class="detalle-header">
             <div class="producto-title">{{ detalle.producto_nombre || detalle.producto_id }}</div>
+            <div class="badge" :class="detalle.tipo === 'rollos' ? 'badge-rollos' : 'badge-estandar'">
+              {{ detalle.tipo === 'rollos' ? 'Rollos de Tela' : 'Estándar' }}
+            </div>
             <button class="delete-btn" @click="eliminarDetalle(index)">Eliminar</button>
           </div>
           <div class="detalle-grid">
-            <div class="form-field">
-              <label>Metros</label>
-              <input type="number" placeholder="Metros" v-model.number="detalle.cantidad" />
-            </div>
-            <div class="form-field" v-if="detalle.cantidad !== detalle.rollos">
-              <label>Rollos</label>
-              <input type="number" placeholder="Rollos" v-model.number="detalle.rollos" />
-            </div>
             <!--<div class="form-field">
-              <label>Precio Unitario</label>
-              <input type="number" placeholder="Precio Unitario" v-model.number="detalle.precio_unitario" />
+              <label>Metros Totales</label>
+              <input type="number" placeholder="Metros" v-model.number="detalle.cantidad" />
             </div>-->
+            <div class="form-field">
+              <label>Cantidad de {{ detalle.medida_gru?.toLowerCase() }}</label>
+              <input type="number" placeholder="Rollos" v-model.number="detalle.rollos" :disabled="detalle.guardado" />
+            </div>
             <div class="form-field">
               <label>Bodega</label>
               <select v-model.number="detalle.bodega">
@@ -163,6 +370,64 @@ onMounted((): void => {
                 <option value="2">Bodega</option>
               </select>
             </div>
+          </div>
+
+          <!-- Mostrar metros por rollo solo si es tipo rollos -->
+          <div v-if="detalle.tipo === 'rollos' && detalle.rollos && detalle.rollos > 0" class="metros-por-rollo">
+            <h4 v-if="estado !== 'recibido' || !detalle.metros_por_rollo || detalle.metros_por_rollo.length === 0">
+              Información de items:
+            </h4>
+            <p v-if="!detalle.metros_por_rollo || detalle.metros_por_rollo.length === 0" class="info-text">
+              Se capturarán {{ detalle.medida_ind?.toLowerCase() }} de cada {{ detalle.medida_gru?.toLowerCase() }} al
+              marcar como recibido
+            </p>
+            <div v-else-if="estado === 'recibido' && detalle.metros_por_rollo && detalle.metros_por_rollo.length > 0"
+              class="metros-grid">
+              <div v-for="(metros, rIndex) in detalle.metros_por_rollo" :key="rIndex" class="metro-item">
+                <label>Item {{ rIndex + 1 }}</label>
+                <div class="metro-value">
+                  <span v-if="metros === 0" class="no-recibido">⏳ No recibido</span>
+                  <span v-else class="recibido">✓ {{ metros }} {{ detalle.medida_ind?.toLowerCase() }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- UI para capturar metros si está "recibido" y es tipo rollos -->
+          <div v-if="detalle.tipo === 'rollos' && estado === 'recibido' && detalle.rollos && detalle.rollos > 0"
+            class="captura-metros">
+            <h4>Capturar {{ detalle.medida_ind?.toLowerCase() }} de {{ detalle.medida_gru?.toLowerCase() }} recibidos:
+            </h4>
+            <div v-if="!detalle.metros_por_rollo || detalle.metros_por_rollo.length === 0">
+              <button type="button" class="btn-generar" @click="generarMetrosInputs(index)">
+                Generar {{ detalle.rollos }} campos de {{ detalle.medida_ind?.toLowerCase() }}
+              </button>
+            </div>
+            <div v-else class="metros-input-grid">
+              <div v-for="(metros, rIndex) in detalle.metros_por_rollo" :key="rIndex" class="metro-input">
+                <label>Item {{ rIndex + 1 }}</label>
+                <div class="metro-wrapper">
+                  <span
+                    v-if="(detalle.metros_guardados[rIndex as number] ?? 0) > 0 && (metros ?? 0) === (detalle.metros_guardados[rIndex as number] ?? 0)"
+                    class="estado-guardado">
+                    ✅ {{ metros }} {{ detalle.medida_ind?.toLowerCase() }}
+                  </span>
+                  <input v-else type="number" step="0.01" min="0"
+                    v-model.number="detalle.metros_por_rollo[rIndex as number]" placeholder="0" :class="{
+                      'input-pendiente': (metros ?? 0) === 0,
+                      'input-nuevo': (metros ?? 0) > 0 && (detalle.metros_guardados[rIndex as number] ?? 0) === 0,
+                      'input-actualizado': (metros ?? 0) > 0 && (detalle.metros_guardados[rIndex as number] ?? 0) > 0
+                    }" />
+                </div>
+                <small v-if="(metros ?? 0) === 0" class="info-text">⏳ Pendiente</small>
+                <small v-else-if="(detalle.metros_guardados[rIndex as number] ?? 0) === 0" class="info-text">📝 Nuevo -
+                  se guardará</small>
+                <small v-else-if="(metros ?? 0) !== (detalle.metros_guardados[rIndex as number] ?? 0)"
+                  class="info-text">🔄 Actualización</small>
+              </div>
+            </div>
+            <p class="info-mensaje">⚠️ Captura los {{ detalle.medida_ind?.toLowerCase() }} por cada {{
+              detalle.medida_gru?.toLowerCase() }}. Los que dejes en 0 no se guardarán en el inventario.</p>
           </div>
         </div>
 
@@ -360,6 +625,204 @@ onMounted((): void => {
   margin-top: 8px;
   cursor: pointer;
   transition: background 0.2s, transform 0.12s;
+}
+
+/* Badge styles */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-rollos {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-estandar {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+/* Metros por rollo display */
+.metros-por-rollo {
+  margin-top: 1rem;
+  padding: 0.8rem;
+  background: #f0fdf4;
+  border-left: 4px solid #22c55e;
+  border-radius: 6px;
+}
+
+.metros-por-rollo h4 {
+  margin: 0 0 0.6rem 0;
+  font-size: 0.9rem;
+  color: #166534;
+  font-weight: 600;
+}
+
+.metros-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.6rem;
+}
+
+.metro-item {
+  background: #fff;
+  padding: 0.4rem;
+  border-radius: 6px;
+  border: 1px solid #bbf7d0;
+  text-align: center;
+}
+
+.metro-item label {
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.2rem;
+  margin-top: 0 !important;
+}
+
+.metro-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.recibido {
+  color: #16a34a;
+}
+
+.no-recibido {
+  color: #f59e0b;
+}
+
+/* Captura de metros */
+.captura-metros {
+  margin-top: 1rem;
+  padding: 0.8rem;
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: 6px;
+}
+
+.captura-metros h4 {
+  margin: 0 0 0.6rem 0;
+  font-size: 0.9rem;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.metros-input-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.metro-input {
+  display: flex;
+  flex-direction: column;
+}
+
+.metro-input label {
+  font-size: 0.8rem;
+  color: #92400e;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+  margin-top: 0 !important;
+}
+
+.metro-input input {
+  width: 100% !important;
+  padding: 0.4rem !important;
+  font-size: 0.9rem !important;
+  margin-bottom: 0.2rem !important;
+}
+
+.metro-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.estado-guardado {
+  display: block;
+  padding: 0.5rem;
+  background: #dcfce7;
+  border: 2px solid #22c55e;
+  border-radius: 6px;
+  color: #166534;
+  font-weight: 600;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.input-pendiente {
+  background: #fef08a !important;
+  border: 2px solid #facc15 !important;
+  color: #92400e !important;
+}
+
+.input-pendiente:focus {
+  border-color: #eab308 !important;
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.15) !important;
+}
+
+.input-nuevo {
+  background: #dbeafe !important;
+  border: 2px solid #3b82f6 !important;
+  color: #1e40af !important;
+}
+
+.input-nuevo:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+.input-actualizado {
+  background: #f3e8ff !important;
+  border: 2px solid #a855f7 !important;
+  color: #581c87 !important;
+}
+
+.input-actualizado:focus {
+  border-color: #9333ea !important;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15) !important;
+}
+
+.info-text {
+  font-size: 0.7rem;
+  color: #b45309;
+  display: block;
+  font-style: italic;
+}
+
+.info-mensaje {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #92400e;
+  font-weight: 500;
+}
+
+.modal input:disabled,
+.modal select:disabled {
+  background: #e5e7eb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.btn-generar {
+  background: var(--color-brand-primary) !important;
+  color: #fff !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 6px !important;
+  border: none !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+  cursor: pointer !important;
+  width: 100% !important;
+  margin-bottom: 0.6rem !important;
 }
 
 .modal button:hover {

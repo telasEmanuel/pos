@@ -109,10 +109,39 @@ async function submitOrder(): Promise<void> {
     const payloadToSend = {
       proveedor_id: proveedor_id.value,
       estado: estado.value,
-      detalles: processedDetalles.filter((d) => d.producto_id !== null)
+      detalles: processedDetalles
+        .filter((d) => d.producto_id !== null)
+        .map(d => ({
+          producto_id: d.producto_id,
+          cantidad: d.cantidad,
+          rollos: d.rollos,
+          precio_unitario: d.precio_unitario,
+          tipo: d.tipo
+        }))
     } as const
 
-    await api.post('ordenes', payloadToSend)
+    const response = await api.post('ordenes', payloadToSend)
+    const ordenId = response.data?.orden?.id
+
+    // Guardar metadata de rollos para poder recuperarlos después
+    if (ordenId) {
+      const rollosData = detalles.value
+        .filter(d => d.tipoEntrada === 'rollos' && d.producto_id)
+        .map(d => ({
+          producto_id: d.producto_id,
+          metros: d.detallesRollos
+        }))
+
+      if (rollosData.length > 0) {
+        const metadata = {
+          orden_id: ordenId,
+          timestamps: new Date().toISOString(),
+          rollos: rollosData
+        }
+        sessionStorage.setItem(`orden_${ordenId}_rollos`, JSON.stringify(metadata))
+      }
+    }
+
     success.value = true
     console.log("Orden creada:", payloadToSend);
     emit('created')

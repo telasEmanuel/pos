@@ -163,7 +163,7 @@ const handleClose = () => {
   // Usar confirmación estándar si el diálogo de Quasar falla por alguna razón de contexto
   if (confirm(isEditing ? '¿Cancelar la edición del pedido?' : '¿Deseas vaciar el pedido seleccionado?')) {
     isRestoring.value = true;
-    sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(import.meta.env.VITE_STORAGE_KEY);
     sessionStorage.removeItem('edit_order_id');
     editOrderId.value = null;
     cartFromStorage.value = [];
@@ -477,7 +477,7 @@ const enviarPedido = async () => {
     socket.emit(isEditing ? 'pedido-actualizado' : 'nuevo-pedido', pedidoParaSocket);
 
     // Limpiar almacenamiento temporal y estado local
-    sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(import.meta.env.VITE_STORAGE_KEY);
     sessionStorage.removeItem('edit_order_id');
 
     productos.value.forEach((p) => {
@@ -539,10 +539,10 @@ const vaciarCarrito = () => {
     position: 'top',
   });
 };
-// Logic consolidated in handleClose
 
-// Persistencia temporal del pedido (nombre y cantidades) en sessionStorage
-const STORAGE_KEY = 'pedido_temp';
+const cargarInventario = () => {
+  window.location.reload();
+}
 
 const guardarTemporal = () => {
   if (isRestoring.value) return;
@@ -554,7 +554,7 @@ const guardarTemporal = () => {
       floatingPos: floatingPos.value,
       esPrecioTap: esPrecioTap.value
     };
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    sessionStorage.setItem(import.meta.env.VITE_STORAGE_KEY, JSON.stringify(payload));
   } catch (err) {
     console.error('Error guardando temporal:', err);
   }
@@ -562,7 +562,7 @@ const guardarTemporal = () => {
 
 const restaurarTemporal = () => {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(import.meta.env.VITE_STORAGE_KEY);
     if (!raw) return;
     const data = JSON.parse(raw);
 
@@ -679,7 +679,12 @@ watch(
     </div>
 
     <section>
-      <h1 class="main-title">Productos</h1>
+      <div class="row items-center justify-between q-mb-md">
+        <h1 class="main-title" style="margin: 0;">Productos</h1>
+        <q-btn flat round dense icon="refresh" @click="cargarInventario" :loading="loading" class="refresh-btn">
+          <q-tooltip>Actualizar inventario</q-tooltip>
+        </q-btn>
+      </div>
 
       <!-- Botón flotante de resumen -->
       <!-- Floating Order Summary -->
@@ -958,6 +963,18 @@ watch(
   font-weight: 800;
   letter-spacing: -0.025em;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.refresh-btn {
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  color: #1a202c;
+}
+
+.refresh-btn:hover {
+  opacity: 1;
+  color: #667eea;
+  transform: rotate(180deg);
 }
 
 .actions {

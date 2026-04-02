@@ -9,7 +9,7 @@ const error = ref<string | null>(null)
 const loading = ref(true)
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
-const categoriaSeleccionada = ref<{ id: number; nombre: string; descripcion?: string } | null>(null)
+const categoriaSeleccionada = ref<{ id: number; nombre: string; descripcion?: string; seccion_id?: number } | null>(null)
 
 const abrirCreateModal = (): void => {
   showCreateModal.value = true
