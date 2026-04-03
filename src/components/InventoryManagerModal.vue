@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import api from 'src/api/axios';
+import { useAuthStore } from 'src/stores/auth';
 import { useQuasar } from 'quasar';
 
 interface Producto {
@@ -38,6 +39,8 @@ const emit = defineEmits<{
 }>();
 
 const $q = useQuasar();
+const datos = ref<{ rol?: string } | null>(null);
+const authStore = useAuthStore();
 
 // States: 'auth' | 'search' | 'update' | 'create'
 const currentState = ref<'auth' | 'search' | 'update' | 'create'>('auth');
@@ -54,12 +57,14 @@ const searchResults = ref<InventarioItem[]>([]);
 
 // Update State
 const selectedItem = ref<InventarioItem | null>(null);
-const newQuantity = ref<number>(0);
-const newProductName = ref('');
-const newPrecio = ref(0);
-const newPrecioTap = ref(0);
-const newPrecioComp = ref(0);
-const newInvMin = ref<number>(0);
+const selectedItemBodega2 = ref<InventarioItem | null>(null)
+const newQuantity = ref<number>(0)
+const newProductName = ref('')
+const newPrecio = ref(0)
+const newPrecioTap = ref(0)
+const newPrecioComp = ref(0)
+const newInvMin = ref<number>(0)
+const newInvMinBodega2 = ref<number>(0)
 const updateLoading = ref(false);
 //const deleteLoading = ref(false);
 
@@ -100,6 +105,11 @@ const selectItem = (item: InventarioItem) => {
   currentState.value = 'update';
 
   console.log('✅ Valores inicializados - newInvMin:', newInvMin.value);
+
+  // Cargar inventario de bodega 2 para el mismo producto
+  if (item.producto_id || item.producto?.id) {
+    void cargarInventarioBodega2(item.producto_id || item.producto?.id || 0);
+  }
 };
 
 const checkPassword = () => {
@@ -138,6 +148,25 @@ const handleSearch = async () => {
     console.error('Error searching inventory:', err);
   } finally {
     searchLoading.value = false;
+  }
+};
+
+const cargarInventarioBodega2 = async (productoId: number) => {
+  try {
+    const res = await api.get('inventarios');
+    const items = (Array.isArray(res.data) ? res.data : (res.data.items ?? [])) as InventarioItem[];
+
+    // Buscar inventario de bodega 2 para el mismo producto
+    const itemBodega2 = items.find((item: InventarioItem) =>
+      item.bodega_id === 2 && item.producto_id === productoId
+    );
+
+    selectedItemBodega2.value = itemBodega2 || null;
+    if (itemBodega2) {
+      newInvMinBodega2.value = itemBodega2.inv_min || 5;
+    }
+  } catch (err) {
+    console.error('Error cargando inventario de bodega 2:', err);
   }
 };
 
@@ -223,7 +252,7 @@ const updateProduct = async () => {
         valorNuevo: newInvMin.value
       });
 
-      if (newInvMin.value < 0) {
+      if (newInvMin.value < 0 || newInvMinBodega2.value < 0) {
         $q.notify({
           message: 'La cantidad mínima no puede ser negativa',
           color: 'warning',
@@ -234,13 +263,22 @@ const updateProduct = async () => {
       }
 
       try {
-        const response = await api.put(`inventarios/${selectedItem.value.id}`, {
+        // Actualizar bodega 1
+        await api.put(`inventarios/${selectedItem.value.id}`, {
           inv_min: newInvMin.value
         });
-        console.log('✅ Respuesta del servidor:', response.data);
+        console.log('✅ Bodega 1 actualizada');
+
+        // Actualizar bodega 2 si existe
+        if (selectedItemBodega2.value) {
+          await api.put(`inventarios/${selectedItemBodega2.value.id}`, {
+            inv_min: newInvMinBodega2.value
+          });
+          console.log('✅ Bodega 2 actualizada');
+        }
 
         $q.notify({
-          message: 'Cantidad mínima actualizada correctamente',
+          message: 'Cantidades mínimas actualizadas correctamente',
           color: 'positive',
           icon: 'check'
         });
@@ -249,7 +287,7 @@ const updateProduct = async () => {
       } catch (error) {
         console.error('❌ Error actualizando inv_min:', error);
         $q.notify({
-          message: 'Error al actualizar la cantidad mínima',
+          message: 'Error al actualizar las cantidades mínimas',
           color: 'negative',
           icon: 'error'
         });
@@ -487,6 +525,8 @@ const resetToSearch = () => {
   searchQuery.value = '';
   searchResults.value = [];
   selectedItem.value = null;
+  selectedItemBodega2.value = null;
+  newInvMinBodega2.value = 0;
   editMode.value = null;
   showPreview.value = false;
   createForm.value = {
@@ -510,6 +550,7 @@ const resetAndClose = () => {
 const backToSearch = () => {
   currentState.value = 'search';
   selectedItem.value = null;
+  selectedItemBodega2.value = null;
   editMode.value = null;
 };
 
@@ -537,6 +578,8 @@ onMounted(async () => {
   } catch (err) {
     console.error('Error loading categories:', err);
   }
+
+  datos.value = authStore.user;
 });
 
 // Watch para resetear el estado cuando se abre el modal
@@ -735,16 +778,38 @@ const formatValue = (value: unknown): string => {
 
             <!-- Inv Min Edit Mode -->
             <div v-if="editMode === 'inv_min'" class="column q-gutter-md">
-              <q-field label="Cantidad Mínima Actual" stack-label filled readonly>
-                <template v-slot:control>
-                  <div class="self-center full-width no-outline" tabindex="0">{{ selectedItem.inv_min || 5 }}</div>
-                </template>
-              </q-field>
+              <!-- BODEGA 1 (TIENDA) -->
+              <div class="column q-gutter-sm">
+                <div class="text-subtitle2 text-weight-bold text-blue-9">🏪 Tienda</div>
+                <q-field label="Cantidad Mínima Actual" stack-label filled readonly>
+                  <template v-slot:control>
+                    <div class="self-center full-width no-outline" tabindex="0">{{ selectedItem.inv_min || 5 }}</div>
+                  </template>
+                </q-field>
 
-              <q-input v-model.number="newInvMin" type="number" label="Nueva Cantidad Mínima" filled autofocus
-                @keyup.enter="generatePreview" />
+                <q-input v-model.number="newInvMin" type="number" label="Nueva Cantidad Mínima - Tienda" filled
+                  @keyup.enter="generatePreview" />
+              </div>
 
-              <div class="row q-gutter-md">
+              <!-- BODEGA 2 (BODEGA) -->
+              <q-separator class="q-my-sm" v-if="datos?.rol === 'visor'" />
+              <div class="column q-gutter-sm" v-if="datos?.rol === 'visor'">
+                <div class="text-subtitle2 text-weight-bold text-amber-9">🏬 Bodega</div>
+                <q-field v-if="selectedItemBodega2" label="Cantidad Mínima Actual" stack-label filled readonly>
+                  <template v-slot:control>
+                    <div class="self-center full-width no-outline" tabindex="0">{{ selectedItemBodega2.inv_min || 5 }}
+                    </div>
+                  </template>
+                </q-field>
+                <div v-else class="text-caption text-grey-7 q-pa-sm bg-grey-2 rounded-borders">
+                  ℹ️ No hay inventario en bodega 2 para este producto
+                </div>
+
+                <q-input v-if="selectedItemBodega2" v-model.number="newInvMinBodega2" type="number"
+                  label="Nueva Cantidad Mínima - Bodega" filled @keyup.enter="generatePreview" />
+              </div>
+
+              <div class="row q-gutter-md q-mt-md">
                 <q-btn label="Cancelar" flat color="grey" class="col rounded-btn" @click="editMode = null" />
                 <q-btn label="Vista Previa" class="col rounded-btn btn-gold-preview" @click="generatePreview" />
               </div>
