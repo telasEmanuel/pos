@@ -4,6 +4,19 @@ import api from '../api/axios'
 import logo from '../assets/logoT.png'
 import { generateOrderPDF } from '../utils/pdfGenerator'
 
+type DetalleOrden = {
+  producto_id: number | null
+  cantidad: number
+  rollos: number
+  precio_unitario: number
+  busqueda: string
+  mostrarSugerencias: boolean
+  productoSeleccionado: { id: number; nombre: string } | null
+  tipoEntrada: string
+  cantidadRollosInput: number
+  detallesRollos: number[]
+}
+
 const props = defineProps({ show: Boolean })
 const emit = defineEmits(['close', 'created'])
 const productos = ref<Array<{ id: number; nombre: string; precio: number; descripcion?: string }>>([])
@@ -11,7 +24,8 @@ const inventarios = ref<Array<{ id: number; producto_id: number; bodega_id: numb
 const proveedores = ref<Array<{ id: number; nombre: string; contacto: string;[key: string]: unknown }>>([])
 const proveedor_id = ref<number | null>(null)
 const estado = ref<string>('pendiente')
-const detalles = ref<Array<{ producto_id: number | null; cantidad: number; rollos: number; precio_unitario: number; busqueda: string; mostrarSugerencias: boolean; productoSeleccionado: { id: number; nombre: string } | null; tipoEntrada: string; cantidadRollosInput: number; detallesRollos: number[] }>>([
+
+const detalles = ref<DetalleOrden[]>([
   {
     producto_id: null,
     cantidad: 1,
@@ -30,7 +44,7 @@ const error = ref<string>('')
 const success = ref<boolean>(false)
 
 function addDetalle(): void {
-  detalles.value.push({
+  const nuevoDetalle: DetalleOrden = {
     producto_id: null,
     cantidad: 1,
     rollos: 0,
@@ -41,7 +55,8 @@ function addDetalle(): void {
     tipoEntrada: 'estandar',
     cantidadRollosInput: 0,
     detallesRollos: [0]
-  })
+  }
+  detalles.value.push(nuevoDetalle)
 }
 
 function removeDetalle(index: number): void {
@@ -51,7 +66,7 @@ function removeDetalle(index: number): void {
 function getProcessedDetalles(): Array<{ producto_id: number | null; cantidad: number; rollos: number; precio_unitario: number; tipo: string; measurements: number[] }> {
   const map = new Map()
 
-  detalles.value.forEach(d => {
+  detalles.value.forEach((d: DetalleOrden) => {
     if (!d.producto_id) return
 
     const key = `${d.producto_id}_${d.tipoEntrada}`
@@ -60,7 +75,7 @@ function getProcessedDetalles(): Array<{ producto_id: number | null; cantidad: n
         producto_id: d.producto_id,
         cantidad: 0,
         rollos: 0,
-        precio_unitario: 0,
+        precio_unitario: d.precio_unitario,
         tipo: d.tipoEntrada,
         measurements: []
       })
@@ -68,13 +83,14 @@ function getProcessedDetalles(): Array<{ producto_id: number | null; cantidad: n
 
     const item = map.get(key)
     if (d.tipoEntrada === 'rollos') {
-      d.detallesRollos.forEach((m: number) => {
-        const val = Number(m)
-        item.cantidad += val
+      // Para rollos, contar cada uno y agregar a measurements (incluso los 0)
+      d.detallesRollos.forEach((metros: number) => {
+        const val = Number(metros)
         item.rollos += 1
-        if (val > 0) item.measurements.push(val)
+        item.measurements.push(val)
       })
     } else {
+      // Para estandar, sumar la cantidad
       item.cantidad += Number(d.cantidad)
     }
   })
@@ -88,7 +104,7 @@ async function submitOrder(): Promise<void> {
 
   const processedDetalles = getProcessedDetalles()
 
-  const hasSelectedProducts = detalles.value.some(d => d.producto_id !== null)
+  const hasSelectedProducts = detalles.value.some((d: DetalleOrden) => d.producto_id !== null)
 
   if (!proveedor_id.value) {
     error.value = 'El proveedor es requerido'
@@ -97,11 +113,6 @@ async function submitOrder(): Promise<void> {
 
   if (!hasSelectedProducts) {
     error.value = 'Debe seleccionar al menos un producto'
-    return
-  }
-
-  if (processedDetalles.length === 0) {
-    error.value = 'Debe agregar al menos un producto con la información completa'
     return
   }
 
@@ -116,7 +127,8 @@ async function submitOrder(): Promise<void> {
           cantidad: d.cantidad,
           rollos: d.rollos,
           precio_unitario: d.precio_unitario,
-          tipo: d.tipo
+          tipo: d.tipo,
+          measurements: d.measurements
         }))
     } as const
 
@@ -126,8 +138,8 @@ async function submitOrder(): Promise<void> {
     // Guardar metadata de rollos para poder recuperarlos después
     if (ordenId) {
       const rollosData = detalles.value
-        .filter(d => d.tipoEntrada === 'rollos' && d.producto_id)
-        .map(d => ({
+        .filter((d: DetalleOrden) => d.tipoEntrada === 'rollos' && d.producto_id)
+        .map((d: DetalleOrden) => ({
           producto_id: d.producto_id,
           metros: d.detallesRollos
         }))
@@ -156,7 +168,7 @@ async function submitOrder(): Promise<void> {
     // Reset de formulario
     proveedor_id.value = null
     estado.value = 'pendiente'
-    detalles.value = [{
+    const resetDetalle: DetalleOrden = {
       producto_id: null,
       cantidad: 1,
       rollos: 0,
@@ -167,7 +179,8 @@ async function submitOrder(): Promise<void> {
       tipoEntrada: 'estandar',
       cantidadRollosInput: 0,
       detallesRollos: [0]
-    }]
+    }
+    detalles.value = [resetDetalle]
   } catch (e) {
     error.value = (e instanceof Error) ? e.message : 'Error al crear la orden'
   }
@@ -177,7 +190,7 @@ watch(() => props.show, (newVal) => {
   if (newVal) {
     proveedor_id.value = null
     estado.value = 'pendiente'
-    detalles.value = [{
+    const nuevoDetalle: DetalleOrden = {
       producto_id: null,
       cantidad: 1,
       rollos: 0,
@@ -188,7 +201,8 @@ watch(() => props.show, (newVal) => {
       tipoEntrada: 'estandar',
       cantidadRollosInput: 0,
       detallesRollos: [0]
-    }]
+    }
+    detalles.value = [nuevoDetalle]
     error.value = ''
     success.value = false
   }
@@ -202,7 +216,7 @@ function close() {
 
 // Lógica de búsqueda individual por fila
 const getProductosFiltrados = (index: number): Array<{ id: number; nombre: string; descripcion?: string; precio?: number }> => {
-  const detalle = detalles.value[index]
+  const detalle: DetalleOrden | undefined = detalles.value[index]
   if (!detalle || !detalle.busqueda) return []
   const termino = detalle.busqueda.toLowerCase()
   if (termino.length < 2) return []
@@ -217,7 +231,7 @@ const getProductosFiltrados = (index: number): Array<{ id: number; nombre: strin
 }
 
 const onBusquedaInput = (index: number): void => {
-  const detalle = detalles.value[index]
+  const detalle: DetalleOrden | undefined = detalles.value[index]
   if (!detalle) return
   if (detalle.busqueda.length >= 2) {
     detalle.mostrarSugerencias = true
@@ -229,8 +243,9 @@ const onBusquedaInput = (index: number): void => {
 }
 
 const seleccionarProducto = (index: number, producto: { id: number; nombre: string; descripcion?: string }): void => {
-  const detalle = detalles.value[index]
+  const detalle: DetalleOrden | undefined = detalles.value[index]
   if (!detalle) return
+
   detalle.productoSeleccionado = producto
   detalle.producto_id = producto.id
   detalle.busqueda = producto.nombre
@@ -239,14 +254,15 @@ const seleccionarProducto = (index: number, producto: { id: number; nombre: stri
 
 const ocultarSugerencias = (index: number): void => {
   setTimeout(() => {
-    if (detalles.value[index]) {
-      detalles.value[index].mostrarSugerencias = false
+    const det = detalles.value[index]
+    if (det) {
+      det.mostrarSugerencias = false
     }
   }, 200)
 }
 
 const generarInputsRollos = (index: number): void => {
-  const detalle = detalles.value[index]
+  const detalle: DetalleOrden | undefined = detalles.value[index]
   if (!detalle) return
   const n = parseInt(detalle.cantidadRollosInput as unknown as string) || 0
   if (n < 0) return

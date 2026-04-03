@@ -37,12 +37,14 @@ const inventarios = ref<Inventario[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const filtroProducto = ref('')
+const bodegaSeleccionada = ref<1 | 2>(2)
 const mostrarModalAgregar = ref(false)
 const inventarioSeleccionado = ref<Inventario | null>(null)
 
 const inventariosFilterados = computed(() => {
-  if (!filtroProducto.value) return inventarios.value
-  return inventarios.value.filter(inv =>
+  const filtered = inventarios.value.filter(inv => inv.bodega_id === bodegaSeleccionada.value)
+  if (!filtroProducto.value) return filtered
+  return filtered.filter(inv =>
     inv.producto?.nombre.toLowerCase().includes(filtroProducto.value.toLowerCase())
   )
 })
@@ -155,7 +157,15 @@ onMounted(() => {
   <div class="container">
     <div class="header">
       <h1>Detalles de Inventario</h1>
-      <button @click="cargarInventarios" class="btn-recargar">🔄 Recargar</button>
+      <div class="header-controls">
+        <div class="bodega-toggle">
+          <q-btn-toggle v-model="bodegaSeleccionada" :options="[
+            { label: 'Tienda', value: 1 },
+            { label: 'Bodega', value: 2 }
+          ]" color="amber-8" text-color="white" toggle-color="amber-9" />
+        </div>
+        <button @click="cargarInventarios" class="btn-recargar">🔄 Recargar</button>
+      </div>
     </div>
 
     <div v-if="loading" class="loading">
@@ -183,7 +193,7 @@ onMounted(() => {
               <h3>{{ inventario.producto?.nombre || 'Producto sin nombre' }}</h3>
               <div class="inventario-meta">
                 <span class="meta-item">
-                  <strong>Bodega:</strong> {{ inventario.bodega?.nombre || 'N/A' }}
+                  <strong>Ubicación: {{ inventario.bodega?.nombre || 'N/A' }}</strong>
                 </span>
                 <span class="meta-item">
                   <strong>Total {{ inventario.medida_gru }}:</strong> {{ inventario.rollos }}
@@ -241,7 +251,7 @@ onMounted(() => {
                 <tr class="total-row">
                   <td colspan="1"><strong>Total</strong></td>
                   <td><strong>{{ obtenerTotalMetros(inventario.detalles).toFixed(2) }} {{ inventario.medida_ind
-                  }}</strong></td>
+                      }}</strong></td>
                   <td colspan="2"></td>
                 </tr>
               </tfoot>
@@ -286,6 +296,16 @@ h1 {
   color: #333;
   font-size: 1.8rem;
   margin: 0;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.bodega-toggle {
+  display: flex;
 }
 
 .btn-recargar {

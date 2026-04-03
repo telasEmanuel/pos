@@ -65,8 +65,20 @@ const cargarOrdenConProductos = async (nuevaOrden: Record<string, unknown>): Pro
         }
       }
 
-      // Si no hay metros pero tiene rollos, inicializar array con ceros
-      if (metros.length === 0 && d.rollos && d.rollos > 0) {
+      // Si es tipo rollos, SIEMPRE asegurar que metros_por_rollo esté inicializado
+      const tipo = (d as { tipo?: string }).tipo || 'estandar';
+      if (tipo === 'rollos' && d.rollos && d.rollos > 0) {
+        if (metros.length === 0) {
+          metros = new Array(d.rollos).fill(0);
+        }
+        // Asegurar que el array tenga exactamente la cantidad de rollos
+        if (metros.length < d.rollos) {
+          metros = [...metros, ...new Array(d.rollos - metros.length).fill(0)];
+        } else if (metros.length > d.rollos) {
+          metros = metros.slice(0, d.rollos);
+        }
+      } else if (metros.length === 0 && d.rollos && d.rollos > 0) {
+        // Si no es tipo rollos pero tiene rollos, inicializar array con ceros
         metros = new Array(d.rollos).fill(0);
       }
 
@@ -74,7 +86,7 @@ const cargarOrdenConProductos = async (nuevaOrden: Record<string, unknown>): Pro
       const metrosGuardados: number[] = new Array(metros.length).fill(0);
 
       // Si es tipo rollos, buscar en inventariodetalle cuántos metros ya fueron guardados
-      if ((d as { tipo?: string }).tipo === 'rollos' && metros.length > 0) {
+      if (tipo === 'rollos' && metros.length > 0) {
         // Buscar inventario para este producto en cualquier bodega
         const inventariosDelProducto = inventariosConDetalles.filter(inv => inv.producto_id === d.producto_id);
 
@@ -104,7 +116,7 @@ const cargarOrdenConProductos = async (nuevaOrden: Record<string, unknown>): Pro
         bodega: (d as { bodega_id?: number }).bodega_id || null,
         metros_por_rollo: metros,
         metros_guardados: metrosGuardados,
-        tipo: (d as { tipo?: string }).tipo || 'estandar',
+        tipo: tipo,
         guardado: (d as { guardado?: boolean }).guardado === true || false,
         medida_ind: inventariosConDetalles.find(inv => inv.producto_id === d.producto_id)?.medida_ind || '',
         medida_gru: inventariosConDetalles.find(inv => inv.producto_id === d.producto_id)?.medida_gru || ''
@@ -121,14 +133,23 @@ watch(
   () => props.orden,
   async (nuevaOrden): Promise<void> => {
     if (!nuevaOrden) return;
-    // Esperar a que filtros esté cargado ANTES de procesar la orden
+    // Si filtros no está cargado aún, esperar a que se cargue
     if (filtros.value.length === 0) {
-      // Si filtros no está cargado, esperar a que se cargue primero
       return;
     }
     await cargarOrdenConProductos(nuevaOrden as Record<string, unknown>);
   },
   { immediate: true }
+);
+
+// Ejecutar cargarOrdenConProductos también cuando filtros se carga
+watch(
+  () => filtros.value.length,
+  async (): Promise<void> => {
+    if (props.orden && filtros.value.length > 0) {
+      await cargarOrdenConProductos(props.orden as Record<string, unknown>);
+    }
+  }
 );
 
 function agregarDetalle(): void {

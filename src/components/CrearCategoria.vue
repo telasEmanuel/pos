@@ -72,9 +72,9 @@ onMounted(async () => {
           <input v-model="descripcion" />
         </div>
         <div>
-          <label>Sección:</label>
+          <label>Asignar a sección:</label>
           <select v-model.number="seccion_id" required>
-            <option value="" disabled>Selecciona una sección</option>
+            <option value="" disabled>Selecciona sección</option>
             <option v-for="seccion in secciones" :key="seccion.id" :value="seccion.id">
               {{ seccion.nombre }}
             </option>

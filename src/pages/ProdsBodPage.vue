@@ -138,8 +138,8 @@ const productosSeleccionados = computed(() => {
   const resultado = []
 
   for (const prod of productosFiltrados()) {
-    // OPCIÓN 1: Productos con rollos (cantidad_piezas > 0)
-    if (Number(prod.cantidad_piezas) > 0 && prod.detalles && prod.detalles.length > 0) {
+    // OPCIÓN 1: Productos con rollos (detalles > 0)
+    if (prod.detalles && prod.detalles.length > 0) {
       // Obtener rollos seleccionados de este producto
       const rolosSeleccionados = prod.detalles
         .map((detalle, idx) => ({ detalle, idx }))
@@ -328,12 +328,15 @@ watch(() => props.categoryId, (newVal) => {
     </div>
 
     <section>
-      <h1 class="main-title">Productos</h1>
-      <div v-if="loading">Cargando productos...</div>
-      <div v-else>
-        <q-btn flat round dense icon="refresh" @click="cargarInventario" class="q-ml-md" :loading="loading">
+      <div class="row items-center justify-center q-mb-md" style="position: relative;">
+        <h1 class="main-title" style="margin: 0;">Productos</h1>
+        <q-btn flat round dense icon="refresh" @click="cargarInventario" :loading="loading" class="refresh-btn"
+          style="position: absolute; right: 0;">
           <q-tooltip>Actualizar</q-tooltip>
         </q-btn>
+      </div>
+      <div v-if="loading">Cargando productos...</div>
+      <div v-else>
         <section v-if="productosFiltrados().length" class="actions">
           <div v-for="prod in productosFiltrados()" :key="prod.id" class="card">
             <div class="card-header">
@@ -356,8 +359,8 @@ watch(() => props.categoryId, (newVal) => {
 
               <!-- Solo mostrar opciones si cantidad > 0 -->
               <div v-if="Number(prod.cantidad) > 0">
-                <!-- Rollos/Detalles Section (producto CON cantidad_piezas) -->
-                <div v-if="Number(prod.cantidad_piezas) > 0" class="rollos-section">
+                <!-- Rollos/Detalles Section (producto CON detalles) -->
+                <div v-if="prod.detalles && prod.detalles.length > 0" class="rollos-section">
                   <button class="btn-toggle-detalles" @click="prod.showDetails = !prod.showDetails">
                     <span class="toggle-icon">{{ prod.showDetails ? '▼' : '▶' }}</span>
                     <span class="toggle-text">
