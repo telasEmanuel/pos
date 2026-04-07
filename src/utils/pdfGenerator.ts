@@ -126,7 +126,7 @@ export async function generateOrderPDF(
     }
 
     if (mostrarRollos) {
-      doc.text('ROLLOS', posRollos, yPosition + 5.5);
+      doc.text('CANTIDAD', posRollos, yPosition + 5.5);
     }
 
     yPosition += 8;

@@ -3,20 +3,64 @@ import { ref, onMounted } from 'vue';
 import api from '../api/axios';
 import CrearProveedor from '../components/CrearProveedores.vue';
 
-const proveedores = ref<Array<{ id: number; nombre: string; contacto: string; telefono?: string }>>([])
+interface Proveedor {
+  id: number
+  nombre: string
+  contacto: string
+  telefono?: string
+  direccion?: string
+}
+
+const proveedores = ref<Proveedor[]>([])
 const loading = ref(false)
 const showCrear = ref(false)
+const proveedorEditar = ref<Proveedor | undefined>(undefined)
 
 // Abrir y cerrar modal
-const abrirModal = () => showCrear.value = true
+const abrirModalCrear = () => {
+  proveedorEditar.value = undefined
+  showCrear.value = true
+}
+
+const abrirModalEditar = (proveedor: Proveedor) => {
+  proveedorEditar.value = proveedor
+  showCrear.value = true
+}
+
 const cerrarModal = () => showCrear.value = false
 
 // Cuando se crea un proveedor nuevo
-const onProveedorCreado = (nuevo: { id: number; nombre: string; contacto: string; telefono?: string }): void => {
+const onProveedorCreado = (nuevo: Proveedor): void => {
   alert('Proveedor creado exitosamente');
   proveedores.value.push(nuevo);
   cerrarModal();
 };
+
+// Cuando se actualiza un proveedor
+const onProveedorActualizado = (actualizado: Proveedor): void => {
+  const index = proveedores.value.findIndex(p => p.id === actualizado.id)
+  if (index !== -1) {
+    proveedores.value[index] = actualizado
+  }
+  alert('Proveedor actualizado exitosamente');
+  cerrarModal();
+}
+
+// Eliminar proveedor
+const eliminarProveedor = async (id: number) => {
+  if (!confirm('¿Estás seguro de que deseas eliminar este proveedor?')) {
+    return
+  }
+
+  try {
+    await api.delete(`proveedores/${id}`)
+    proveedores.value = proveedores.value.filter(p => p.id !== id)
+    alert('Proveedor eliminado exitosamente');
+  } catch (error) {
+    console.error("Error al eliminar el proveedor:", error);
+    alert('Error al eliminar el proveedor')
+  }
+}
 
 // Obtener proveedores desde la API
 const mostrarProveedores = async () => {
@@ -42,29 +86,40 @@ onMounted(() => {
   </div>
 
   <div class="container" v-else>
-    <button @click="abrirModal" id="boton">Agregar Proveedor</button>
+    <button @click="abrirModalCrear" class="btn-editar">Agregar Proveedor</button>
 
     <table class="table table-striped">
       <thead>
         <tr>
-          <th>ID</th>
+          <!--<th>ID</th>-->
           <th>Nombre</th>
           <th>Contacto</th>
           <th>Teléfono</th>
+          <th>Dirección</th>
+          <th>Editar</th>
+          <th>Eliminar</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="proveedor in proveedores" :key="proveedor.id">
-          <td>{{ proveedor.id }}</td>
+          <!--<td>{{ proveedor.id }}</td>-->
           <td>{{ proveedor.nombre }}</td>
           <td>{{ proveedor.contacto }}</td>
           <td>{{ proveedor.telefono }}</td>
+          <td>{{ proveedor.direccion }}</td>
+          <td>
+            <button @click="abrirModalEditar(proveedor)" class="btn-editar">Editar</button>
+          </td>
+          <td>
+            <button @click="eliminarProveedor(proveedor.id)" class="btn-eliminar">Eliminar</button>
+          </td>
         </tr>
       </tbody>
     </table>
 
-    <!-- Modal para crear proveedor -->
-    <CrearProveedor :visible="showCrear" @close="cerrarModal" @proveedorCreado="onProveedorCreado" />
+    <!-- Modal para crear/editar proveedor -->
+    <CrearProveedor :visible="showCrear" :proveedor="proveedorEditar" @close="cerrarModal"
+      @proveedorCreado="onProveedorCreado" @proveedorActualizado="onProveedorActualizado" />
   </div>
 </template>
 <style scoped>
@@ -117,5 +172,33 @@ onMounted(() => {
 
 .table-striped tbody tr:hover {
   background-color: #f1f1f1;
+}
+
+.btn-editar,
+.btn-eliminar {
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-right: 0.5rem;
+}
+
+.btn-editar {
+  background: var(--gradient-brand-90);
+}
+
+.btn-editar:hover {
+  background: var(--color-brand-secondary);
+}
+
+.btn-eliminar {
+  background: #ef4444;
+}
+
+.btn-eliminar:hover {
+  background: #dc2626;
 }
 </style>

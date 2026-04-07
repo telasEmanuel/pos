@@ -24,10 +24,18 @@ const login = async () => {
     const token = response.data.token;
     const usuario = response.data.usuario;
 
+    console.log('📝 LoginPage - Respuesta del servidor:', { token, usuario });
+
     if (token) {
       const authStore = useAuthStore();
       authStore.login(token, usuario);
       datos.value = usuario;
+
+      console.log('✅ LoginPage - Usuario guardado en authStore:', {
+        token: authStore.token,
+        user: authStore.user,
+        sessionStorageUser: JSON.parse(sessionStorage.getItem('user') || 'null')
+      });
 
       switch (datos.value?.rol) {
         case 'caja':
@@ -36,6 +44,7 @@ const login = async () => {
         case 'secretaria':
         case 'asistente':
           //await router.push('/carrito');
+          console.log('🚀 Redirigiendo a /select');
           await router.push('/select');
           break;
         /*case 'vendedor':

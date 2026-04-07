@@ -24,6 +24,7 @@ import {
   DetalleInventario,
   Historial,
   Secciones,
+  AutorizacionesPage
 } from '../pages/index';
 
 const routes: RouteRecordRaw[] = [
@@ -216,6 +217,14 @@ const routes: RouteRecordRaw[] = [
     component: Historial,
     meta: {
       title: 'Historial de movimientos',
+      layout: MainLayout,
+    },
+  },
+  {
+    path: '/permisos',
+    component: AutorizacionesPage,
+    meta: {
+      title: 'Autorizaciones del personal',
       layout: MainLayout,
     },
   },

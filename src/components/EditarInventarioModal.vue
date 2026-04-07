@@ -108,12 +108,12 @@ const actualizarInventario = async () => {
         <!-- Fila 1: Control 1 y Tipo 1 -->
         <div class="form-group-row">
           <div class="form-group">
-            <label for="rollos">Control 1:</label>
+            <label for="rollos">Cantidad:</label>
             <input type="number" id="rollos" v-model.number="form.rollos" min="0" required :disabled="loading" />
           </div>
 
           <div class="form-group">
-            <label for="medida_gru">Tipo 1:</label>
+            <label for="medida_gru">Presentación:</label>
             <select id="medida_gru" v-model="form.medida_gru" :disabled="loading">
               <option value="Rollos">Rollos</option>
               <option value="Cajas">Cajas</option>
@@ -129,13 +129,13 @@ const actualizarInventario = async () => {
         <!-- Fila 2: Control 2 y Tipo 2 -->
         <div class="form-group-row">
           <div class="form-group">
-            <label for="cantidad">Control 2:</label>
+            <label for="cantidad">(mts, lts, pz, kg):</label>
             <input type="number" id="cantidad" v-model.number="form.cantidad" min="0" step="0.01" required
               :disabled="loading" />
           </div>
 
           <div class="form-group">
-            <label for="medida_ind">Tipo 2:</label>
+            <label for="medida_ind">Presentación:</label>
             <select id="medida_ind" v-model="form.medida_ind" :disabled="loading">
               <option value="Metros">Metros</option>
               <option value="Piezas">Piezas</option>

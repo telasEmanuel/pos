@@ -1,13 +1,212 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useAuthStore } from 'src/stores/auth';
+import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router';
 
-const datos = ref<{ nombre?: string, rol?: string } | null>(null);
+const datos = ref<{ nombre?: string, rol?: string, categorias?: boolean, productos?: boolean, detalles_inventario?: boolean, ordenes?: boolean, proveedores?: boolean, historial_movimientos?: boolean, calculadora?: boolean, secciones?: boolean, reporte_ventas?: boolean, usuarios?: boolean } | null>(null);
 const authStore = useAuthStore();
+const $q = useQuasar()
+const router = useRouter();
+
+// Helper para convertir 0/1 o true/false a booleano
+const convertirABooleano = (valor: unknown): boolean => {
+  if (valor === null || valor === undefined) return false;
+  if (typeof valor === 'boolean') return valor;
+  if (typeof valor === 'number') return valor !== 0;
+  if (typeof valor === 'string') return valor === '1' || valor.toLowerCase() === 'true';
+  return !!valor;
+}
+
+const checarPermiso = (seccion: string) => {
+  switch (seccion) {
+    case 'categorias':
+      if (convertirABooleano(datos.value?.categorias)) {
+        void router.push('/categorias');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break;
+    case 'productos':
+      if (convertirABooleano(datos.value?.productos)) {
+        void router.push('/productos');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break;
+    case 'detalles_inventario':
+      if (convertirABooleano(datos.value?.detalles_inventario)) {
+        void router.push('/detalles-inventario');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break;
+    case 'usuarios':
+      if (convertirABooleano(datos.value?.usuarios)) {
+        void router.push('/usuarios');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break;
+    case 'ordenes':
+      if (convertirABooleano(datos.value?.ordenes)) {
+        void router.push('/ordenes');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break;
+    case 'ventas':
+      if (convertirABooleano(datos.value?.reporte_ventas)) {
+        void router.push('/reporte-ventas');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break;
+    case 'proveedores':
+      if (convertirABooleano(datos.value?.proveedores)) {
+        void router.push('/proveedores');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break;
+    case 'historial_movimientos':
+      if (convertirABooleano(datos.value?.historial_movimientos)) {
+        void router.push('/historial');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break;
+    case 'calculadora':
+      if (convertirABooleano(datos.value?.calculadora)) {
+        void router.push('/calculadora');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break;
+    case 'secciones':
+      if (convertirABooleano(datos.value?.secciones)) {
+        void router.push('/secciones');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break;
+  }
+}
 
 onMounted(() => {
+  // Cargar usuario inicial
   datos.value = authStore.user;
+
+  console.log('%c📍 OpcionesBodega - onMounted', 'background: #222; color: #bada55; font-size: 14px; font-weight: bold;');
+  console.log('authStore.user =', authStore.user);
+  console.log('datos.value =', datos.value);
+  console.log('sessionStorage.user =', JSON.parse(sessionStorage.getItem('user') || 'null'));
+
+  if (datos.value) {
+    console.log('✅ Usuario disponible. Permisos:', {
+      categorias: convertirABooleano(datos.value?.categorias),
+      productos: convertirABooleano(datos.value?.productos),
+      ordenes: convertirABooleano(datos.value?.ordenes),
+      usuarios: convertirABooleano(datos.value?.usuarios)
+    });
+  } else {
+    console.warn('⚠️ No hay usuario en onMounted');
+  }
 })
+
+// Watcher para detectar cambios en authStore.user
+watch(() => authStore.user, (nuevoUsuario) => {
+  console.log('%c👀 OpcionesBodega - watcher triggered', 'background: #ff6b6b; color: white; font-size: 12px');
+  console.log('nuevoUsuario =', nuevoUsuario);
+
+  if (nuevoUsuario) {
+    datos.value = nuevoUsuario;
+    console.log('✅ Usuario actualizado en OpcionesBodega (watcher):', datos.value);
+  } else {
+    console.warn('⚠️ Usuario cerró sesión, redirigiendo...');
+    void router.push('/');
+  }
+}, { immediate: true })
 </script>
 
 <template>
@@ -22,61 +221,67 @@ onMounted(() => {
         <span class="icon">💎</span>
         <h3>Ver categorías</h3>
         <p>Crea categorías de productos para consultas.</p>
-        <router-link to="/categorias" class="btn">Entrar</router-link>
+        <button @click="checarPermiso('categorias')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">➕</span>
         <h3>Dar de alta productos</h3>
         <p>Añadir productos nuevos al inventario actual.</p>
-        <router-link to="/productos" class="btn">Entrar</router-link>
+        <button @click="checarPermiso('productos')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">📦</span>
         <h3>Detalles de Inventario</h3>
         <p>Ver y editar metros disponibles de cada rollo.</p>
-        <router-link to="/detalles-inventario" class="btn">Entrar</router-link>
+        <button @click="checarPermiso('detalles_inventario')" class="btn">Entrar</button>
       </div>
-      <div class="card" v-if="datos?.rol === 'visor'">
+      <div class="card">
         <span class="icon">👥</span>
         <h3>Administrar usuarios</h3>
         <p>Crear y gestionar usuarios del sistema.</p>
-        <router-link to="/usuarios" class="btn">Entrar</router-link>
+        <button @click="checarPermiso('usuarios')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">📄</span>
         <h3>Ver órdenes de compra</h3>
         <p>Consulta de órdenes de compra.</p>
-        <router-link to="/ordenes" class="btn">Entrar</router-link>
+        <button @click="checarPermiso('ordenes')" class="btn">Entrar</button>
       </div>
-      <div class="card" v-if="datos?.rol === 'visor'">
+      <div class="card">
         <span class="icon">📊</span>
         <h3>Ver ventas</h3>
         <p>Visualiza todas las ventas de productos.</p>
-        <router-link to="/ventas" class="btn">Entrar</router-link>
+        <button @click="checarPermiso('ventas')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">🦺</span>
         <h3>Crear proveedores</h3>
         <p>Añade nuevos proveedores de materiales.</p>
-        <router-link to="/proveedores" class="btn">Entrar</router-link>
+        <button @click="checarPermiso('proveedores')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">⏳</span>
         <h3>Ver historial</h3>
         <p>Ver historial de motivos de cambios de productos.</p>
-        <router-link to="/historial" class="btn">Entrar</router-link>
+        <button @click="checarPermiso('historial_movimientos')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">🪙</span>
         <h3>Calculadora de precios</h3>
         <p>Administrar cambios en los precios de productos.</p>
-        <router-link to="/calculadora" class="btn">Entrar</router-link>
+        <button @click="checarPermiso('calculadora')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">🗂️</span>
         <h3>Crear secciones</h3>
         <p>Crear secciones para organizar las categorías.</p>
-        <router-link to="/secciones" class="btn">Entrar</router-link>
+        <button @click="checarPermiso('secciones')" class="btn">Entrar</button>
+      </div>
+      <div class="card" v-if="datos?.rol === 'visor'">
+        <span class="icon">🪪</span>
+        <h3>Actualizar permisos</h3>
+        <p>Administrar los permisos de los usuarios del sistema.</p>
+        <router-link to="/permisos" class="btn">Entrar</router-link>
       </div>
     </section>
     <footer>

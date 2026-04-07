@@ -2,19 +2,45 @@
 import { ref, watch } from 'vue'
 import api from '../api/axios'
 
-const props = defineProps({
-  visible: Boolean
-})
-const emit = defineEmits(['close', 'proveedorCreado'])
+interface Proveedor {
+  id?: number
+  nombre: string
+  contacto: string
+  telefono?: string
+  direccion?: string
+}
+
+const props = defineProps<{
+  visible: boolean
+  proveedor?: Proveedor | undefined
+}>()
+
+const emit = defineEmits(['close', 'proveedorCreado', 'proveedorActualizado'])
 
 const nombre = ref('')
 const contacto = ref('')
 const telefono = ref('')
 const direccion = ref('')
 const error = ref<string | null>(null)
+const isEditing = ref(false)
+const currentId = ref<number | undefined>(undefined)
 
 watch(() => props.visible, (newVal) => {
-  if (newVal) resetForm()
+  if (newVal) {
+    if (props.proveedor?.id) {
+      // Modo edición
+      isEditing.value = true
+      currentId.value = props.proveedor.id
+      nombre.value = props.proveedor.nombre
+      contacto.value = props.proveedor.contacto
+      telefono.value = props.proveedor.telefono || ''
+      direccion.value = props.proveedor.direccion || ''
+    } else {
+      // Modo creación
+      isEditing.value = false
+      resetForm()
+    }
+  }
 })
 
 const resetForm = () => {
@@ -23,24 +49,35 @@ const resetForm = () => {
   telefono.value = ''
   direccion.value = ''
   error.value = null
+  currentId.value = undefined
 }
 
 const cerrarModal = () => {
+  resetForm()
   emit('close')
 }
 
-const crearProveedor = async () => {
+const guardarProveedor = async () => {
   try {
-    const response = await api.post('proveedores', {
+    const payload = {
       nombre: nombre.value,
       contacto: contacto.value,
       telefono: telefono.value,
       direccion: direccion.value
-    })
-    emit('proveedorCreado', response.data)
+    }
+
+    if (isEditing.value && currentId.value) {
+      // Actualizar
+      const response = await api.put(`proveedores/${currentId.value}`, payload)
+      emit('proveedorActualizado', response.data)
+    } else {
+      // Crear
+      const response = await api.post('proveedores', payload)
+      emit('proveedorCreado', response.data)
+    }
     cerrarModal()
   } catch (err) {
-    error.value = 'Error al crear el proveedor'
+    error.value = isEditing.value ? 'Error al actualizar el proveedor' : 'Error al crear el proveedor'
     console.error(err)
   }
 }
@@ -49,25 +86,25 @@ const crearProveedor = async () => {
 <template>
   <div v-if="visible" class="modal-overlay">
     <div class="modal">
-      <h2>Crear Proveedor</h2>
-      <form @submit.prevent="crearProveedor">
+      <h2>{{ isEditing ? 'Editar Proveedor' : 'Crear Proveedor' }}</h2>
+      <form @submit.prevent="guardarProveedor">
         <div>
           <label>Nombre:</label>
-          <input v-model="nombre" required />
+          <input v-model="nombre" type="text" required />
         </div>
         <div>
           <label>Contacto:</label>
-          <input v-model="contacto" required />
+          <input v-model="contacto" type="text" required />
         </div>
         <div>
           <label>Teléfono:</label>
-          <input v-model="telefono" required />
+          <input v-model="telefono" type="number" required />
         </div>
         <div>
           <label>Dirección:</label>
-          <input v-model="direccion" />
+          <input v-model="direccion" type="text" />
         </div>
-        <button type="submit">Crear</button>
+        <button type="submit">{{ isEditing ? 'Actualizar' : 'Crear' }}</button>
         <button type="button" @click="cerrarModal">Cancelar</button>
       </form>
       <p v-if="error" style="color: red;">{{ error }}</p>

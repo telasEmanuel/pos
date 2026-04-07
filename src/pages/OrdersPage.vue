@@ -80,28 +80,31 @@ onMounted((): void => {
     <table class="table table-striped" v-else>
       <thead>
         <tr>
-          <th>ID</th>
+          <!--<th>ID</th>-->
           <th>Proveedor</th>
           <th>Fecha</th>
           <th>Estado</th>
-          <th>Acciones</th>
+          <th>Editar</th>
+          <th>Eliminar</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="orden in ordenes" :key="orden.id">
-          <td>{{ orden.id }}</td>
+          <!--<td>{{ orden.id }}</td>-->
           <td>{{ (orden.proveedor as any).nombre }}</td>
           <td>{{ formatearFecha(orden.fecha_orden as string) }}</td>
           <td>{{ orden.estado.toUpperCase() }}</td>
           <td>
             <button @click="editarOrden(orden)" id="botonsito">Editar</button>
-            <button @click="cancelarOrden(orden)" id="boton-cancelar">Cancelar</button>
+          </td>
+          <td>
+            <button @click="cancelarOrden(orden)" id="boton-cancelar">Eliminar</button>
           </td>
         </tr>
       </tbody>
     </table>
 
-    <button @click="showModal = true" id="boton">Nueva Orden de Compra</button>
+    <button @click="showModal = true" id="botonsito">Nueva Orden de Compra</button>
 
     <!-- Modal para crear -->
     <OrdenCompraModal :show="showModal" @close="showModal = false" @created="onCreated" />

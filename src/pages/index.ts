@@ -20,3 +20,4 @@ export { default as Productos } from './ProductsPage.vue';
 export { default as DetalleInventario } from './DetalleInventarioPage.vue';
 export { default as Historial } from './MovimientosInventario.vue';
 export { default as Secciones } from './SeccionesPage.vue';
+export { default as AutorizacionesPage } from './AutorizacionesPage.vue';

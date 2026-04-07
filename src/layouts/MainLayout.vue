@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from 'src/stores/auth';
 import { socket } from 'src/boot/socket'
@@ -19,14 +19,23 @@ const pedidosStore = usePedidosStore()
 const { pedidos } = storeToRefs(pedidosStore)
 const router = useRouter();
 const leftDrawerOpen = ref(false);
-const datos = ref<{ nombre?: string, rol?: string } | null>(null);
+const datos = ref<{ nombre?: string, rol?: string, corte_caja?: boolean, reporte_existencia?: boolean } | null>(null);
 const authStore = useAuthStore();
+
+// Helper para convertir 0/1 o true/false a booleano
+const convertirABooleano = (valor: unknown): boolean => {
+  if (valor === null || valor === undefined) return false;
+  if (typeof valor === 'boolean') return valor;
+  if (typeof valor === 'number') return valor !== 0;
+  if (typeof valor === 'string') return valor === '1' || valor.toLowerCase() === 'true';
+  return !!valor;
+}
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
 }
 
-const abrirCarritoConPassword = () => {
+/*const abrirCarritoConPassword = () => {
   showPasswordDialog.value = true;
   passwordInput.value = '';
   passwordError.value = '';
@@ -38,7 +47,7 @@ const abrirCorteConPassword = () => {
   passwordInput.value = '';
   passwordError.value = '';
   currentPasswordContext.value = 'corte';
-}
+}*/
 
 /*const abrirReporteConPassword = () => {
   showPasswordDialog.value = true;
@@ -99,6 +108,41 @@ const cerrarSesion = async () => {
 //   }
 // }
 
+const checarPermiso = (seccion: string) => {
+  switch(seccion){
+    case 'corte':
+      if (convertirABooleano(datos.value?.corte_caja)) {
+        void router.push('/corte');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break;
+    case 'reporte':
+      if (convertirABooleano(datos.value?.reporte_existencia)) {
+        void router.push('/reporte');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break;
+  }
+}
+
 onMounted(() => {
   // Solicitar permiso para notificaciones del sistema
   if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
@@ -106,6 +150,11 @@ onMounted(() => {
   }
 
   datos.value = authStore.user;
+  console.log('✅ Usuario cargado en MainLayout (onMounted):', datos.value);
+  
+  if (!datos.value) {
+    console.warn('⚠️ No hay usuario en onMounted. Esperando...');
+  }
 
   leftDrawerOpen.value = false;
 
@@ -168,6 +217,17 @@ onMounted(() => {
   })
 })
 
+// Watcher para detectar cambios en authStore.user
+watch(() => authStore.user, (nuevoUsuario) => {
+  if (nuevoUsuario) {
+    datos.value = nuevoUsuario;
+    console.log('✅ Usuario actualizado en MainLayout (watcher):', datos.value);
+  } else {
+    console.warn('⚠️ Usuario cerró sesión, redirigiendo...');
+    void router.push('/');
+  }
+}, { immediate: true })
+
 onUnmounted(() => {
   socket.off('nuevo-pedido')
   socket.off('pedido-actualizado')
@@ -193,7 +253,82 @@ onUnmounted(() => {
         <q-item-label header>
           Menú de opciones
         </q-item-label>
-        <div v-if="datos?.rol === 'caja'">
+
+        <q-item clickable to="/select">
+          <q-item-section avatar>
+            <q-icon name="home" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Inicio</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable to="/tienda">
+          <q-item-section avatar>
+            <q-icon name="store" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Categorías Tienda</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable to="/bodega">
+          <q-item-section avatar>
+            <q-icon name="warehouse" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Categorías Bodega</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable @click="checarPermiso('corte')">
+          <q-item-section avatar>
+            <q-icon name="point_of_sale" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Corte de Caja</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable @click="checarPermiso('reporte')">
+          <q-item-section avatar>
+            <q-icon name="table_rows" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Reporte de Existencias</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable @click="showInventoryManager = true">
+          <q-item-section avatar>
+            <q-icon name="inventory" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Gestión de Inventario</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <InventoryManagerModal :show="showInventoryManager" @close="showInventoryManager = false" />
+
+        <q-item clickable to="/moresettings">
+          <q-item-section avatar>
+            <q-icon name="add_box" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Más configuraciones</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable @click="cerrarSesion">
+          <q-item-section avatar>
+            <q-icon name="logout" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Cerrar sesión</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <!--<div v-if="datos?.rol === 'caja'">
           <q-item clickable @click="abrirCarritoConPassword">
             <q-item-section avatar>
               <q-icon name="home" />
@@ -304,9 +439,9 @@ onUnmounted(() => {
             <q-item-section>
               <q-item-label>Pedidos</q-item-label>
             </q-item-section>
-          </q-item>
+          </q-item>-->
 
-          <!--<q-item clickable @click="showInventoryManager = true">
+        <!--<q-item clickable @click="showInventoryManager = true">
             <q-item-section avatar>
               <q-icon name="inventory" />
             </q-item-section>
@@ -315,7 +450,7 @@ onUnmounted(() => {
             </q-item-section>
           </q-item>-->
 
-          <q-item clickable @click="cerrarSesion">
+        <!--<q-item clickable @click="cerrarSesion">
             <q-item-section avatar>
               <q-icon name="logout" />
             </q-item-section>
@@ -418,9 +553,9 @@ onUnmounted(() => {
             <q-item-section>
               <q-item-label>Reporte de Existencias</q-item-label>
             </q-item-section>
-          </q-item>
+          </q-item>-->
 
-          <!--<q-item clickable @click="showInventoryManager = true">
+        <!--<q-item clickable @click="showInventoryManager = true">
             <q-item-section avatar>
               <q-icon name="inventory" />
             </q-item-section>
@@ -429,7 +564,7 @@ onUnmounted(() => {
             </q-item-section>
           </q-item>-->
 
-          <q-item clickable @click="showInventoryManager = true">
+        <!--<q-item clickable @click="showInventoryManager = true">
             <q-item-section avatar>
               <q-icon name="inventory" />
             </q-item-section>
@@ -475,9 +610,9 @@ onUnmounted(() => {
             <q-item-section>
               <q-item-label>Más configuraciones</q-item-label>
             </q-item-section>
-          </q-item>
+          </q-item>-->
 
-          <!--<q-item clickable @click="showInventoryManager = true">
+        <!--<q-item clickable @click="showInventoryManager = true">
             <q-item-section avatar>
               <q-icon name="inventory" />
             </q-item-section>
@@ -487,7 +622,7 @@ onUnmounted(() => {
           </q-item>
           <InventoryManagerModal :show="showInventoryManager" @close="showInventoryManager = false" />-->
 
-          <q-item clickable @click="cerrarSesion">
+        <!--<q-item clickable @click="cerrarSesion">
             <q-item-section avatar>
               <q-icon name="logout" />
             </q-item-section>
@@ -495,7 +630,7 @@ onUnmounted(() => {
               <q-item-label>Cerrar sesión</q-item-label>
             </q-item-section>
           </q-item>
-        </div>
+        </div>-->
       </q-list>
     </q-drawer>
 

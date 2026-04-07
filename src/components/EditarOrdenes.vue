@@ -46,11 +46,21 @@ const cargarOrdenConProductos = async (nuevaOrden: Record<string, unknown>): Pro
 
     // Cargar inventarios para buscar metros editados guardados
     let inventariosConDetalles: Array<{ id: number; producto_id: number; bodega_id: number; medida_ind?: string; medida_gru?: string; detalles?: Array<{ cantidad: number }> }> = [];
+    let detallesDelInventario: Array<{ producto_id: number; cantidad: number; bodega_id: number }> = [];
     try {
       const invRes = await api.get('inventarios');
       inventariosConDetalles = invRes.data || [];
     } catch (e) {
       console.warn('No se pudo cargar inventarios para verificar detalles guardados', e);
+    }
+
+    // Cargar detalles individuales del inventario para obtener TODOS los items guardados
+    try {
+      const detallesRes = await api.get('inventarios/detalles');
+      detallesDelInventario = (detallesRes.data || []);
+      console.log(`📋 Detalles del inventario cargados: ${detallesDelInventario.length} items`);
+    } catch (e) {
+      console.warn('No se pudo cargar detalles del inventario', e);
     }
 
     detalles.value = (res.data.detalles || []).map((d: { id?: number; producto_id: number; cantidad: number; rollos: number; precio_unitario: number }) => {
@@ -67,6 +77,10 @@ const cargarOrdenConProductos = async (nuevaOrden: Record<string, unknown>): Pro
 
       // Si es tipo rollos, SIEMPRE asegurar que metros_por_rollo esté inicializado
       const tipo = (d as { tipo?: string }).tipo || 'estandar';
+
+      // DEBUG: Log para entender qué se está recibiendo
+      console.log(`📊 Detalle cargado - Producto: ${d.producto_id}, tipo: ${tipo}, rollos: ${d.rollos}, metadata metros.length: ${metros.length}`);
+
       if (tipo === 'rollos' && d.rollos && d.rollos > 0) {
         if (metros.length === 0) {
           metros = new Array(d.rollos).fill(0);
@@ -87,21 +101,17 @@ const cargarOrdenConProductos = async (nuevaOrden: Record<string, unknown>): Pro
 
       // Si es tipo rollos, buscar en inventariodetalle cuántos metros ya fueron guardados
       if (tipo === 'rollos' && metros.length > 0) {
-        // Buscar inventario para este producto en cualquier bodega
-        const inventariosDelProducto = inventariosConDetalles.filter(inv => inv.producto_id === d.producto_id);
+        // Buscar TODOS los detalles guardados para este producto (sin filtrar por bodega)
+        const detallesGuardadosDelProducto = detallesDelInventario.filter(det => det.producto_id === d.producto_id);
 
-        if (inventariosDelProducto.length > 0) {
-          // Sumar todos los detalles guardados de este producto en todas las bodegas
-          const metrosGuardadosPorRollo = inventariosDelProducto.flatMap(inv => inv.detalles || []);
-          console.log(`📊 Producto ${d.producto_id}: encontrados ${metrosGuardadosPorRollo.length} rollos guardados`);
+        console.log(`📊 Producto ${d.producto_id}: encontrados ${detallesGuardadosDelProducto.length} detalles guardados`);
 
-          // Asignar los metros guardados a cada posición
-          for (let i = 0; i < metrosGuardadosPorRollo.length && i < metrosGuardados.length; i++) {
-            const detalle = metrosGuardadosPorRollo[i];
-            if (detalle) {
-              const cantidad = detalle.cantidad;
-              metrosGuardados[i] = typeof cantidad === 'number' ? cantidad : Number(cantidad);
-            }
+        // Asignar los metros guardados a cada posición
+        for (let i = 0; i < detallesGuardadosDelProducto.length && i < metrosGuardados.length; i++) {
+          const detalle = detallesGuardadosDelProducto[i];
+          if (detalle) {
+            const cantidad = detalle.cantidad;
+            metrosGuardados[i] = typeof cantidad === 'number' ? cantidad : Number(cantidad);
           }
         }
       }
@@ -151,27 +161,6 @@ watch(
     }
   }
 );
-
-function agregarDetalle(): void {
-  if (estado.value === 'recibido') {
-    alert("Acción denegada, la orden ya fue recibida.");
-    return;
-  }
-  detalles.value.push({
-    producto_id: null,
-    producto_nombre: '',
-    cantidad: 1,
-    rollos: 1,
-    precio_unitario: 0,
-    bodega: null,
-    metros_por_rollo: [],
-    metros_guardados: [],
-    tipo: 'estandar',
-    guardado: false,
-    medida_ind: '',
-    medida_gru: ''
-  });
-}
 
 function eliminarDetalle(index: number): void {
   if (estado.value === 'recibido') {
@@ -359,7 +348,7 @@ const generarMetrosInputs = (index: number): void => {
           <div class="detalle-header">
             <div class="producto-title">{{ detalle.producto_nombre || detalle.producto_id }}</div>
             <div class="badge" :class="detalle.tipo === 'rollos' ? 'badge-rollos' : 'badge-estandar'">
-              {{ detalle.tipo === 'rollos' ? 'Rollos de Tela' : 'Estándar' }}
+              {{ detalle.tipo === 'rollos' ? 'Por agrupación' : 'Por unidad' }}
             </div>
             <button class="delete-btn" @click="eliminarDetalle(index)">Eliminar</button>
           </div>
@@ -440,9 +429,6 @@ const generarMetrosInputs = (index: number): void => {
               detalle.medida_gru?.toLowerCase() }}. Los que dejes en 0 no se guardarán en el inventario.</p>
           </div>
         </div>
-
-        <button @click="agregarDetalle">Agregar Producto</button>
-        <br /><br />
 
         <button @click="actualizarOrden">Guardar Cambios</button>
         <button @click="$emit('close')">Cancelar</button>

@@ -91,7 +91,7 @@ onMounted((): void => {
       <table v-if="categorias.length" class="tabla">
         <thead>
           <tr>
-            <th>ID</th>
+            <!--<th>ID</th>-->
             <th>Nombre</th>
             <th>Ficha técnica</th>
             <th>Editar</th>
@@ -100,7 +100,7 @@ onMounted((): void => {
         </thead>
         <tbody>
           <tr v-for="categoria in categorias" :key="categoria.id">
-            <td>{{ categoria.id }}</td>
+            <!--<td>{{ categoria.id }}</td>-->
             <td>{{ categoria.nombre }}</td>
             <td>{{ categoria.descripcion || 'Sin ficha técnica ' }}</td>
             <td><button @click="abrirEditModal(categoria)" class="btn-editar">Editar</button></td>

@@ -15,6 +15,8 @@ type DetalleOrden = {
   tipoEntrada: string
   cantidadRollosInput: number
   detallesRollos: number[]
+  medida_ind?: string
+  medida_gru?: string
 }
 
 const props = defineProps({ show: Boolean })
@@ -36,7 +38,9 @@ const detalles = ref<DetalleOrden[]>([
     productoSeleccionado: null,
     tipoEntrada: 'estandar',
     cantidadRollosInput: 0,
-    detallesRollos: [0]
+    detallesRollos: [0],
+    medida_ind: '',
+    medida_gru: ''
   }
 ])
 
@@ -54,7 +58,9 @@ function addDetalle(): void {
     productoSeleccionado: null,
     tipoEntrada: 'estandar',
     cantidadRollosInput: 0,
-    detallesRollos: [0]
+    detallesRollos: [0],
+    medida_ind: '',
+    medida_gru: ''
   }
   detalles.value.push(nuevoDetalle)
 }
@@ -178,7 +184,9 @@ async function submitOrder(): Promise<void> {
       productoSeleccionado: null,
       tipoEntrada: 'estandar',
       cantidadRollosInput: 0,
-      detallesRollos: [0]
+      detallesRollos: [0],
+      medida_ind: '',
+      medida_gru: ''
     }
     detalles.value = [resetDetalle]
   } catch (e) {
@@ -200,7 +208,9 @@ watch(() => props.show, (newVal) => {
       productoSeleccionado: null,
       tipoEntrada: 'estandar',
       cantidadRollosInput: 0,
-      detallesRollos: [0]
+      detallesRollos: [0],
+      medida_ind: '',
+      medida_gru: ''
     }
     detalles.value = [nuevoDetalle]
     error.value = ''
@@ -250,6 +260,13 @@ const seleccionarProducto = (index: number, producto: { id: number; nombre: stri
   detalle.producto_id = producto.id
   detalle.busqueda = producto.nombre
   detalle.mostrarSugerencias = false
+
+  // Asignar medidas desde el inventario
+  const medidas = medidaProductoMap.get(producto.id)
+  if (medidas) {
+    detalle.medida_ind = medidas.medida_ind || ''
+    detalle.medida_gru = medidas.medida_gru || ''
+  }
 }
 
 const ocultarSugerencias = (index: number): void => {
@@ -292,11 +309,25 @@ const fetchProductos = async (): Promise<void> => {
   }
 }
 
+// Mapa para obtener medida_ind y medida_gru por producto_id
+const medidaProductoMap: Map<number, { medida_ind?: string; medida_gru?: string }> = new Map()
+
 const fetchInventarios = async (): Promise<void> => {
   try {
     const response = await api.get('inventarios')
     inventarios.value = Array.isArray(response.data) ? response.data : (response.data.items || [])
     console.log('✅ Inventarios cargados para PDF:', inventarios.value.length)
+
+    // Construir mapa de medidas por producto
+    medidaProductoMap.clear()
+    for (const inv of inventarios.value) {
+      if (inv.producto_id && !medidaProductoMap.has(inv.producto_id)) {
+        medidaProductoMap.set(inv.producto_id, {
+          medida_ind: (inv as { medida_ind?: string }).medida_ind || '',
+          medida_gru: (inv as { medida_gru?: string }).medida_gru || ''
+        })
+      }
+    }
   } catch (err) {
     error.value = 'Error al cargar inventarios'
     console.error(err)
@@ -395,11 +426,10 @@ onMounted(async (): Promise<void> => {
                 </div>
               </div>
 
-              <!-- UI para Rollos de Tela -->
               <div v-else-if="detalle.tipoEntrada === 'rollos'">
                 <div class="input-row">
                   <div class="input-half">
-                    <label>Cantidad de Rollos:</label>
+                    <label v-if="detalle.medida_gru">{{ `Cantidad de ${detalle.medida_gru?.toLowerCase()}` }}:</label>
                     <input type="number" min="1" step="1" v-model.number="detalle.cantidadRollosInput"
                       @input="generarInputsRollos(index)" placeholder="Ej: 3" required />
                   </div>
@@ -411,7 +441,7 @@ onMounted(async (): Promise<void> => {
 
                 <div class="rollos-inputs-grid" v-if="detalle.detallesRollos.length > 0">
                   <div v-for="(rollo, rIndex) in detalle.detallesRollos" :key="rIndex" class="rollo-input-item">
-                    <label>Rollo {{ (rIndex as unknown as number) + 1 }} (m):</label>
+                    <label>{{ detalle.medida_ind && (detalle.medida_ind.charAt(0).toUpperCase() + detalle.medida_ind.slice(1).toLowerCase()) + ':' }}</label>
                     <input type="number" step="0.01" min="0" v-model.number="detalle.detallesRollos[rIndex]"
                       placeholder="0.00" required />
                   </div>

@@ -76,11 +76,24 @@ const cargarProductos = async () => {
     const res = await api.get('inventarios')
     const items = (Array.isArray(res.data) ? res.data : (res.data.items ?? [])) as Producto[]
 
+    // Cargar detalles del inventario por separado
+    let detallesDelInventario: Array<{ id: number; producto_id: number; cantidad: number; estado: string; bodega_id: number }> = []
+    try {
+      const detallesRes = await api.get('inventarios/detalles')
+      detallesDelInventario = detallesRes.data || []
+      console.log('📋 Detalles del inventario cargados:', detallesDelInventario.length)
+    } catch (e) {
+      console.warn('No se pudo cargar detalles del inventario', e)
+    }
+
     console.log('📦 Inventarios cargados:', items) // DEBUG
 
     productos.value = items.map((p) => {
       const prodObj = p.producto || { precio_comp: 0 }
       const precioComp = Number(p.precio_comp ?? prodObj.precio_comp ?? 0)
+
+      // Obtener todos los detalles para este inventario
+      const detallesDeEsteProducto = detallesDelInventario.filter(det => det.producto_id === p.id)
 
       return {
         ...p,
@@ -88,7 +101,7 @@ const cargarProductos = async () => {
         showDetails: false,
         rolosSeleccionados: [],
         cantidadTransferencia: 0,
-        detalles: p.detalles || []
+        detalles: detallesDeEsteProducto.length > 0 ? detallesDeEsteProducto : (p.detalles || [])
       }
     })
   } catch (err) {
@@ -380,7 +393,7 @@ watch(() => props.categoryId, (newVal) => {
                         @change="toggleRollo(prod, idx)" class="rollo-checkbox" />
                       <label :for="`rollo-${prod.id}-${idx}`" class="rollo-label">
                         <div class="rollo-info-main">
-                          <span class="rollo-num">Rollo #{{ idx + 1 }}</span>
+                          <span class="rollo-num">{{ prod.medida_gru }} #{{ idx + 1 }}</span>
                           <!-- <span class="rollo-qty"></span> -->
                         </div>
                         <div class="rollo-info-secondary">
