@@ -231,29 +231,17 @@ const actualizarOrden = async (): Promise<void> => {
       }
 
       for (const detalle of detalles.value) {
-        // Buscar el inventario_id para este producto y bodega
-        const inventarioMatch = inventariosDisponibles.find(
-          inv => inv.producto_id === detalle.producto_id && inv.bodega_id === primeraBodega
-        );
-
-        if (!inventarioMatch) {
-          console.warn(`❌ No existe inventario para producto ${detalle.producto_id} en bodega ${primeraBodega}`);
-          continue;
-        }
-
-        const inventarioId = inventarioMatch.id;
-        console.log(`✓ Encontrado inventario_id: ${inventarioId} para producto ${detalle.producto_id}`);
-
         // Caso 1: Producto estándar - guardar cantidad total si es > 0
-        if (detalle.tipo === 'estandar' && detalle.cantidad && Number(detalle.cantidad) > 0) {
+        if (detalle.tipo === 'estandar' && Number(detalle.cantidad) > 0) {
           // Verificar si ya está guardado
           if (detalle.metros_guardados.length === 0 || (detalle.metros_guardados[0] || 0) === 0) {
             try {
               console.log(`📊 Guardando producto estándar ${detalle.producto_id}: ${detalle.cantidad}`);
               await api.post('inventarios/detalles', {
-                inventario_id: inventarioId,
+                producto_id: detalle.producto_id,
                 cantidad: Number(detalle.cantidad),
-                estado: 'DISPONIBLE'
+                estado: 'DISPONIBLE',
+                bodega_id: primeraBodega
               });
               // Marcar como guardado
               detalle.metros_guardados = [Number(detalle.cantidad)];
@@ -278,9 +266,10 @@ const actualizarOrden = async (): Promise<void> => {
               try {
                 console.log(`  📌 Guardando rollo ${i + 1} con ${metros}m...`);
                 const detalleResponse = await api.post('inventarios/detalles', {
-                  inventario_id: inventarioId,
+                  producto_id: detalle.producto_id,
                   cantidad: metros,
-                  estado: 'DISPONIBLE'
+                  estado: 'DISPONIBLE',
+                  bodega_id: primeraBodega
                 });
                 console.log(`  ✅ Rollo ${i + 1} guardado:`, detalleResponse.data);
                 // Marcar este rollo como guardado

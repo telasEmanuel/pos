@@ -37,6 +37,22 @@ function editarOrden(orden: { id: number; proveedor_id: number; estado: string;[
   showEditModal.value = true;
 }
 
+async function cancelarOrden(orden: { id: number; proveedor_id: number; estado: string;[key: string]: unknown }): Promise<void> {
+  if (!confirm(`¿Deseas cancelar la orden #${orden.id}? Esta acción no se puede deshacer.`)) {
+    return;
+  }
+
+  loading.value = false;
+  try {
+    await api.delete(`ordenes/${orden.id}`);
+    alert('Orden cancelada correctamente');
+    await mostrarOrdenes();
+  } catch (error) {
+    alert('Error al cancelar la orden: ' + (error instanceof Error ? error.message : String(error)));
+    loading.value = true;
+  }
+}
+
 function formatearFecha(fechaISO: string | number | Date): string {
   const fecha = new Date(fechaISO);
   const dd = String(fecha.getDate()).padStart(2, '0');
@@ -79,6 +95,7 @@ onMounted((): void => {
           <td>{{ orden.estado.toUpperCase() }}</td>
           <td>
             <button @click="editarOrden(orden)" id="botonsito">Editar</button>
+            <button @click="cancelarOrden(orden)" id="boton-cancelar">Cancelar</button>
           </td>
         </tr>
       </tbody>
@@ -156,6 +173,28 @@ h1 {
 
 #botonsito:hover {
   background: var(--color-brand-secondary);
+  transform: translateY(-2px) scale(1.03);
+}
+
+#boton-cancelar {
+  background: #dc3545;
+  color: #fff;
+  padding: 0.5rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 200;
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.15);
+  cursor: pointer;
+  transition: background 0.18s, transform 0.12s;
+  margin-top: 5px;
+  margin-left: 0.5rem;
+  margin-bottom: 5px;
+  letter-spacing: 0.5px;
+}
+
+#boton-cancelar:hover {
+  background: #c82333;
   transform: translateY(-2px) scale(1.03);
 }
 </style>

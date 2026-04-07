@@ -292,6 +292,17 @@ const fetchProductos = async (): Promise<void> => {
   }
 }
 
+const fetchInventarios = async (): Promise<void> => {
+  try {
+    const response = await api.get('inventarios')
+    inventarios.value = Array.isArray(response.data) ? response.data : (response.data.items || [])
+    console.log('✅ Inventarios cargados para PDF:', inventarios.value.length)
+  } catch (err) {
+    error.value = 'Error al cargar inventarios'
+    console.error(err)
+  }
+}
+
 const fetchProveedores = async (): Promise<void> => {
   try {
     const response = await api.get('proveedores')
@@ -304,6 +315,7 @@ const fetchProveedores = async (): Promise<void> => {
 
 onMounted(async (): Promise<void> => {
   await fetchProductos()
+  await fetchInventarios()
   await fetchProveedores()
 })
 </script>
@@ -363,10 +375,10 @@ onMounted(async (): Promise<void> => {
                 <label>Tipo de Entrada:</label>
                 <div class="radio-group">
                   <label class="radio-label">
-                    <input type="radio" v-model="detalle.tipoEntrada" value="estandar"> Estándar
+                    <input type="radio" v-model="detalle.tipoEntrada" value="estandar"> Por unidad
                   </label>
                   <label class="radio-label">
-                    <input type="radio" v-model="detalle.tipoEntrada" value="rollos"> Rollos de Tela
+                    <input type="radio" v-model="detalle.tipoEntrada" value="rollos"> Por agrupación
                   </label>
                 </div>
               </div>

@@ -146,10 +146,10 @@ export async function generateOrderPDF(
         const medidaInd = String(invItem.medida_ind || '');
         const medidaGru = String(invItem.medida_gru || '');
 
-        let displayNombre = productoNombre.toUpperCase();
-        if (detalle.tipo === 'rollos' && detalle.measurements && detalle.measurements.length > 0) {
+        const displayNombre = productoNombre.toUpperCase();
+        /*if (detalle.tipo === 'rollos' && detalle.measurements && detalle.measurements.length > 0) {
           displayNombre += ` (${detalle.measurements.join(', ')} ${medidaInd})`;
-        }
+        }*/
 
         const maxWidth = (mostrarCantidad ? posCantidad : posRollos) - 20;
         const lines = doc.splitTextToSize(displayNombre, maxWidth);

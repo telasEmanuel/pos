@@ -369,16 +369,16 @@ const printReceiptWindow = async () => {
   const html = generateReceiptHTML(props.data)
 
   try {
-    // Detectar si estamos en Electron o navegador
-    const isElectron = typeof window !== 'undefined' && (window.electron !== undefined || window.pos?.printTicket !== undefined)
+    // Verificar si estamos en Electron (tiene la API de pos)
+    const isElectronApp = typeof window !== 'undefined' && window.pos !== undefined && typeof window.pos.printTicket === 'function'
 
-    if (isElectron && window.pos?.printTicket) {
-      // Estamos en Electron - usar API nativa
+    if (isElectronApp) {
+      // Estamos en Electron - SOLO usar impresora térmica
       await window.pos.printTicket(html)
-      console.log('✅ Ticket enviado a impresora (Electron)')
+      console.log('✅ Ticket enviado a impresora térmica (Electron)')
     } else {
-      // Estamos en navegador - imprimir en ventana nueva
-      console.log('📄 Imprimiendo en navegador (fallback)')
+      // Estamos en SPA/PWA - abrir navegador para imprimir
+      console.log('📄 Abriendo navegador para imprimir (SPA/PWA)')
       const printWindow = window.open('', '_blank')
       if (printWindow) {
         printWindow.document.write(html)
@@ -389,19 +389,7 @@ const printReceiptWindow = async () => {
     }
   } catch (error) {
     console.error('❌ Error imprimiendo:', error)
-    const isElectron = typeof window !== 'undefined' && (window.electron !== undefined || window.pos?.printTicket !== undefined)
-
-    if (isElectron) {
-      throw error
-    }
-
-    const printWindow = window.open('', '_blank')
-    if (printWindow) {
-      const generatedHtml = props.data ? generateReceiptHTML(props.data) : ''
-      printWindow.document.write(generatedHtml)
-      printWindow.document.close()
-      printWindow.print()
-    }
+    throw error
   }
 }
 

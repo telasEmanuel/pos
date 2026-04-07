@@ -211,10 +211,10 @@ onMounted(async () => {
           <label>Tipo de Entrada:</label>
           <div class="radio-group">
             <label class="radio-label">
-              <input type="radio" v-model="tipoEntrada" value="estandar"> Estándar
+              <input type="radio" v-model="tipoEntrada" value="estandar"> Por unidad
             </label>
             <label class="radio-label">
-              <input type="radio" v-model="tipoEntrada" value="rollos"> Rollos de Tela
+              <input type="radio" v-model="tipoEntrada" value="rollos"> Por agrupación
             </label>
           </div>
         </div>
