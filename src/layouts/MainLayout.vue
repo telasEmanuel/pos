@@ -109,7 +109,7 @@ const cerrarSesion = async () => {
 // }
 
 const checarPermiso = (seccion: string) => {
-  switch(seccion){
+  switch (seccion) {
     case 'corte':
       if (convertirABooleano(datos.value?.corte_caja)) {
         void router.push('/corte');
@@ -151,7 +151,7 @@ onMounted(() => {
 
   datos.value = authStore.user;
   console.log('✅ Usuario cargado en MainLayout (onMounted):', datos.value);
-  
+
   if (!datos.value) {
     console.warn('⚠️ No hay usuario en onMounted. Esperando...');
   }

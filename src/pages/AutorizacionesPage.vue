@@ -178,28 +178,19 @@ onMounted(() => {
         </div>
 
         <div class="search-box">
-          <input 
-            v-model="busqueda" 
-            type="text" 
-            placeholder="Buscar por nombre, email o usuario..."
-            class="search-input"
-          />
+          <input v-model="busqueda" type="text" placeholder="Buscar por nombre, email o usuario..."
+            class="search-input" />
         </div>
 
         <div v-if="loading" class="loading">Cargando usuarios...</div>
-        
+
         <div v-else-if="usuariosFiltrados.length === 0" class="empty-state">
           Sin usuarios
         </div>
 
         <div v-else class="usuarios-list">
-          <div 
-            v-for="usuario in usuariosFiltrados" 
-            :key="usuario.id"
-            class="usuario-item"
-            :class="{ active: usuarioSeleccionado?.id === usuario.id }"
-            @click="seleccionarUsuario(usuario)"
-          >
+          <div v-for="usuario in usuariosFiltrados" :key="usuario.id" class="usuario-item"
+            :class="{ active: usuarioSeleccionado?.id === usuario.id }" @click="seleccionarUsuario(usuario)">
             <div class="usuario-avatar">{{ usuario.nombre?.charAt(0) || '?' }}</div>
             <div class="usuario-info">
               <div class="usuario-nombre">{{ usuario.nombre || usuario.username || 'Sin nombre' }}</div>
@@ -228,18 +219,10 @@ onMounted(() => {
           </div>
 
           <div class="permisos-grid">
-            <div 
-              v-for="permiso in permisos"
-              :key="permiso.key"
-              class="permiso-item"
-            >
+            <div v-for="permiso in permisos" :key="permiso.key" class="permiso-item">
               <label class="permiso-label">
-                <input 
-                  type="checkbox"
-                  :checked="obtenerPermiso(usuarioSeleccionado, permiso.key)"
-                  @change="togglePermiso(permiso.key)"
-                  class="permiso-checkbox"
-                />
+                <input type="checkbox" :checked="obtenerPermiso(usuarioSeleccionado, permiso.key)"
+                  @change="togglePermiso(permiso.key)" class="permiso-checkbox" />
                 <span class="permiso-icon">{{ permiso.icon }}</span>
                 <span class="permiso-text">{{ permiso.label }}</span>
               </label>
@@ -582,7 +565,7 @@ onMounted(() => {
   font-weight: 500;
 }
 
-.permiso-label input:checked + .permiso-icon + .permiso-text {
+.permiso-label input:checked+.permiso-icon+.permiso-text {
   color: #667eea;
 }
 
