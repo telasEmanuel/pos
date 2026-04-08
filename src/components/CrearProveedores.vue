@@ -98,7 +98,7 @@ const guardarProveedor = async () => {
         </div>
         <div>
           <label>Teléfono:</label>
-          <input v-model="telefono" type="number" required />
+          <input v-model="telefono" type="text" required />
         </div>
         <div>
           <label>Dirección:</label>
@@ -132,6 +132,8 @@ const guardarProveedor = async () => {
   border-radius: 18px;
   width: 380px;
   max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 8px 32px rgba(60, 60, 90, 0.18);
   display: flex;
   flex-direction: column;
