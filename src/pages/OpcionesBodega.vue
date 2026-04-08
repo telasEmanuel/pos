@@ -277,12 +277,12 @@ watch(() => authStore.user, (nuevoUsuario) => {
         <p>Crear secciones para organizar las categorías.</p>
         <button @click="checarPermiso('secciones')" class="btn">Entrar</button>
       </div>
-      <div class="card" v-if="datos?.rol === 'visor'">
+      <!-- <div class="card" v-if="datos?.rol === 'visor'">
         <span class="icon">🪪</span>
         <h3>Actualizar permisos</h3>
         <p>Administrar los permisos de los usuarios del sistema.</p>
         <router-link to="/permisos" class="btn">Entrar</router-link>
-      </div>
+      </div> -->
     </section>
     <footer>
       <small>&copy; 2026 Telas Emanuel · Telas Emanuel App</small>
