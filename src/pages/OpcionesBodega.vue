@@ -97,7 +97,7 @@ const checarPermiso = (seccion: string) => {
       break;
     case 'ventas':
       if (convertirABooleano(datos.value?.reporte_ventas)) {
-        void router.push('/reporte-ventas');
+        void router.push('/ventas');
       } else {
         $q.dialog({
           title: 'Acceso denegado',

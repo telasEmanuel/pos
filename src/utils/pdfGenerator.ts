@@ -203,6 +203,6 @@ export async function generateOrderPDF(
     console.log('PDF generado exitosamente');
   } catch (error) {
     console.error('Error generating PDF:', error);
-    throw new Error(`Error al generar PDF: ${String(error)}`);
+    throw new Error(`Error al generar PDF: ${String(error)}`, { cause: error });
   }
 }

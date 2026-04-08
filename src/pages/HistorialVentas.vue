@@ -203,8 +203,32 @@ const buscarTodas = async (): Promise<void> => {
   cargando.value = true;
   error.value = '';
   try {
-    const response = await api.get('ventas');
-    ventas.value = Array.isArray(response.data) ? response.data : [response.data];
+    // Cargar ventas
+    const ventasResponse = await api.get('ventas');
+    const ventasData = Array.isArray(ventasResponse.data) ? ventasResponse.data : [ventasResponse.data];
+    
+    // Cargar productos desde /productos/all
+    const productosResponse = await api.get('productos/all');
+    const productosData = Array.isArray(productosResponse.data) ? productosResponse.data : [productosResponse.data];
+    
+    // Crear mapa id -> nombre
+    const productosMap = new Map<number, string>();
+    productosData.forEach((prod: {id: number; nombre: string}) => {
+      productosMap.set(prod.id, prod.nombre);
+    });
+    
+    // Enriquecer ventas con nombres de productos
+    const ventasEnriquecidas = ventasData.map(venta => ({
+      ...venta,
+      detallesVenta: venta.detallesVenta.map((detalle: {id: number; producto_id: number; producto?: { nombre: string }; cantidad: number; precio_unitario: number}) => ({
+        ...detalle,
+        producto: {
+          nombre: productosMap.get(detalle.producto_id) || `Producto #${detalle.producto_id}`
+        }
+      }))
+    }));
+    
+    ventas.value = ventasEnriquecidas;
     error.value = '';
   } catch (err) {
     const msg = (err instanceof Error) ? err.message : 'Error al cargar todas las ventas';
@@ -223,9 +247,33 @@ const buscarPorId = async (): Promise<void> => {
   cargando.value = true;
   ventas.value = [];
   try {
-    const response = await api.get(`ventas/${detalleId.value}`);
-    const data = response.data;
-    ventas.value = data ? [data] : [];
+    const ventasResponse = await api.get(`ventas/${detalleId.value}`);
+    const venta = ventasResponse.data;
+    
+    if (venta) {
+      // Cargar productos desde /productos/all
+      const productosResponse = await api.get('productos/all');
+      const productosData = Array.isArray(productosResponse.data) ? productosResponse.data : [productosResponse.data];
+      
+      // Crear mapa id -> nombre
+      const productosMap = new Map<number, string>();
+      productosData.forEach((prod: {id: number; nombre: string}) => {
+        productosMap.set(prod.id, prod.nombre);
+      });
+      
+      // Enriquecer venta con nombres de productos
+      const ventaEnriquecida = {
+        ...venta,
+        detallesVenta: venta.detallesVenta.map((detalle: {id: number; producto_id: number; producto?: { nombre: string }; cantidad: number; precio_unitario: number}) => ({
+          ...detalle,
+          producto: {
+            nombre: productosMap.get(detalle.producto_id) || `Producto #${detalle.producto_id}`
+          }
+        }))
+      };
+      
+      ventas.value = [ventaEnriquecida];
+    }
     error.value = '';
   } catch (err) {
     const msg = (err instanceof Error) ? err.message : 'No se encontró la venta o hubo un error.';
@@ -258,10 +306,34 @@ const buscarPorRangoFechas = async (): Promise<void> => {
     const response = await api.get('ventas');
     const todasLasVentas = Array.isArray(response.data) ? response.data : [response.data];
 
-    ventas.value = todasLasVentas.filter((venta: Venta) => {
+    // Filtrar por rango de fechas
+    const ventasFiltradas = todasLasVentas.filter((venta: Venta) => {
       const fechaVenta = new Date(venta.fecha_venta);
-      return fechaVenta >= inicio && fechaVenta <= new Date(fin.getTime() + 86400000); // +1 día para incluir el día fin completo
+      return fechaVenta >= inicio && fechaVenta <= new Date(fin.getTime() + 86400000);
     });
+    
+    // Cargar productos desde /productos/all
+    const productosResponse = await api.get('productos/all');
+    const productosData = Array.isArray(productosResponse.data) ? productosResponse.data : [productosResponse.data];
+    
+    // Crear mapa id -> nombre
+    const productosMap = new Map<number, string>();
+    productosData.forEach((prod: {id: number; nombre: string}) => {
+      productosMap.set(prod.id, prod.nombre);
+    });
+    
+    // Enriquecer ventas con nombres de productos
+    const ventasEnriquecidas = ventasFiltradas.map(venta => ({
+      ...venta,
+      detallesVenta: venta.detallesVenta.map((detalle: {id: number; producto_id: number; producto?: { nombre: string }; cantidad: number; precio_unitario: number}) => ({
+        ...detalle,
+        producto: {
+          nombre: productosMap.get(detalle.producto_id) || `Producto #${detalle.producto_id}`
+        }
+      }))
+    }));
+
+    ventas.value = ventasEnriquecidas;
 
     if (ventas.value.length === 0) {
       error.value = 'No se encontraron ventas en el rango de fechas especificado.';

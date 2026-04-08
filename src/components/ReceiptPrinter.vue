@@ -47,9 +47,7 @@ const formatAmountInLetters = (amount: number) => {
     if (n < 1000000) {
       const k = Math.floor(n / 1000);
       const resto = n % 1000;
-      let prefijo = '';
-      if (k === 1) prefijo = 'MIL';
-      else prefijo = `${format(k)} MIL`;
+      const prefijo = k === 1 ? 'MIL' : `${format(k)} MIL`;
       return resto === 0 ? prefijo : `${prefijo} ${format(resto)}`;
     }
     return n.toString();
