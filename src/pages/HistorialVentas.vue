@@ -206,28 +206,28 @@ const buscarTodas = async (): Promise<void> => {
     // Cargar ventas
     const ventasResponse = await api.get('ventas');
     const ventasData = Array.isArray(ventasResponse.data) ? ventasResponse.data : [ventasResponse.data];
-    
+
     // Cargar productos desde /productos/all
     const productosResponse = await api.get('productos/all');
     const productosData = Array.isArray(productosResponse.data) ? productosResponse.data : [productosResponse.data];
-    
+
     // Crear mapa id -> nombre
     const productosMap = new Map<number, string>();
-    productosData.forEach((prod: {id: number; nombre: string}) => {
+    productosData.forEach((prod: { id: number; nombre: string }) => {
       productosMap.set(prod.id, prod.nombre);
     });
-    
+
     // Enriquecer ventas con nombres de productos
     const ventasEnriquecidas = ventasData.map(venta => ({
       ...venta,
-      detallesVenta: venta.detallesVenta.map((detalle: {id: number; producto_id: number; producto?: { nombre: string }; cantidad: number; precio_unitario: number}) => ({
+      detallesVenta: venta.detallesVenta.map((detalle: { id: number; producto_id: number; producto?: { nombre: string }; cantidad: number; precio_unitario: number }) => ({
         ...detalle,
         producto: {
           nombre: productosMap.get(detalle.producto_id) || `Producto #${detalle.producto_id}`
         }
       }))
     }));
-    
+
     ventas.value = ventasEnriquecidas;
     error.value = '';
   } catch (err) {
@@ -249,29 +249,29 @@ const buscarPorId = async (): Promise<void> => {
   try {
     const ventasResponse = await api.get(`ventas/${detalleId.value}`);
     const venta = ventasResponse.data;
-    
+
     if (venta) {
       // Cargar productos desde /productos/all
       const productosResponse = await api.get('productos/all');
       const productosData = Array.isArray(productosResponse.data) ? productosResponse.data : [productosResponse.data];
-      
+
       // Crear mapa id -> nombre
       const productosMap = new Map<number, string>();
-      productosData.forEach((prod: {id: number; nombre: string}) => {
+      productosData.forEach((prod: { id: number; nombre: string }) => {
         productosMap.set(prod.id, prod.nombre);
       });
-      
+
       // Enriquecer venta con nombres de productos
       const ventaEnriquecida = {
         ...venta,
-        detallesVenta: venta.detallesVenta.map((detalle: {id: number; producto_id: number; producto?: { nombre: string }; cantidad: number; precio_unitario: number}) => ({
+        detallesVenta: venta.detallesVenta.map((detalle: { id: number; producto_id: number; producto?: { nombre: string }; cantidad: number; precio_unitario: number }) => ({
           ...detalle,
           producto: {
             nombre: productosMap.get(detalle.producto_id) || `Producto #${detalle.producto_id}`
           }
         }))
       };
-      
+
       ventas.value = [ventaEnriquecida];
     }
     error.value = '';
@@ -311,21 +311,21 @@ const buscarPorRangoFechas = async (): Promise<void> => {
       const fechaVenta = new Date(venta.fecha_venta);
       return fechaVenta >= inicio && fechaVenta <= new Date(fin.getTime() + 86400000);
     });
-    
+
     // Cargar productos desde /productos/all
     const productosResponse = await api.get('productos/all');
     const productosData = Array.isArray(productosResponse.data) ? productosResponse.data : [productosResponse.data];
-    
+
     // Crear mapa id -> nombre
     const productosMap = new Map<number, string>();
-    productosData.forEach((prod: {id: number; nombre: string}) => {
+    productosData.forEach((prod: { id: number; nombre: string }) => {
       productosMap.set(prod.id, prod.nombre);
     });
-    
+
     // Enriquecer ventas con nombres de productos
     const ventasEnriquecidas = ventasFiltradas.map(venta => ({
       ...venta,
-      detallesVenta: venta.detallesVenta.map((detalle: {id: number; producto_id: number; producto?: { nombre: string }; cantidad: number; precio_unitario: number}) => ({
+      detallesVenta: venta.detallesVenta.map((detalle: { id: number; producto_id: number; producto?: { nombre: string }; cantidad: number; precio_unitario: number }) => ({
         ...detalle,
         producto: {
           nombre: productosMap.get(detalle.producto_id) || `Producto #${detalle.producto_id}`
