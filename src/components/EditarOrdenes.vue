@@ -114,6 +114,12 @@ const cargarOrdenConProductos = async (nuevaOrden: Record<string, unknown>): Pro
             metrosGuardados[i] = typeof cantidad === 'number' ? cantidad : Number(cantidad);
           }
         }
+
+        // Si hay metros guardados y aún no mostramos ninguno en metros, usar los guardados
+        if (metros.every(m => m === 0) && metrosGuardados.some(m => m > 0)) {
+          metros = [...metrosGuardados];
+          console.log(`✅ Recuperados valores guardados para producto ${d.producto_id}:`, metros);
+        }
       }
 
       return {
@@ -380,13 +386,30 @@ const generarMetrosInputs = (index: number): void => {
               Se capturarán {{ detalle.medida_ind?.toLowerCase() }} de cada {{ detalle.medida_gru?.toLowerCase() }} al
               marcar como recibido
             </p>
-            <div v-else-if="estado === 'recibido' && detalle.metros_por_rollo && detalle.metros_por_rollo.length > 0"
+            <!-- Mostrar metros capturados o guardados -->
+            <div v-if="estado === 'recibido' && detalle.metros_por_rollo && detalle.metros_por_rollo.length > 0"
               class="metros-grid">
               <div v-for="(metros, rIndex) in detalle.metros_por_rollo" :key="rIndex" class="metro-item">
                 <label>Item {{ rIndex + 1 }}</label>
                 <div class="metro-value">
-                  <span v-if="metros === 0" class="no-recibido">⏳ No recibido</span>
+                  <!-- Usar metros_guardados si metros_por_rollo está vacío pero hay datos guardados -->
+                  <span v-if="metros === 0 && (detalle.metros_guardados[rIndex as number] ?? 0) > 0" class="recibido">
+                    ✓ {{ detalle.metros_guardados[rIndex as number] }} {{ detalle.medida_ind?.toLowerCase() }}
+                  </span>
+                  <span v-else-if="metros === 0" class="no-recibido">⏳ No recibido</span>
                   <span v-else class="recibido">✓ {{ metros }} {{ detalle.medida_ind?.toLowerCase() }}</span>
+                </div>
+              </div>
+            </div>
+            <!-- Si metros_por_rollo está vacío pero hay datos en metros_guardados, mostrarlos -->
+            <div
+              v-if="estado === 'recibido' && (!detalle.metros_por_rollo || detalle.metros_por_rollo.length === 0) && detalle.metros_guardados && detalle.metros_guardados.some((m: number) => m > 0)"
+              class="metros-grid">
+              <div v-for="(metros, rIndex) in detalle.metros_guardados" :key="rIndex" class="metro-item">
+                <label>Item {{ rIndex + 1 }}</label>
+                <div class="metro-value">
+                  <span v-if="metros > 0" class="recibido">✓ {{ metros }} {{ detalle.medida_ind?.toLowerCase() }}</span>
+                  <span v-else class="no-recibido">⏳ No recibido</span>
                 </div>
               </div>
             </div>
