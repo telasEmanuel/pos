@@ -199,8 +199,7 @@ export async function generateOrderPDF(
     });
 
     // Save
-    doc.save(`orden_compra_${proveedor ? proveedor.nombre : 'no_proveedor'}.pdf`);
-    console.log('PDF generado exitosamente');
+    doc.save(`Orden de compra ${proveedor ? proveedor.nombre.toLowerCase() : 'noproveedor'} (${new Date().toISOString().split('T')[0]}).pdf`);
   } catch (error) {
     console.error('Error generating PDF:', error);
     throw new Error(`Error al generar PDF: ${String(error)}`, { cause: error });
