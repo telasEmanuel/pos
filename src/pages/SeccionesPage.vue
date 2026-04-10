@@ -97,7 +97,6 @@ onMounted((): void => {
       <table v-if="secciones.length" class="tabla">
         <thead>
           <tr>
-            <th>ID</th>
             <th>Nombre</th>
             <th>Descripción</th>
             <th>Editar</th>
@@ -106,7 +105,6 @@ onMounted((): void => {
         </thead>
         <tbody>
           <tr v-for="seccion in secciones" :key="seccion.id">
-            <td>{{ seccion.id }}</td>
             <td>{{ seccion.nombre }}</td>
             <td>{{ seccion.descripcion || 'N/A' }}</td>
             <td>
