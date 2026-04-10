@@ -354,6 +354,24 @@ const decrementarCantidad = (prod: ProductoConCantidad) => {
   }
 };
 
+const validarCantidad = (prod: ProductoConCantidad) => {
+  // Si la cantidad es 0, no permitir ingreso
+  if (prod.cantidad === 0) {
+    prod.cantidadPedido = 0;
+    return;
+  }
+
+  // Si la cantidad ingresada es mayor a la disponible, limitarla
+  if (prod.cantidadPedido > prod.cantidad) {
+    prod.cantidadPedido = prod.cantidad;
+  }
+
+  // Si es negativo, ponerlo en 0
+  if (prod.cantidadPedido < 0) {
+    prod.cantidadPedido = 0;
+  }
+};
+
 const abrirEditModal = (existencia: ProductoConCantidad) => {
   existenciaSeleccionada.value = existencia;
   showEditModal.value = true;
@@ -749,7 +767,7 @@ watch(
                     </div>
                     <span class="unit-label q-ml-md text-caption text-weight-medium" style="min-width: 45px;">{{
                       p.medida
-                    }}</span>
+                      }}</span>
                     <q-btn icon="delete" flat round dense color="negative" size="md"
                       @click.stop="removeItem(p.productoId)" @mousedown.stop @touchstart.stop class="q-ml-sm" />
                   </div>
@@ -763,7 +781,7 @@ watch(
             <div class="row justify-between items-center q-mb-md">
               <span class="text-subtitle1 text-weight-bold">Total:</span>
               <span class="text-h6 text-primary text-weight-bolder gradient-text">${{ formatNumber(totalPedido)
-              }}</span>
+                }}</span>
             </div>
             <div class="row q-col-gutter-sm no-wrap">
               <div class="col-4">
@@ -820,8 +838,8 @@ watch(
                   -
                 </button>
                 <input type="number" v-model.number="prod.cantidadPedido" inputmode="decimal" min="0" step="any"
-                  :max="prod.cantidad" class="qty-input"
-                  :disabled="prod.cantidad < prod.cantidadPedido && prod.cantidad == 0" />
+                  :max="prod.cantidad" class="qty-input" :disabled="prod.cantidad === 0"
+                  @input="validarCantidad(prod)" />
                 <button @click="incrementarCantidad(prod)" class="btn-qty"
                   :disabled="prod.cantidadPedido >= prod.cantidad">
                   +
@@ -849,7 +867,7 @@ watch(
                   <span class="detail-val">{{ formatNumber(detalle.cantidad) }} {{ prod.medida_ind }}</span>
                   <span class="detail-status" :class="detalle.estado?.toLowerCase()">{{
                     detalle.estado
-                    }}</span>
+                  }}</span>
                 </div>
               </div>
             </div>
