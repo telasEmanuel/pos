@@ -19,7 +19,7 @@ const pedidosStore = usePedidosStore()
 const { pedidos } = storeToRefs(pedidosStore)
 const router = useRouter();
 const leftDrawerOpen = ref(false);
-const datos = ref<{ nombre?: string, rol?: string, corte_caja?: boolean, reporte_existencia?: boolean } | null>(null);
+const datos = ref<{ nombre?: string, rol?: string, corte_caja?: boolean, reporte_existencia?: boolean, carrito?: boolean } | null>(null);
 const authStore = useAuthStore();
 
 // Helper para convertir 0/1 o true/false a booleano
@@ -34,29 +34,6 @@ const convertirABooleano = (valor: unknown): boolean => {
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
 }
-
-/*const abrirCarritoConPassword = () => {
-  showPasswordDialog.value = true;
-  passwordInput.value = '';
-  passwordError.value = '';
-  currentPasswordContext.value = 'carrito';
-}
-
-const abrirCorteConPassword = () => {
-  showPasswordDialog.value = true;
-  passwordInput.value = '';
-  passwordError.value = '';
-  currentPasswordContext.value = 'corte';
-}*/
-
-/*const abrirReporteConPassword = () => {
-  showPasswordDialog.value = true;
-  passwordInput.value = '';
-  passwordError.value = '';
-  currentPasswordContext.value = 'reporte';
-
-  //@click="abrirReporteConPassword"
-}*/
 
 const validarPassword = () => {
   if (currentPasswordContext.value === 'carrito' && passwordInput.value === import.meta.env.VITE_CARRITO) {
@@ -93,20 +70,6 @@ const cerrarSesion = async () => {
     await router.push('/');
   }
 }
-
-// const cargarPedidos = async () => {
-//   try {
-//     await pedidosStore.obtenerPedidos()
-//   } catch (error) {
-//     console.error('Error cargando pedidos:', error)
-//     $q.notify({
-//       message: 'Error al cargar los pedidos',
-//       color: 'negative',
-//       icon: 'error',
-//       position: 'top'
-//     })
-//   }
-// }
 
 const checarPermiso = (seccion: string) => {
   switch (seccion) {
@@ -145,7 +108,22 @@ const checarPermiso = (seccion: string) => {
 
 const validarPermiso = () => {
   if (datos.value?.rol === 'caja') {
-    void router.push('/carrito');
+    if (convertirABooleano(datos.value?.carrito)) {
+      console.log('entra en el if')
+      console.log('valor booleano: '+datos.value?.carrito)
+      void router.push('/carrito');
+    } else {
+      console.log('valor boleano: '+datos.value?.carrito)
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
   } else {
     void router.push('/select');
   }
@@ -335,310 +313,6 @@ onUnmounted(() => {
             <q-item-label>Cerrar sesión</q-item-label>
           </q-item-section>
         </q-item>
-
-        <!--<div v-if="datos?.rol === 'caja'">
-          <q-item clickable @click="abrirCarritoConPassword">
-            <q-item-section avatar>
-              <q-icon name="home" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Inicio</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable to="/tienda">
-            <q-item-section avatar>
-              <q-icon name="store" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Categorías Tienda</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable to="/bodega">
-            <q-item-section avatar>
-              <q-icon name="warehouse" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Categorías Bodega</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable to="/caja">
-            <q-item-section avatar>
-              <q-icon name="storefront" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Pedidos</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable @click="abrirCorteConPassword">
-            <q-item-section avatar>
-              <q-icon name="point_of_sale" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Corte de Caja</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable @click="showInventoryManager = true">
-            <q-item-section avatar>
-              <q-icon name="inventory" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Gestión de Inventario</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable to="/reporte">
-            <q-item-section avatar>
-              <q-icon name="table_rows" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Reporte de Existencias</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <InventoryManagerModal :show="showInventoryManager" @close="showInventoryManager = false" />
-
-          <q-item clickable @click="cerrarSesion">
-            <q-item-section avatar>
-              <q-icon name="logout" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Cerrar sesión</q-item-label>
-            </q-item-section>
-          </q-item>
-        </div>
-
-        <div v-if="datos?.rol === 'vendedor'">
-          <q-item clickable to="/select">
-            <q-item-section avatar>
-              <q-icon name="home" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Inicio</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable to="/tienda">
-            <q-item-section avatar>
-              <q-icon name="store" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Categorías Tienda</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable to="/bodega">
-            <q-item-section avatar>
-              <q-icon name="warehouse" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Categorías Bodega</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable to="/caja">
-            <q-item-section avatar>
-              <q-icon name="storefront" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Pedidos</q-item-label>
-            </q-item-section>
-          </q-item>-->
-
-        <!--<q-item clickable @click="showInventoryManager = true">
-            <q-item-section avatar>
-              <q-icon name="inventory" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Gestión de Inventario</q-item-label>
-            </q-item-section>
-          </q-item>-->
-
-        <!--<q-item clickable @click="cerrarSesion">
-            <q-item-section avatar>
-              <q-icon name="logout" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Cerrar sesión</q-item-label>
-            </q-item-section>
-          </q-item>
-        </div>
-
-        <div v-if="datos?.rol === 'visor'">
-          <q-item clickable to="/select">
-            <q-item-section avatar>
-              <q-icon name="home" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Inicio</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable to="/tienda">
-            <q-item-section avatar>
-              <q-icon name="store" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Categorías Tienda</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable to="/bodega">
-            <q-item-section avatar>
-              <q-icon name="warehouse" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Categorías Bodega</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable to="/corte">
-            <q-item-section avatar>
-              <q-icon name="point_of_sale" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Corte de Caja</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable to="/reporte">
-            <q-item-section avatar>
-              <q-icon name="table_rows" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Reporte de Existencias</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable @click="showInventoryManager = true">
-            <q-item-section avatar>
-              <q-icon name="inventory" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Gestión de Inventario</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <InventoryManagerModal :show="showInventoryManager" @close="showInventoryManager = false" />
-
-          <q-item clickable to="/moresettings">
-            <q-item-section avatar>
-              <q-icon name="add_box" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Más configuraciones</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable @click="cerrarSesion">
-            <q-item-section avatar>
-              <q-icon name="logout" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Cerrar sesión</q-item-label>
-            </q-item-section>
-          </q-item>
-        </div>
-
-        <div v-if="datos?.rol === 'secretaria'">
-          <q-item clickable to="/select">
-            <q-item-section avatar>
-              <q-icon name="home" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Inicio</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable to="/reporte">
-            <q-item-section avatar>
-              <q-icon name="table_rows" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Reporte de Existencias</q-item-label>
-            </q-item-section>
-          </q-item>-->
-
-        <!--<q-item clickable @click="showInventoryManager = true">
-            <q-item-section avatar>
-              <q-icon name="inventory" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Gestión de Inventario</q-item-label>
-            </q-item-section>
-          </q-item>-->
-
-        <!--<q-item clickable @click="showInventoryManager = true">
-            <q-item-section avatar>
-              <q-icon name="inventory" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Gestión de Inventario</q-item-label>
-            </q-item-section>
-          </q-item>
-          <InventoryManagerModal :show="showInventoryManager" @close="showInventoryManager = false" />
-
-          <q-item clickable @click="cerrarSesion">
-            <q-item-section avatar>
-              <q-icon name="logout" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Cerrar sesión</q-item-label>
-            </q-item-section>
-          </q-item>
-        </div>
-
-        <div v-if="datos?.rol === 'asistente'">
-          <q-item clickable to="/select">
-            <q-item-section avatar>
-              <q-icon name="home" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Inicio</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable to="/reporte">
-            <q-item-section avatar>
-              <q-icon name="table_rows" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Reporte de Existencias</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable to="/moresettings">
-            <q-item-section avatar>
-              <q-icon name="add_box" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Más configuraciones</q-item-label>
-            </q-item-section>
-          </q-item>-->
-
-        <!--<q-item clickable @click="showInventoryManager = true">
-            <q-item-section avatar>
-              <q-icon name="inventory" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Gestión de Inventario</q-item-label>
-            </q-item-section>
-          </q-item>
-          <InventoryManagerModal :show="showInventoryManager" @close="showInventoryManager = false" />-->
-
-        <!--<q-item clickable @click="cerrarSesion">
-            <q-item-section avatar>
-              <q-icon name="logout" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Cerrar sesión</q-item-label>
-            </q-item-section>
-          </q-item>
-        </div>-->
       </q-list>
     </q-drawer>
 

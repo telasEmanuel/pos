@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 import api from '../api/axios';
+import { generateOrderPDF } from '../utils/pdfGenerator';
+import logo from '../assets/logoT.png';
 
 const props = defineProps({
   show: Boolean,
@@ -17,6 +19,7 @@ const proveedor_id = ref<number | null>(null);
 const filtros = ref<Array<{ id: number; nombre: string }>>([])
 
 const loading = ref(false);
+const generandoPDF = ref(false);
 
 const productoFiltrado = async (): Promise<void> => {
   const response = await api.get('productos/all')
@@ -329,6 +332,44 @@ const generarMetrosInputs = (index: number): void => {
     detalle.metros_por_rollo = new Array(detalle.rollos).fill(0);
   }
 }
+
+const descargarPDF = async (): Promise<void> => {
+  try {
+    generandoPDF.value = true;
+
+    // Cargar inventarios y proveedores necesarios para el PDF
+    const [invResponse, provResponse] = await Promise.all([
+      api.get('inventarios'),
+      api.get('proveedores')
+    ]);
+
+    const inventarios = invResponse.data || [];
+    const proveedores = provResponse.data || [];
+
+    // Preparar payload con los detalles actuales
+    const detallesParaPDF = detalles.value.map(d => ({
+      producto_id: d.producto_id,
+      cantidad: d.cantidad,
+      rollos: d.rollos,
+      precio_unitario: d.precio_unitario,
+      tipo: d.tipo,
+      measurements: d.metros_por_rollo
+    }));
+
+    const payload = {
+      proveedor_id: Number(proveedor_id.value),
+      estado: estado.value,
+      detalles: detallesParaPDF
+    };
+
+    // Generar PDF
+    await generateOrderPDF(payload, logo, inventarios, proveedores, Number(proveedor_id.value));
+  } catch (error) {
+    console.error('Error al generar PDF:', error);
+  } finally {
+    generandoPDF.value = false;
+  }
+}
 </script>
 
 <template>
@@ -453,6 +494,8 @@ const generarMetrosInputs = (index: number): void => {
           </div>
         </div>
 
+        <button @click="descargarPDF" :disabled="generandoPDF" class="btn-pdf">{{ generandoPDF ? 'Generando PDF...' :
+          'Descargar PDF' }}</button>
         <button @click="actualizarOrden">Guardar Cambios</button>
         <button @click="$emit('close')">Cancelar</button>
       </div>
@@ -644,6 +687,27 @@ const generarMetrosInputs = (index: number): void => {
   margin-top: 8px;
   cursor: pointer;
   transition: background 0.2s, transform 0.12s;
+}
+
+.modal button:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.modal button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-pdf {
+  background: linear-gradient(135deg, #4f8cff 0%, #357abd 100%) !important;
+  order: -1;
 }
 
 /* Badge styles */
