@@ -38,33 +38,19 @@ const login = async () => {
       });
 
       switch (datos.value?.rol) {
-        case 'caja':
         case 'vendedor':
         case 'visor':
         case 'secretaria':
         case 'asistente':
-          //await router.push('/carrito');
-          console.log('🚀 Redirigiendo a /select');
+        case 'admin':
           await router.push('/select');
           break;
-        /*case 'vendedor':
-          await router.push('/select');
+        case 'caja':
+          await router.push('/carrito');
           break;
-        case 'visor':
+        /*case 'visor':
           await router.push('/select');
           break;*/
-        case 'admin':
-          try {
-            const adminUrl = (import.meta.env.VITE_ADMIN_URL as string)
-            if (/^https?:\/\//.test(adminUrl)) {
-              window.location.href = adminUrl
-            } else {
-              await router.push(adminUrl)
-            }
-          } catch (e) {
-            return e
-          }
-          break;
         default:
           mensajeError.value = 'No debería llegar a este punto pero bueno.';
           break;
