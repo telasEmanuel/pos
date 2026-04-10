@@ -371,7 +371,7 @@ watch(() => props.categoryId, (newVal) => {
               </div>
 
               <!-- Solo mostrar opciones si cantidad > 0 -->
-              <div v-if="Number(prod.cantidad) > 0">
+              <div v-if="Number(prod.cantidad) > 0 && datos?.rol === 'visor'">
                 <!-- Rollos/Detalles Section (producto CON detalles) -->
                 <div v-if="prod.detalles && prod.detalles.length > 0" class="rollos-section">
                   <button class="btn-toggle-detalles" @click="prod.showDetails = !prod.showDetails">
