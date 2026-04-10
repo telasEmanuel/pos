@@ -494,7 +494,7 @@ const descargarPDF = async (): Promise<void> => {
           </div>
         </div>
 
-        <button @click="descargarPDF" :disabled="generandoPDF" class="btn-pdf">{{ generandoPDF ? 'Generando PDF...' :
+        <button @click="descargarPDF" :disabled="generandoPDF">{{ generandoPDF ? 'Generando PDF...' :
           'Descargar PDF' }}</button>
         <button @click="actualizarOrden">Guardar Cambios</button>
         <button @click="$emit('close')">Cancelar</button>
