@@ -43,11 +43,12 @@ const login = async () => {
         case 'secretaria':
         case 'asistente':
         case 'admin':
+        case 'caja':
           await router.push('/select');
           break;
-        case 'caja':
+        /*case 'caja':
           await router.push('/carrito');
-          break;
+          break;*/
         /*case 'visor':
           await router.push('/select');
           break;*/
