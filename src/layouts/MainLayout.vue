@@ -143,6 +143,14 @@ const checarPermiso = (seccion: string) => {
   }
 }
 
+const validarPermiso = () => {
+  if (datos.value?.rol === 'caja') {
+    void router.push('/carrito');
+  } else {
+    void router.push('/select');
+  }
+}
+
 onMounted(() => {
   // Solicitar permiso para notificaciones del sistema
   if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
@@ -254,7 +262,7 @@ onUnmounted(() => {
           Menú de opciones
         </q-item-label>
 
-        <q-item clickable to="/select">
+        <q-item clickable @click="validarPermiso()">
           <q-item-section avatar>
             <q-icon name="home" />
           </q-item-section>
