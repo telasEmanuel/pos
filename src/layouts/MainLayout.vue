@@ -19,7 +19,7 @@ const pedidosStore = usePedidosStore()
 const { pedidos } = storeToRefs(pedidosStore)
 const router = useRouter();
 const leftDrawerOpen = ref(false);
-const datos = ref<{ nombre?: string, rol?: string, corte_caja?: boolean, reporte_existencia?: boolean, carrito?: boolean } | null>(null);
+const datos = ref<{ nombre?: string, rol?: string, corte_caja?: boolean, reporte_existencia?: boolean, carrito?: boolean, pedidos?: boolean } | null>(null);
 const authStore = useAuthStore();
 
 // Helper para convertir 0/1 o true/false a booleano
@@ -91,6 +91,21 @@ const checarPermiso = (seccion: string) => {
     case 'reporte':
       if (convertirABooleano(datos.value?.reporte_existencia)) {
         void router.push('/reporte');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break;
+    case 'pedido':
+      if (convertirABooleano(datos.value?.pedidos)) {
+        void router.push('/caja');
       } else {
         $q.dialog({
           title: 'Acceso denegado',
@@ -264,6 +279,15 @@ onUnmounted(() => {
           </q-item-section>
           <q-item-section>
             <q-item-label>Categorías Bodega</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item clickable @click="checarPermiso('pedido')">
+          <q-item-section avatar>
+            <q-icon name="storefront" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Pedidos</q-item-label>
           </q-item-section>
         </q-item>
 
