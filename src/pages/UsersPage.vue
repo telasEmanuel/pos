@@ -22,6 +22,7 @@ interface Usuario {
   secciones?: boolean | number
   reporte_ventas?: boolean | number
   usuarios?: boolean | number
+  pedidos?: boolean | number
 }
 
 const $q = useQuasar()
@@ -47,7 +48,8 @@ const permisos = [
   { key: 'calculadora', label: 'Calculadora de Precios', icon: '🧮' },
   { key: 'secciones', label: 'Secciones', icon: '🏷️' },
   { key: 'corte_caja', label: 'Corte de Caja', icon: '💰' },
-  { key: 'reporte_existencia', label: 'Reporte de Existencias', icon: '📈' }
+  { key: 'reporte_existencia', label: 'Reporte de Existencias', icon: '📈' },
+  { key: 'pedidos', label: 'Consulta de pedidos', icon: '🛍️' }
 ]
 
 // Convertir 0/1 a booleano
@@ -88,7 +90,8 @@ const seleccionarUsuario = (usuario: Usuario) => {
     calculadora: convertirABooleano(usuario.calculadora),
     secciones: convertirABooleano(usuario.secciones),
     reporte_ventas: convertirABooleano(usuario.reporte_ventas),
-    usuarios: convertirABooleano(usuario.usuarios)
+    usuarios: convertirABooleano(usuario.usuarios),
+    pedidos: convertirABooleano(usuario.pedidos)
   }
 
   // Copiar permisos a permisosCopia para reactividad
@@ -102,6 +105,7 @@ const seleccionarUsuario = (usuario: Usuario) => {
     proveedores: convertirABooleano(usuario.proveedores),
     historial_movimientos: convertirABooleano(usuario.historial_movimientos),
     calculadora: convertirABooleano(usuario.calculadora),
+    pedidos: convertirABooleano(usuario.pedidos),
     secciones: convertirABooleano(usuario.secciones),
     corte_caja: convertirABooleano(usuario.corte_caja),
     reporte_existencia: convertirABooleano(usuario.reporte_existencia)
@@ -202,7 +206,8 @@ const guardarPermisos = async () => {
       calculadora: permisosCopia.value.calculadora ?? false,
       secciones: permisosCopia.value.secciones ?? false,
       reporte_ventas: permisosCopia.value.reporte_ventas ?? false,
-      usuarios: permisosCopia.value.usuarios ?? false
+      usuarios: permisosCopia.value.usuarios ?? false,
+      pedidos: permisosCopia.value.pedidos ?? false
     }
 
     console.log('📤 Enviando permisos actualizados:', datosActualizados)
@@ -223,6 +228,7 @@ const guardarPermisos = async () => {
       usuarioSeleccionado.value.secciones = datosActualizados.secciones
       usuarioSeleccionado.value.reporte_ventas = datosActualizados.reporte_ventas
       usuarioSeleccionado.value.usuarios = datosActualizados.usuarios
+      usuarioSeleccionado.value.pedidos = datosActualizados.pedidos
     }
 
     // Actualizar el usuario en la lista
@@ -241,6 +247,7 @@ const guardarPermisos = async () => {
       usuario.secciones = datosActualizados.secciones
       usuario.reporte_ventas = datosActualizados.reporte_ventas
       usuario.usuarios = datosActualizados.usuarios
+      usuario.pedidos = datosActualizados.pedidos
     }
 
     $q.notify({

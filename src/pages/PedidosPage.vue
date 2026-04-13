@@ -33,7 +33,7 @@ const router = useRouter();
 const pedidosStore = usePedidosStore();
 const { pedidos } = storeToRefs(pedidosStore);
 const cargando = ref(true);
-const datos = ref<{ email?: string } | null>(null);
+const datos = ref<{ email?: string, rol?: string } | null>(null);
 const authStore = useAuthStore();
 
 const showPagoModal = ref(false);
@@ -439,7 +439,7 @@ onUnmounted(() => {
             </div>
             <p class="pedido-total">Total: ${{ Number(pedido.total || 0).toFixed(2) }}</p>
             <div class="pedido-actions">
-              <button v-if="datos?.email === 'caja'" @click="completarPedido(pedido)" class="btn-complete">
+              <button v-if="datos?.rol === 'caja'" @click="completarPedido(pedido)" class="btn-complete">
                 ✓ Completar
               </button>
               <button v-if="datos?.email === 'vendedor'" @click="editPedido(pedido)" class="btn-edit">
@@ -751,6 +751,8 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(217, 164, 65, 0.4);
 }
 
+.btn-complete,
+.btn-edit,
 .btn-cancel {
   flex: 1;
   padding: 0.75rem;
