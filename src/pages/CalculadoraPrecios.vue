@@ -18,6 +18,14 @@ const precioDinamico = ref(0)
 const incremento1 = ref(0)
 const incremento2 = ref(0)
 
+// Validar y limpiar valores
+const validarNumero = (valor: number | null | undefined): number => {
+  if (valor === null || valor === undefined || isNaN(Number(valor))) {
+    return 0
+  }
+  return Number(valor) >= 0 ? Number(valor) : 0
+}
+
 // Productos
 const productos = ref<Producto[]>([])
 const productoSeleccionado = ref<Producto | null>(null)
@@ -29,19 +37,26 @@ const IVA_FIJO = 16
 
 // Computed para cada paso del cálculo
 const paso1ConIVA = computed(() => {
-  return precioProveedor.value * (1 + IVA_FIJO / 100)
+  const precio = validarNumero(precioProveedor.value)
+  return precio * (1 + IVA_FIJO / 100)
 })
 
 const paso2ConDinamico = computed(() => {
-  return paso1ConIVA.value + precioDinamico.value
+  const paso1 = validarNumero(paso1ConIVA.value)
+  const dinamico = validarNumero(precioDinamico.value)
+  return paso1 + dinamico
 })
 
 const paso3ConIncremento1 = computed(() => {
-  return paso2ConDinamico.value * (1 + incremento1.value / 100)
+  const paso2 = validarNumero(paso2ConDinamico.value)
+  const incremento = validarNumero(incremento1.value)
+  return paso2 * (1 + incremento / 100)
 })
 
 const paso4Final = computed(() => {
-  return paso3ConIncremento1.value * (1 + incremento2.value / 100)
+  const paso3 = validarNumero(paso3ConIncremento1.value)
+  const incremento = validarNumero(incremento2.value)
+  return paso3 * (1 + incremento / 100)
 })
 
 // Cargar productos al montar
@@ -137,7 +152,13 @@ onMounted(async () => {
         <div class="columna-input">
           <div class="input-group">
             <label for="precio-proveedor">Precio de venta proveedor</label>
-            <input type="number" id="precio-proveedor" v-model.number="precioProveedor" step="0.01" min="0"
+            <input 
+              type="number" 
+              id="precio-proveedor" 
+              v-model.number="precioProveedor" 
+              step="0.01" 
+              min="0"
+              @blur="precioProveedor = validarNumero(precioProveedor)"
               placeholder="Ej: 50.00">
           </div>
         </div>
@@ -154,7 +175,13 @@ onMounted(async () => {
         <div class="columna-input">
           <div class="input-group">
             <label for="precio-dinamico">Costo flete</label>
-            <input type="number" id="precio-dinamico" v-model.number="precioDinamico" step="0.01" min="0"
+            <input 
+              type="number" 
+              id="precio-dinamico" 
+              v-model.number="precioDinamico" 
+              step="0.01" 
+              min="0"
+              @blur="precioDinamico = validarNumero(precioDinamico)"
               placeholder="Ej: 5.00">
           </div>
         </div>
@@ -172,7 +199,14 @@ onMounted(async () => {
         <div class="columna-input">
           <div class="input-group">
             <label for="incremento1">Porcentaje de incremento precio tapicero</label>
-            <input type="number" id="incremento1" v-model.number="incremento1" step="0.01" min="0" placeholder="Ej: 20">
+            <input 
+              type="number" 
+              id="incremento1" 
+              v-model.number="incremento1" 
+              step="0.01" 
+              min="0" 
+              @blur="incremento1 = validarNumero(incremento1)"
+              placeholder="Ej: 20">
           </div>
         </div>
         <div class="columna-paso" v-if="precioProveedor > 0">
@@ -189,7 +223,14 @@ onMounted(async () => {
         <div class="columna-input">
           <div class="input-group">
             <label for="incremento2">Porcentaje de incremento precio público</label>
-            <input type="number" id="incremento2" v-model.number="incremento2" step="0.01" min="0" placeholder="Ej: 15">
+            <input 
+              type="number" 
+              id="incremento2" 
+              v-model.number="incremento2" 
+              step="0.01" 
+              min="0" 
+              @blur="incremento2 = validarNumero(incremento2)"
+              placeholder="Ej: 15">
           </div>
         </div>
         <div class="columna-paso" v-if="precioProveedor > 0">
