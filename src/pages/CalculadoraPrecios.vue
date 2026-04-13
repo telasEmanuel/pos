@@ -152,14 +152,8 @@ onMounted(async () => {
         <div class="columna-input">
           <div class="input-group">
             <label for="precio-proveedor">Precio de venta proveedor</label>
-            <input 
-              type="number" 
-              id="precio-proveedor" 
-              v-model.number="precioProveedor" 
-              step="0.01" 
-              min="0"
-              @blur="precioProveedor = validarNumero(precioProveedor)"
-              placeholder="Ej: 50.00">
+            <input type="number" id="precio-proveedor" v-model.number="precioProveedor" step="0.01" min="0"
+              @blur="precioProveedor = validarNumero(precioProveedor)" placeholder="Ej: 50.00">
           </div>
         </div>
         <div class="columna-paso" v-if="precioProveedor > 0">
@@ -175,14 +169,8 @@ onMounted(async () => {
         <div class="columna-input">
           <div class="input-group">
             <label for="precio-dinamico">Costo flete</label>
-            <input 
-              type="number" 
-              id="precio-dinamico" 
-              v-model.number="precioDinamico" 
-              step="0.01" 
-              min="0"
-              @blur="precioDinamico = validarNumero(precioDinamico)"
-              placeholder="Ej: 5.00">
+            <input type="number" id="precio-dinamico" v-model.number="precioDinamico" step="0.01" min="0"
+              @blur="precioDinamico = validarNumero(precioDinamico)" placeholder="Ej: 5.00">
           </div>
         </div>
         <div class="columna-paso" v-if="precioProveedor > 0">
@@ -199,14 +187,8 @@ onMounted(async () => {
         <div class="columna-input">
           <div class="input-group">
             <label for="incremento1">Porcentaje de incremento precio tapicero</label>
-            <input 
-              type="number" 
-              id="incremento1" 
-              v-model.number="incremento1" 
-              step="0.01" 
-              min="0" 
-              @blur="incremento1 = validarNumero(incremento1)"
-              placeholder="Ej: 20">
+            <input type="number" id="incremento1" v-model.number="incremento1" step="0.01" min="0"
+              @blur="incremento1 = validarNumero(incremento1)" placeholder="Ej: 20">
           </div>
         </div>
         <div class="columna-paso" v-if="precioProveedor > 0">
@@ -223,14 +205,8 @@ onMounted(async () => {
         <div class="columna-input">
           <div class="input-group">
             <label for="incremento2">Porcentaje de incremento precio público</label>
-            <input 
-              type="number" 
-              id="incremento2" 
-              v-model.number="incremento2" 
-              step="0.01" 
-              min="0" 
-              @blur="incremento2 = validarNumero(incremento2)"
-              placeholder="Ej: 15">
+            <input type="number" id="incremento2" v-model.number="incremento2" step="0.01" min="0"
+              @blur="incremento2 = validarNumero(incremento2)" placeholder="Ej: 15">
           </div>
         </div>
         <div class="columna-paso" v-if="precioProveedor > 0">
