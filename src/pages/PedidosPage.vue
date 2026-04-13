@@ -442,7 +442,7 @@ onUnmounted(() => {
               <button v-if="datos?.email === 'caja'" @click="completarPedido(pedido)" class="btn-complete">
                 ✓ Completar
               </button>
-              <button v-if="datos?.email !== 'caja'" @click="editPedido(pedido)" class="btn-edit">
+              <button v-if="datos?.email === 'vendedor'" @click="editPedido(pedido)" class="btn-edit">
                 ✎ Editar
               </button>
               <button @click="cancelarPedido(pedido)" class="btn-cancel">✕ Cancelar</button>

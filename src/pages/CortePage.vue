@@ -3,10 +3,11 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import api from 'src/api/axios';
 import { useQuasar, date } from 'quasar';
 import ReceiptPrinter from 'src/components/ReceiptPrinter.vue';
+import RefundModal from 'src/components/RefundModal.vue';
 import type { ReceiptData } from 'src/components/types';
 import * as XLSX from 'xlsx';
 import { useAuthStore } from 'src/stores/auth';
-// Interfaces based on API introspection
+
 interface Usuario {
   id: number;
   username: string;
@@ -141,6 +142,8 @@ const productosMap = ref<Map<number, string>>(new Map());
 const medidasMap = ref<Map<number, string>>(new Map());
 const receiptPrinter = ref<InstanceType<typeof ReceiptPrinter> | null>(null);
 const lastReceipt = ref<ReceiptData | null>(null);
+const refundModal = ref<InstanceType<typeof RefundModal> | null>(null);
+const ventaSeleccionadaParaReembolso = ref<Venta | null>(null);
 
 // Date selection
 const todayFormatted = date.formatDate(Date.now(), 'DD/MM/YYYY');
@@ -303,11 +306,11 @@ const loadVentas = async () => {
     console.log('📊 DEBUG CortePage - Ventas recibidas:', data.ventas);
     console.log('📊 DEBUG CortePage - Stats:', data.stats);
 
-    // Filtrar ventas para mostrar solo las del día seleccionado (convertir a zona horaria local)
+    // Filtrar ventas para mostrar solo las del día seleccionado
     const ventasFiltradas = data.ventas.filter(venta => {
-      // Convertir fecha ISO a zona horaria local
-      const fechaLocal = date.formatDate(new Date(venta.fecha_venta), 'YYYY-MM-DD');
-      return fechaLocal === inicio;
+      // Obtener solo la fecha (YYYY-MM-DD) del timestamp ISO sin conversión de zona horaria
+      const fechaVenta = venta.fecha_venta?.split('T')[0] ?? '';
+      return fechaVenta === inicio;
     });
 
     console.log(`📊 Ventas filtradas para ${inicio}:`, ventasFiltradas);
@@ -391,6 +394,16 @@ const printVenta = async (venta: Venta) => {
   lastReceipt.value = buildLastReceiptFromVenta(venta);
   await nextTick();
   receiptPrinter.value?.print();
+};
+
+const abrirModalReembolso = (venta: Venta) => {
+  ventaSeleccionadaParaReembolso.value = venta;
+  refundModal.value?.abrirModal(venta);
+};
+
+const manejarReembolsoCompletado = () => {
+  // Recargar ventas después de un reembolso exitoso
+  void loadVentas();
 };
 
 const formatMoney = (amount: number) => `$${Number(amount || 0).toFixed(2)}`;
@@ -1077,6 +1090,10 @@ onMounted(async () => {
                     <q-btn icon="print" flat round dense color="primary" @click.stop="printVenta(venta)">
                       <q-tooltip>Imprimir esta venta</q-tooltip>
                     </q-btn>
+                    <q-btn icon="assignment_return" flat round dense color="orange-8"
+                      @click.stop="abrirModalReembolso(venta)">
+                      <q-tooltip>Procesar reembolso</q-tooltip>
+                    </q-btn>
                     <div>
                       <div class="text-weight-bolder text-primary text-body1">{{ formatCurrency(venta.total) }}</div>
                       <div class="text-caption text-grey-5">#{{ venta.id }}</div>
@@ -1144,6 +1161,10 @@ onMounted(async () => {
                     <q-btn icon="print" flat round dense color="primary" @click.stop="printVenta(venta)">
                       <q-tooltip>Imprimir esta venta</q-tooltip>
                     </q-btn>
+                    <q-btn icon="assignment_return" flat round dense color="orange-8"
+                      @click.stop="abrirModalReembolso(venta)">
+                      <q-tooltip>Procesar reembolso</q-tooltip>
+                    </q-btn>
                     <div>
                       <div class="text-weight-bolder text-primary text-body1">{{ formatCurrency(venta.total) }}</div>
                       <div class="text-caption text-grey-5">#{{ venta.id }}</div>
@@ -1206,6 +1227,10 @@ onMounted(async () => {
                 <q-btn icon="print" flat round dense color="primary" @click.stop="printVenta(venta)">
                   <q-tooltip>Imprimir esta venta</q-tooltip>
                 </q-btn>
+                <q-btn icon="assignment_return" flat round dense color="orange-8"
+                  @click.stop="abrirModalReembolso(venta)">
+                  <q-tooltip>Procesar reembolso</q-tooltip>
+                </q-btn>
                 <div>
                   <div class="text-weight-bolder text-primary text-body1">{{
                     formatCurrency(venta.total) }}</div>
@@ -1238,6 +1263,10 @@ onMounted(async () => {
 
     <!-- Receipt Printer Component (hidden, only for printing) -->
     <ReceiptPrinter ref="receiptPrinter" :data="lastReceipt" />
+
+    <!-- Refund Modal Component -->
+    <RefundModal v-if="ventaSeleccionadaParaReembolso" ref="refundModal" :venta="ventaSeleccionadaParaReembolso"
+      :productos-map="productosMap" :medidas-map="medidasMap" @refund="manejarReembolsoCompletado" />
   </q-page>
 </template>
 
