@@ -24,7 +24,7 @@ import {
   DetalleInventario,
   Historial,
   Secciones,
-  AutorizacionesPage
+  ImpresionesPage,
 } from '../pages/index';
 
 const routes: RouteRecordRaw[] = [
@@ -221,8 +221,8 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/permisos',
-    component: AutorizacionesPage,
+    path: '/tickets',
+    component: ImpresionesPage,
     meta: {
       title: 'Autorizaciones del personal',
       layout: MainLayout,

@@ -118,17 +118,10 @@ const checarPermiso = (seccion: string) => {
         });
       }
       break;
-  }
-}
-
-const validarPermiso = () => {
-  if (datos.value?.rol === 'caja') {
-    if (convertirABooleano(datos.value?.carrito)) {
-      console.log('entra en el if')
-      console.log('valor booleano: '+datos.value?.carrito)
-      void router.push('/carrito');
-    } else {
-      console.log('valor boleano: '+datos.value?.carrito)
+    case 'carrito':
+      if (convertirABooleano(datos.value?.carrito)) {
+        void router.push('/carrito');
+      } else {
         $q.dialog({
           title: 'Acceso denegado',
           message: 'No tienes permiso para acceder a esta sección.',
@@ -139,8 +132,8 @@ const validarPermiso = () => {
           }
         });
       }
-  } else {
-    void router.push('/select');
+      break;
+
   }
 }
 
@@ -163,14 +156,11 @@ onMounted(() => {
 
   // Escuchar nuevos pedidos por socket
   socket.on('nuevo-pedido', (pedido: Pedido | PedidoBackend) => {
-    console.log('🟢 [MainLayout] ⭐ EVENTO SOCKET RECIBIDO - nuevo-pedido:', { id: pedido.id, comprador: pedido.comprador });
-
     // Guardar el usuario_username en localStorage para evitar pérdida de datos
     const pedidoConUsername = pedido as unknown as Record<string, string | null>;
     if (pedidoConUsername.usuario_username && typeof pedidoConUsername.usuario_username === 'string') {
       const key = `pedido_${pedido.id}_usuario_username`;
       localStorage.setItem(key, pedidoConUsername.usuario_username);
-      console.log(`  ✅ GUARDADO EN LOCALSTORAGE: "${key}" = "${pedidoConUsername.usuario_username}"`);
     } else {
       console.log(`  ⚠️ NO HAY usuario_username en el evento socket. usuario_username =`, pedidoConUsername.usuario_username);
     }
@@ -222,7 +212,6 @@ onMounted(() => {
 watch(() => authStore.user, (nuevoUsuario) => {
   if (nuevoUsuario) {
     datos.value = nuevoUsuario;
-    console.log('✅ Usuario actualizado en MainLayout (watcher):', datos.value);
   } else {
     console.warn('⚠️ Usuario cerró sesión, redirigiendo...');
     void router.push('/');
@@ -255,7 +244,7 @@ onUnmounted(() => {
           Menú de opciones
         </q-item-label>
 
-        <q-item clickable @click="validarPermiso()">
+        <q-item clickable to="/select">
           <q-item-section avatar>
             <q-icon name="home" />
           </q-item-section>
@@ -264,21 +253,12 @@ onUnmounted(() => {
           </q-item-section>
         </q-item>
 
-        <q-item clickable to="/tienda">
+        <q-item clickable @click="checarPermiso('carrito')">
           <q-item-section avatar>
-            <q-icon name="store" />
+            <q-icon name="shopping_cart" />
           </q-item-section>
           <q-item-section>
-            <q-item-label>Categorías Tienda</q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item clickable to="/bodega">
-          <q-item-section avatar>
-            <q-icon name="warehouse" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Categorías Bodega</q-item-label>
+            <q-item-label>Carrito de compras</q-item-label>
           </q-item-section>
         </q-item>
 

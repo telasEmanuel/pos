@@ -4,7 +4,7 @@ import { useAuthStore } from 'src/stores/auth';
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router';
 
-const datos = ref<{ nombre?: string, rol?: string, categorias?: boolean, productos?: boolean, detalles_inventario?: boolean, ordenes?: boolean, proveedores?: boolean, historial_movimientos?: boolean, calculadora?: boolean, secciones?: boolean, reporte_ventas?: boolean, usuarios?: boolean } | null>(null);
+const datos = ref<{ nombre?: string, rol?: string, categorias?: boolean, productos?: boolean, detalles_inventario?: boolean, ordenes?: boolean, proveedores?: boolean, historial_movimientos?: boolean, calculadora?: boolean, secciones?: boolean, reporte_ventas?: boolean, usuarios?: boolean, tickets?: boolean } | null>(null);
 const authStore = useAuthStore();
 const $q = useQuasar()
 const router = useRouter();
@@ -170,6 +170,21 @@ const checarPermiso = (seccion: string) => {
         });
       }
       break;
+    case 'tickets':
+      if (convertirABooleano(datos.value?.tickets)) {
+        void router.push('/tickets');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break
   }
 }
 
@@ -266,7 +281,7 @@ watch(() => authStore.user, (nuevoUsuario) => {
         <button @click="checarPermiso('historial_movimientos')" class="btn">Entrar</button>
       </div>
       <div class="card">
-        <span class="icon">🪙</span>
+        <span class="icon">🧮</span>
         <h3>Calculadora de precios</h3>
         <p>Administrar cambios en los precios de productos.</p>
         <button @click="checarPermiso('calculadora')" class="btn">Entrar</button>
@@ -277,12 +292,12 @@ watch(() => authStore.user, (nuevoUsuario) => {
         <p>Crear secciones para organizar las categorías.</p>
         <button @click="checarPermiso('secciones')" class="btn">Entrar</button>
       </div>
-      <!-- <div class="card" v-if="datos?.rol === 'visor'">
-        <span class="icon">🪪</span>
-        <h3>Actualizar permisos</h3>
-        <p>Administrar los permisos de los usuarios del sistema.</p>
-        <router-link to="/permisos" class="btn">Entrar</router-link>
-      </div> -->
+      <div class="card">
+        <span class="icon">🎫</span>
+        <h3>Consulta de tickets</h3>
+        <p>Ver los tickets generados en el sistema.</p>
+        <button @click="checarPermiso('tickets')" class="btn">Entrar</button>
+      </div>
     </section>
     <footer>
       <small>&copy; 2026 Telas Emanuel · Telas Emanuel App</small>

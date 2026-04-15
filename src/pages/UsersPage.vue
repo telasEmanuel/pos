@@ -23,6 +23,8 @@ interface Usuario {
   reporte_ventas?: boolean | number
   usuarios?: boolean | number
   pedidos?: boolean | number
+  carrito?: boolean | number
+  tickets?: boolean | number
 }
 
 const $q = useQuasar()
@@ -49,7 +51,9 @@ const permisos = [
   { key: 'secciones', label: 'Secciones', icon: '🏷️' },
   { key: 'corte_caja', label: 'Corte de Caja', icon: '💰' },
   { key: 'reporte_existencia', label: 'Reporte de Existencias', icon: '📈' },
-  { key: 'pedidos', label: 'Consulta de pedidos', icon: '🛍️' }
+  { key: 'pedidos', label: 'Consulta de pedidos', icon: '🛍️' },
+  { key: 'carrito', label: 'Carrito de compras', icon: '🛒' },
+  { key: 'tickets', label: 'Gestión de tickets', icon: '🎫' }
 ]
 
 // Convertir 0/1 a booleano
@@ -91,7 +95,9 @@ const seleccionarUsuario = (usuario: Usuario) => {
     secciones: convertirABooleano(usuario.secciones),
     reporte_ventas: convertirABooleano(usuario.reporte_ventas),
     usuarios: convertirABooleano(usuario.usuarios),
-    pedidos: convertirABooleano(usuario.pedidos)
+    pedidos: convertirABooleano(usuario.pedidos),
+    carrito: convertirABooleano(usuario.carrito),
+    tickets: convertirABooleano(usuario.tickets)
   }
 
   // Copiar permisos a permisosCopia para reactividad
@@ -108,7 +114,9 @@ const seleccionarUsuario = (usuario: Usuario) => {
     pedidos: convertirABooleano(usuario.pedidos),
     secciones: convertirABooleano(usuario.secciones),
     corte_caja: convertirABooleano(usuario.corte_caja),
-    reporte_existencia: convertirABooleano(usuario.reporte_existencia)
+    reporte_existencia: convertirABooleano(usuario.reporte_existencia),
+    carrito: convertirABooleano(usuario.carrito),
+    tickets: convertirABooleano(usuario.tickets)
   }
 }
 
@@ -207,7 +215,9 @@ const guardarPermisos = async () => {
       secciones: permisosCopia.value.secciones ?? false,
       reporte_ventas: permisosCopia.value.reporte_ventas ?? false,
       usuarios: permisosCopia.value.usuarios ?? false,
-      pedidos: permisosCopia.value.pedidos ?? false
+      pedidos: permisosCopia.value.pedidos ?? false,
+      carrito: permisosCopia.value.carrito ?? false,
+      tickets: permisosCopia.value.tickets ?? false
     }
 
     console.log('📤 Enviando permisos actualizados:', datosActualizados)
@@ -229,6 +239,8 @@ const guardarPermisos = async () => {
       usuarioSeleccionado.value.reporte_ventas = datosActualizados.reporte_ventas
       usuarioSeleccionado.value.usuarios = datosActualizados.usuarios
       usuarioSeleccionado.value.pedidos = datosActualizados.pedidos
+      usuarioSeleccionado.value.carrito = datosActualizados.carrito
+      usuarioSeleccionado.value.tickets = datosActualizados.tickets
     }
 
     // Actualizar el usuario en la lista
@@ -248,6 +260,8 @@ const guardarPermisos = async () => {
       usuario.reporte_ventas = datosActualizados.reporte_ventas
       usuario.usuarios = datosActualizados.usuarios
       usuario.pedidos = datosActualizados.pedidos
+      usuario.carrito = datosActualizados.carrito
+      usuario.tickets = datosActualizados.tickets
     }
 
     $q.notify({
