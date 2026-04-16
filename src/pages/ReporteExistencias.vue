@@ -52,8 +52,8 @@ const columns: { name: string; align: 'left' | 'center' | 'right'; label: string
 const comparativaColumns = [
   { name: 'seleccionar', align: 'center' as const, label: '', field: 'seleccionado' },
   { name: 'nombre', align: 'left' as const, label: 'PRODUCTO', field: 'nombre' },
-  { name: 'inv_bodega', align: 'center' as const, label: 'INV. BOD.', field: 'inv_bodega' },
-  { name: 'inv_tienda', align: 'center' as const, label: 'INV. TIE.', field: 'inv_tienda' }
+  { name: 'inv_bodega', align: 'center' as const, label: 'Inventario bodega', field: 'inv_bodega' },
+  { name: 'inv_tienda', align: 'center' as const, label: 'Inventario tienda', field: 'inv_tienda' }
 ];
 
 const lowStockItems = computed(() => {
@@ -307,7 +307,7 @@ onMounted(() => {
 
         <template v-slot:body-cell-inv_bodega="props">
           <q-td :props="props">
-            <q-badge color="blue" :label="`${props.value}`" text-color="white" class="text-weight-bold" />
+            <q-badge color="orange" :label="`${props.value}`" text-color="white" class="text-weight-bold" />
           </q-td>
         </template>
 
