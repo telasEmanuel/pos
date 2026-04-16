@@ -185,6 +185,7 @@ const cerrar = () => {
             <option value="secretaria">Secretaria</option>
             <option value="asistente">Asistente</option>
             <option value="visor">Visor</option>
+            <option value="consultor">Consultor</option>
           </select>
         </div>
 

@@ -44,6 +44,7 @@ const login = async () => {
         case 'asistente':
         case 'admin':
         case 'caja':
+        case 'consultor':
           await router.push('/select');
           break;
         /*case 'caja':
