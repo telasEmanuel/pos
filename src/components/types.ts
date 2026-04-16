@@ -29,4 +29,5 @@ export interface ReceiptData {
   subtotal?: number;
   iva?: number;
   descuento?: number;
+  esVentaCancelada?: boolean;
 }

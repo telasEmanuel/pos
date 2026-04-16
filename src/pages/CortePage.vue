@@ -26,6 +26,13 @@ interface DetalleVenta {
   };
 }
 
+interface Reembolso {
+  id?: number;
+  producto_id: number;
+  cantidad: number;
+  precio_unitario: number;
+}
+
 interface Venta {
   id: number;
   fecha_venta: string;
@@ -38,6 +45,8 @@ interface Venta {
   usuario?: Usuario;
   requiere_factura?: boolean;
   detallesVenta: DetalleVenta[];
+  reembolsos?: Reembolso[];
+  monto_reembolsado?: number;
 }
 
 interface CorteResponse {
@@ -76,7 +85,8 @@ const statsCalculadas = computed(() => {
   ventas.value.forEach(venta => {
     const metodoPago = (venta.metodo_pago || 'EFECTIVO').toUpperCase();
     const comentarios = venta.comentarios || '';
-    const total = Number(venta.total) || 0;
+    // Restar el monto reembolsado del total
+    const total = (Number(venta.total) || 0) - (Number(venta.monto_reembolsado) || 0);
 
     // Función auxiliar para parsear monto de los comentarios
     const parseAmount = (regex: RegExp): number => {
@@ -94,10 +104,12 @@ const statsCalculadas = computed(() => {
       const pTarjeta = parseAmount(/Tarjeta:\s*\$([\d.]+)/);
       const pTransf = parseAmount(/Transf:\s*\$([\d.]+)/);
 
-      efectivo += pPesos;
-      usd += pUSD;
-      debito += pTarjeta;  // Tarjeta en MIXTO cuenta como débito
-      transferencia += pTransf;
+      // Distribuir el descuento proporcionalmente
+      const descuentoProporcion = total / (Number(venta.total) || 1);
+      efectivo += pPesos * descuentoProporcion;
+      usd += pUSD * descuentoProporcion;
+      debito += pTarjeta * descuentoProporcion;
+      transferencia += pTransf * descuentoProporcion;
     } else if (metodoPago === 'EFECTIVO') {
       efectivo += total;
     } else if (metodoPago === 'DEBITO') {
@@ -122,7 +134,7 @@ const statsCalculadas = computed(() => {
     if (metodoPago !== 'MIXTO') {
       const usdMatch = comentarios.match(/USD:\s*([\d.]+)/i);
       if (usdMatch && usdMatch[1]) {
-        usd += parseFloat(usdMatch[1]);
+        usd += parseFloat(usdMatch[1]) * (total / (Number(venta.total) || 1));
       }
     }
   });
@@ -258,21 +270,53 @@ const buildLastReceiptFromVenta = (venta: Venta): ReceiptData => {
     // Si hay error, seguir con fallback
   }
 
-  return {
-    cliente: (venta.cliente || 'Cliente General').trim(),
-    productos: (venta.detallesVenta || []).map((detalle) => ({
-      cantidad: Number(detalle.cantidad || 0),
+  // Filtrar productos no devueltos
+  const productosNoDevueltos = (venta.detallesVenta || []).filter(detalle => {
+    const reembolsoDeste = (venta.reembolsos || []).find(r => r.producto_id === detalle.producto_id);
+    return !reembolsoDeste || (reembolsoDeste.cantidad < detalle.cantidad);
+  }).map(detalle => {
+    const reembolsoDeste = (venta.reembolsos || []).find(r => r.producto_id === detalle.producto_id);
+    const cantidadFinal = reembolsoDeste
+      ? detalle.cantidad - reembolsoDeste.cantidad
+      : detalle.cantidad;
+
+    return {
+      cantidad: cantidadFinal,
       medida: (detalle.medida || getProductoMedida(detalle.producto_id)).trim(),
       nombre: getProductoNombre(detalle.producto_id),
-      precio_unitario: Number(detalle.precio_unitario || 0),
-    })),
-    total: Number(venta.total || 0),
+      precio_unitario: Number(detalle.precio_unitario || 0)
+    };
+  });
+
+  // Detectar venta cancelada (todos los productos devueltos)
+  const esCancelada = venta.reembolsos &&
+    venta.reembolsos.length > 0 &&
+    venta.detallesVenta.length > 0 &&
+    venta.detallesVenta.every(d => {
+      const reembolsoProducto = venta.reembolsos!.find(r => r.producto_id === d.producto_id);
+      if (!reembolsoProducto) return false;
+      // Comparar con precisión de 2 decimales
+      return Number(reembolsoProducto.cantidad).toFixed(3) === Number(d.cantidad).toFixed(3);
+    });
+
+  console.log('🔍 DEBUG buildLastReceiptFromVenta:', {
+    venta_id: venta.id,
+    reembolsos: venta.reembolsos,
+    detalles: venta.detallesVenta,
+    esCancelada
+  });
+
+  return {
+    cliente: (venta.cliente || 'Cliente General').trim(),
+    productos: productosNoDevueltos,
+    total: Number(venta.total || 0) - (Number(venta.monto_reembolsado) || 0),
     metodoPago: String(venta.metodo_pago || 'EFECTIVO').toUpperCase(),
     fecha: venta.fecha_venta,
     ticketId: venta.id,
     atendidoPor,
     ...(parsed.comments ? { comentarios: parsed.comments } : {}),
     ...(parsed.pagoDetalle ? { pagoDetalle: parsed.pagoDetalle } : {}),
+    ...(esCancelada ? { esVentaCancelada: true } : {})
   };
 };
 
@@ -1069,7 +1113,8 @@ onMounted(async () => {
           </h3>
           <q-list v-if="ventasTarjetaDebito.length > 0" separator class="sales-list bg-white shadow-1 rounded-borders">
             <q-expansion-item v-for="venta in ventasTarjetaDebito" :key="venta.id" group="sales-debito"
-              class="sale-item" expand-icon-class="hidden">
+              class="sale-item" :class="{ 'refunded-sale': venta.reembolsos && venta.reembolsos.length > 0 }"
+              expand-icon-class="hidden">
               <template v-slot:header="{ expanded }">
                 <div class="row full-width items-center q-py-xs">
                   <div class="col-auto q-mr-md">
@@ -1140,7 +1185,8 @@ onMounted(async () => {
           </h3>
           <q-list v-if="ventasTarjetaCredito.length > 0" separator class="sales-list bg-white shadow-1 rounded-borders">
             <q-expansion-item v-for="venta in ventasTarjetaCredito" :key="venta.id" group="sales-credito"
-              class="sale-item" expand-icon-class="hidden">
+              class="sale-item" :class="{ 'refunded-sale': venta.reembolsos && venta.reembolsos.length > 0 }"
+              expand-icon-class="hidden">
               <template v-slot:header="{ expanded }">
                 <div class="row full-width items-center q-py-xs">
                   <div class="col-auto q-mr-md">
@@ -1205,7 +1251,7 @@ onMounted(async () => {
       <!-- Vista normal para otros métodos de pago -->
       <q-list v-else separator class="sales-list bg-white shadow-1 rounded-borders">
         <q-expansion-item v-for="venta in ventasFiltradas" :key="venta.id" group="sales" class="sale-item"
-          expand-icon-class="hidden">
+          :class="{ 'refunded-sale': venta.reembolsos && venta.reembolsos.length > 0 }" expand-icon-class="hidden">
           <template v-slot:header="{ expanded }">
             <div class="row full-width items-center q-py-xs">
               <div class="col-auto q-mr-md">
@@ -1357,6 +1403,21 @@ onMounted(async () => {
 
 .sale-item:hover {
   background-color: #fcfcfc;
+}
+
+.sale-item.refunded-sale {
+  background-color: #fee2e2 !important;
+  border-left: 4px solid #dc2626;
+}
+
+.sale-item.refunded-sale:hover {
+  background-color: #fecaca !important;
+}
+
+.sale-item.refunded-sale .time-badge {
+  background: #ef4444;
+  color: white;
+  font-weight: 700;
 }
 
 .time-badge {

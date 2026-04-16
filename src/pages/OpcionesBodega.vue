@@ -234,68 +234,68 @@ watch(() => authStore.user, (nuevoUsuario) => {
     <section class="actions">
       <div class="card">
         <span class="icon">💎</span>
-        <h3>Ver categorías</h3>
-        <p>Crea categorías de productos para consultas.</p>
+        <h3>Categorías</h3>
+        <p>Crea categorías de productos.</p>
         <button @click="checarPermiso('categorias')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">➕</span>
-        <h3>Dar de alta productos</h3>
+        <h3>Alta de productos</h3>
         <p>Añadir productos nuevos al inventario actual.</p>
         <button @click="checarPermiso('productos')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">📦</span>
-        <h3>Detalles de Inventario</h3>
-        <p>Ver y editar metros disponibles de cada rollo.</p>
+        <h3>Corregir inventarios</h3>
+        <p>Actualizar cantidades de productos en inventarios.</p>
         <button @click="checarPermiso('detalles_inventario')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">👥</span>
-        <h3>Administrar usuarios</h3>
+        <h3>Configuración usuarios</h3>
         <p>Crear y gestionar usuarios del sistema.</p>
         <button @click="checarPermiso('usuarios')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">📄</span>
-        <h3>Ver órdenes de compra</h3>
-        <p>Consulta de órdenes de compra.</p>
+        <h3>Órdenes de compra</h3>
+        <p>Creación y admnistración de órdenes de compra.</p>
         <button @click="checarPermiso('ordenes')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">📊</span>
-        <h3>Ver ventas</h3>
+        <h3>Reporte de ventas</h3>
         <p>Visualiza todas las ventas de productos.</p>
         <button @click="checarPermiso('ventas')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">🦺</span>
-        <h3>Crear proveedores</h3>
-        <p>Añade nuevos proveedores de materiales.</p>
+        <h3>Proveedores</h3>
+        <p>Añade nuevos proveedores.</p>
         <button @click="checarPermiso('proveedores')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">⏳</span>
-        <h3>Ver historial</h3>
-        <p>Ver historial de motivos de cambios de productos.</p>
+        <h3>Historial de movimientos</h3>
+        <p>Ver historial de transferencias de productos.</p>
         <button @click="checarPermiso('historial_movimientos')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">🧮</span>
         <h3>Calculadora de precios</h3>
-        <p>Administrar cambios en los precios de productos.</p>
+        <p>Calcular precios de productos.</p>
         <button @click="checarPermiso('calculadora')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">🗂️</span>
-        <h3>Crear secciones</h3>
+        <h3>Secciones</h3>
         <p>Crear secciones para organizar las categorías.</p>
         <button @click="checarPermiso('secciones')" class="btn">Entrar</button>
       </div>
       <div class="card">
         <span class="icon">🎫</span>
         <h3>Consulta de tickets</h3>
-        <p>Ver los tickets generados en el sistema.</p>
+        <p>Tickets generados por ventas.</p>
         <button @click="checarPermiso('tickets')" class="btn">Entrar</button>
       </div>
     </section>

@@ -25,6 +25,13 @@ interface DetalleVenta {
   }
 }
 
+interface Reembolso {
+  id?: number
+  producto_id: number
+  cantidad: number
+  precio_unitario: number
+}
+
 interface Venta {
   id: number
   fecha_venta: string
@@ -37,6 +44,8 @@ interface Venta {
   usuario?: Usuario
   requiere_factura?: boolean
   detallesVenta: DetalleVenta[]
+  reembolsos?: Reembolso[]
+  monto_reembolsado?: number
 }
 
 const $q = useQuasar()
@@ -189,21 +198,46 @@ const buildReceiptFromVenta = (venta: Venta): ReceiptData => {
     // Si hay error, seguir con fallback
   }
 
-  return {
-    cliente: (venta.cliente || 'Cliente General').trim(),
-    productos: (venta.detallesVenta || []).map((detalle) => ({
-      cantidad: Number(detalle.cantidad || 0),
+  // Filtrar productos no devueltos
+  const productosNoDevueltos = (venta.detallesVenta || []).filter(detalle => {
+    const reembolsoDeste = (venta.reembolsos || []).find(r => r.producto_id === detalle.producto_id)
+    return !reembolsoDeste || (reembolsoDeste.cantidad < detalle.cantidad)
+  }).map(detalle => {
+    const reembolsoDeste = (venta.reembolsos || []).find(r => r.producto_id === detalle.producto_id)
+    const cantidadFinal = reembolsoDeste
+      ? detalle.cantidad - reembolsoDeste.cantidad
+      : detalle.cantidad
+
+    return {
+      cantidad: cantidadFinal,
       medida: (detalle.medida || getProductoMedida(detalle.producto_id)).trim(),
       nombre: getProductoNombre(detalle.producto_id),
       precio_unitario: Number(detalle.precio_unitario || 0)
-    })),
-    total: Number(venta.total || 0),
+    }
+  })
+
+  // Detectar venta cancelada (todos los productos devueltos)
+  const esCancelada = venta.reembolsos &&
+    venta.reembolsos.length > 0 &&
+    venta.detallesVenta.length > 0 &&
+    venta.detallesVenta.every(d => {
+      const reembolsoProducto = venta.reembolsos!.find(r => r.producto_id === d.producto_id);
+      if (!reembolsoProducto) return false;
+      // Comparar con precisión de 3 decimales (porque cantidad usa Decimal(10,3))
+      return Number(reembolsoProducto.cantidad).toFixed(3) === Number(d.cantidad).toFixed(3);
+    });
+
+  return {
+    cliente: (venta.cliente || 'Cliente General').trim(),
+    productos: productosNoDevueltos,
+    total: Number(venta.total || 0) - (Number(venta.monto_reembolsado) || 0),
     metodoPago: String(venta.metodo_pago || 'EFECTIVO').toUpperCase(),
     fecha: venta.fecha_venta,
     ticketId: venta.id,
     atendidoPor,
     ...(parsed.comments ? { comentarios: parsed.comments } : {}),
-    ...(parsed.pagoDetalle ? { pagoDetalle: parsed.pagoDetalle } : {})
+    ...(parsed.pagoDetalle ? { pagoDetalle: parsed.pagoDetalle } : {}),
+    ...(esCancelada ? { esVentaCancelada: true } : {})
   }
 }
 

@@ -310,26 +310,38 @@ const generateReceiptHTML = (data: ReceiptData) => {
 
       <div class="double-line"></div>
 
-      <table class="totals-table">
-        <colgroup>
-          <col style="width: 60%" />
-          <col style="width: 40%" />
-        </colgroup>
-        <tbody>
-          <tr>
-            <td colspan="2" style="text-align: right; font-weight: 900;">TOTAL: ${toMoney(data.total)}</td>
-          </tr>
-          <tr>
-            <td colspan="2" style="text-align: right; font-weight: 900;">${paymentLinesHTML(data)}</td>
-          </tr>
-          <tr>
-            <td colspan="2" style="text-align: right; font-weight: 900;">Cambio: ${toMoney(data.cambio || 0)}</td>
-          </tr>
-        </tbody>
-      </table>
+      ${data.esVentaCancelada ? `
+        <div style="text-align: center; font-weight: 900; font-size: 16px; color: #000; margin: 12px 0;">
+          *** VENTA CANCELADA ***
+        </div>
+        <div style="text-align: center; font-weight: 700; font-size: 12px; color: #000; margin: 8px 0;">
+          DEVOLUCIÓN COMPLETA
+        </div>
+        <div style="text-align: center; font-weight: 900; font-size: 14px; color: #000; margin: 8px 0;">
+          Total a Reembolsar: ${toMoney(data.total)}
+        </div>
+      ` : `
+        <table class="totals-table">
+          <colgroup>
+            <col style="width: 60%" />
+            <col style="width: 40%" />
+          </colgroup>
+          <tbody>
+            <tr>
+              <td colspan="2" style="text-align: right; font-weight: 900;">TOTAL: ${toMoney(data.total)}</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="text-align: right; font-weight: 900;">${paymentLinesHTML(data)}</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="text-align: right; font-weight: 900;">Cambio: ${toMoney(data.cambio || 0)}</td>
+            </tr>
+          </tbody>
+        </table>
 
-      <br/>
-      <div class="center">${formatAmountInLetters(data.total)}</div>
+        <br/>
+        <div class="center">${formatAmountInLetters(data.total)}</div>
+      `}
 
       ${data.ahorroTapicero && data.ahorroTapicero > 0 ? `
       <div class="double-line"></div>

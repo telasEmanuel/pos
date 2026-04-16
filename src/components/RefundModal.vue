@@ -329,11 +329,10 @@ defineExpose({
                                             }})</span>
                                     </div>
                                     <q-input v-model.number="item.cantidadADevolver" type="number" outlined dense
-                                        :min="0" :max="item.cantidadOriginal" class="full-width"
+                                        :min="0.00" :max="item.cantidadOriginal" class="full-width"
                                         :error="erroresValidacion.has(`${item.producto_id}`)" :rules="[
                                             val => val !== null && val !== undefined || 'Campo requerido',
                                             val => val >= 0 || 'No puede ser negativo',
-                                            val => Number.isInteger(val) || 'Debe ser un número entero',
                                             val => val <= item.cantidadOriginal || `No puedes devolver más de ${item.cantidadOriginal}`
                                         ]" @update:model-value="(val) => {
                         const numVal = Number(val) || 0;
