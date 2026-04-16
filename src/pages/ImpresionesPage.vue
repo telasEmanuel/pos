@@ -44,6 +44,7 @@ const authStore = useAuthStore()
 const ventas = ref<Venta[]>([])
 const usuarios = ref<Usuario[]>([])
 const usuarioSeleccionado = ref<number | null>(null)
+const filtroFactura = ref<boolean | null>(null)
 const loading = ref(true)
 const productosMap = ref<Map<number, string>>(new Map())
 const medidasMap = ref<Map<number, string>>(new Map())
@@ -68,6 +69,42 @@ const dateRange = ref<string>(todayFormatted)
 
 const displayDate = computed(() => {
   return dateRange.value
+})
+
+const ventasFiltradas = computed(() => {
+  let resultado = ventas.value
+
+  // Aplicar filtro de factura
+  if (filtroFactura.value !== null) {
+    resultado = resultado.filter(venta => venta.requiere_factura === filtroFactura.value)
+  }
+
+  return resultado
+})
+
+// Contadores de ventas filtradas por estado de factura
+const ventasFiltradasPorFactura = computed(() => {
+  const sinFactura = ventas.value.filter(v => !v.requiere_factura).length
+  const conFactura = ventas.value.filter(v => v.requiere_factura).length
+
+  return {
+    sinFactura,
+    conFactura
+  }
+})
+
+// Calcular total de ventas sin factura
+const totalVentasSinFactura = computed(() => {
+  return ventas.value
+    .filter(v => !v.requiere_factura)
+    .reduce((sum, v) => sum + (Number(v.total) || 0), 0)
+})
+
+// Calcular total de ventas con factura (requieren factura)
+const totalVentasConFactura = computed(() => {
+  return ventas.value
+    .filter(v => v.requiere_factura)
+    .reduce((sum, v) => sum + (Number(v.total) || 0), 0)
 })
 
 const formatCurrency = (amount: number | string | undefined | null) => {
@@ -275,6 +312,14 @@ const seleccionarTicket = (venta: Venta) => {
   ventaExpandida.value = venta
 }
 
+const toggleFiltroFactura = (requiereFactura: boolean) => {
+  if (filtroFactura.value === requiereFactura) {
+    filtroFactura.value = null // Deseleccionar si ya está seleccionado
+  } else {
+    filtroFactura.value = requiereFactura
+  }
+}
+
 const generarTicketHTML = (receipt: ReceiptData): string => {
   const productsHTML = receipt.productos
     .map(
@@ -314,10 +359,12 @@ const generarTicketHTML = (receipt: ReceiptData): string => {
 }
 
 watch(dateRange, () => {
+  filtroFactura.value = null // Limpiar filtro al cambiar fecha
   void loadVentas()
 })
 
 watch(usuarioSeleccionado, () => {
+  filtroFactura.value = null // Limpiar filtro al cambiar usuario
   void loadVentas()
 })
 
@@ -362,10 +409,38 @@ onMounted(async () => {
           <template v-slot:prepend>
             <q-icon name="person" />
           </template>
-        </q-select>-->
+</q-select>-->
         <q-btn icon="refresh" flat round color="primary" @click="loadVentas" :loading="loading">
           <q-tooltip>Actualizar Datos</q-tooltip>
         </q-btn>
+      </div>
+    </div>
+
+    <!-- Invoicing Status Filter Row -->
+    <div class="row q-col-gutter-sm q-mb-xl">
+      <div class="col-6 col-md-3">
+        <div class="mini-stat-card" :class="{ 'active-filter': filtroFactura === false }"
+          @click="toggleFiltroFactura(false)">
+          <div class="stat-label text-orange-8">
+            <q-icon name="receipt" /> Facturación global
+          </div>
+          <div class="stat-amount">{{ formatCurrency(totalVentasSinFactura) }}</div>
+          <div class="stat-breakdown">{{ ventasFiltradasPorFactura.sinFactura }} venta{{
+            ventasFiltradasPorFactura.sinFactura !== 1 ? 's' : '' }}</div>
+          <q-tooltip>Click para mostrar solo ventas sin facturación especial</q-tooltip>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="mini-stat-card" :class="{ 'active-filter': filtroFactura === true }"
+          @click="toggleFiltroFactura(true)">
+          <div class="stat-label text-red-8">
+            <q-icon name="receipt_long" /> Facturación cliente contado
+          </div>
+          <div class="stat-amount">{{ formatCurrency(totalVentasConFactura) }}</div>
+          <div class="stat-breakdown">{{ ventasFiltradasPorFactura.conFactura }} venta{{
+            ventasFiltradasPorFactura.conFactura !== 1 ? 's' : '' }}</div>
+          <q-tooltip>Click para mostrar solo ventas que requieren facturación</q-tooltip>
+        </div>
       </div>
     </div>
 
@@ -374,7 +449,7 @@ onMounted(async () => {
       <q-spinner-dots size="3rem" color="primary" />
     </div>
 
-    <div v-else-if="ventas.length === 0" class="empty-state text-center q-py-xl">
+    <div v-else-if="ventasFiltradas.length === 0" class="empty-state text-center q-py-xl">
       <q-icon name="receipt_long" size="4rem" color="grey-4" />
       <p class="text-grey-5 q-mt-md text-h6">No hay ventas registradas para esta fecha</p>
     </div>
@@ -383,11 +458,7 @@ onMounted(async () => {
       <!-- Tickets Gallery -->
       <div class="row q-col-gutter-md">
         <!-- Each ticket as a card -->
-        <div
-          v-for="venta in ventas"
-          :key="venta.id"
-          class="col-12 col-sm-6 col-md-4 col-lg-3"
-        >
+        <div v-for="venta in ventasFiltradas" :key="venta.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
           <q-card class="ticket-card shadow-1 cursor-pointer" @click="seleccionarTicket(venta)">
             <!-- Card Header -->
             <q-card-section class="ticket-header q-pa-sm">
@@ -406,11 +477,9 @@ onMounted(async () => {
 
             <!-- Card Body - Receipt Preview (Miniatura) -->
             <q-card-section class="ticket-body q-pa-sm">
-              <div
-                class="receipt-ticket-display bg-white rounded-borders"
+              <div class="receipt-ticket-display bg-white rounded-borders"
                 style="border: 1px solid #e0e0e0; padding: 8px; overflow: hidden; max-height: 320px; overflow-y: auto;"
-                v-html="generarTicketHTML(buildReceiptFromVenta(venta))"
-              />
+                v-html="generarTicketHTML(buildReceiptFromVenta(venta))" />
             </q-card-section>
 
             <!-- Card Footer -->
@@ -445,7 +514,8 @@ onMounted(async () => {
           <q-card-section class="bg-primary text-white row items-center justify-between q-pa-md">
             <div>
               <h3 class="text-h5 text-weight-bold q-my-none">Ticket #{{ ventaExpandida?.id }}</h3>
-              <div class="text-subtitle2 q-mt-xs">{{ formatDateLong(ventaExpandida?.fecha_venta) }} - {{ formatTime(ventaExpandida?.fecha_venta) }}</div>
+              <div class="text-subtitle2 q-mt-xs">{{ formatDateLong(ventaExpandida?.fecha_venta) }} - {{
+                formatTime(ventaExpandida?.fecha_venta) }}</div>
             </div>
             <q-btn icon="close" flat round dense v-close-popup />
           </q-card-section>
@@ -453,25 +523,18 @@ onMounted(async () => {
           <!-- Contenido del Modal -->
           <q-card-section class="scroll expanded-content q-pa-lg">
             <div class="row justify-center">
-              <div style="max-width: 500px; width: 100%; background: white; padding: 16px; border: 1px solid #ddd; border-radius: 8px;">
-                <div
-                  v-if="ventaExpandida"
-                  v-html="generarTicketHTML(buildReceiptFromVenta(ventaExpandida))"
-                  style="font-size: 12px;"
-                />
+              <div
+                style="max-width: 500px; width: 100%; background: white; padding: 16px; border: 1px solid #ddd; border-radius: 8px;">
+                <div v-if="ventaExpandida" v-html="generarTicketHTML(buildReceiptFromVenta(ventaExpandida))"
+                  style="font-size: 12px;" />
               </div>
             </div>
           </q-card-section>
 
           <!-- Action Buttons -->
           <q-card-actions align="right" class="q-pa-md bg-grey-1">
-            <q-btn
-              color="primary"
-              icon="print"
-              label="Imprimir Ticket"
-              @click="printVenta(ventaExpandida!)"
-              unelevated
-            />
+            <q-btn color="primary" icon="print" label="Imprimir Ticket" @click="printVenta(ventaExpandida!)"
+              unelevated />
             <!--<q-btn
               color="orange-8"
               icon="assignment_return"
@@ -596,5 +659,80 @@ onMounted(async () => {
   max-height: 800px;
   overflow-y: auto;
   border: 2px solid #e0e0e0;
+}
+
+/* Mini Stat Cards for Invoicing Filter */
+.mini-stat-card {
+  background: white;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  text-align: center;
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s;
+  cursor: pointer;
+  position: relative;
+}
+
+.mini-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+  border-color: #e0e0e0;
+}
+
+.mini-stat-card.active-filter {
+  background: linear-gradient(135deg, #d9a441 0%, #c9993a 100%);
+  border-color: #c9993a;
+  box-shadow: 0 4px 20px rgba(217, 164, 65, 0.4);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.mini-stat-card.active-filter .stat-label,
+.mini-stat-card.active-filter .stat-amount {
+  color: white !important;
+}
+
+.mini-stat-card.active-filter::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.stat-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.stat-breakdown {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  opacity: 0.8;
 }
 </style>
