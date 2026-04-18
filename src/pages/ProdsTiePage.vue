@@ -163,7 +163,7 @@ const handleClose = () => {
   // Usar confirmación estándar si el diálogo de Quasar falla por alguna razón de contexto
   if (confirm(isEditing ? '¿Cancelar la edición del pedido?' : '¿Deseas vaciar el pedido seleccionado?')) {
     isRestoring.value = true;
-    sessionStorage.removeItem(import.meta.env.VITE_STORAGE_KEY);
+    sessionStorage.removeItem('pedido_temp');
     sessionStorage.removeItem('edit_order_id');
     editOrderId.value = null;
     cartFromStorage.value = [];
@@ -199,6 +199,8 @@ const removeItem = (pIdArg: number | string) => {
 };
 
 const updateItemQty = (pIdArg: number | string, delta: number) => {
+  console.log('🔵 updateItemQty called:', { pIdArg, delta, cartLength: cartFromStorage.value.length });
+
   const targetId = Number(pIdArg);
   const prod = productos.value.find(p => {
     const currentId = Number(p.producto_id ?? p.producto?.id);
@@ -206,6 +208,7 @@ const updateItemQty = (pIdArg: number | string, delta: number) => {
   });
 
   if (prod) {
+    console.log('✅ Encontrado en productos.value');
     if (delta > 0) {
       incrementarCantidad(prod);
     } else {
@@ -213,8 +216,10 @@ const updateItemQty = (pIdArg: number | string, delta: number) => {
     }
     productos.value = [...productos.value];
   } else {
+    console.log('🔍 Buscando en cartFromStorage...');
     const item = cartFromStorage.value.find(s => Number(s.productoId) === targetId);
     if (item) {
+      console.log('✅ Encontrado en cartFromStorage:', { oldQty: item.cantidadPedido });
       const step = Math.abs(delta);
       if (delta > 0) {
         const max = Number(item.stock ?? 999999);
@@ -225,7 +230,10 @@ const updateItemQty = (pIdArg: number | string, delta: number) => {
         const actualStep = (item.cantidadPedido <= 0.61 && step === 0.5) ? 0.1 : step;
         item.cantidadPedido = round(Math.max(0, item.cantidadPedido - actualStep));
       }
+      console.log('📝 Nueva cantidad:', item.cantidadPedido);
       cartFromStorage.value = [...cartFromStorage.value];
+    } else {
+      console.log('❌ No encontrado en ningún lugar:', targetId);
     }
   }
   guardarTemporal();
@@ -240,9 +248,9 @@ const cargarProductos = async () => {
       const prodObj = (p.producto || {}) as ProductoRaw;
       return {
         ...p,
-        precio: Number(p.precio ?? prodObj.precio ?? 0),
-        precio_tap: Number(p.precio_tap ?? prodObj.precio_tap ?? 0),
-        precio_comp: Number(p.precio_comp ?? prodObj.precio_comp ?? 0),
+        precio: Number(prodObj.precio ?? p.precio ?? 0),
+        precio_tap: Number(prodObj.precio_tap ?? p.precio_tap ?? 0),
+        precio_comp: Number(prodObj.precio_comp ?? p.precio_comp ?? 0),
         producto: {
           ...prodObj,
           nombre: prodObj.nombre || p.nombre || 'Sin Nombre',
@@ -495,7 +503,7 @@ const enviarPedido = async () => {
     socket.emit(isEditing ? 'pedido-actualizado' : 'nuevo-pedido', pedidoParaSocket);
 
     // Limpiar almacenamiento temporal y estado local
-    sessionStorage.removeItem(import.meta.env.VITE_STORAGE_KEY);
+    sessionStorage.removeItem('pedido_temp');
     sessionStorage.removeItem('edit_order_id');
 
     productos.value.forEach((p) => {
@@ -572,7 +580,7 @@ const guardarTemporal = () => {
       floatingPos: floatingPos.value,
       esPrecioTap: esPrecioTap.value
     };
-    sessionStorage.setItem(import.meta.env.VITE_STORAGE_KEY, JSON.stringify(payload));
+    sessionStorage.setItem('pedido_temp', JSON.stringify(payload));
   } catch (err) {
     console.error('Error guardando temporal:', err);
   }
@@ -580,7 +588,7 @@ const guardarTemporal = () => {
 
 const restaurarTemporal = () => {
   try {
-    const raw = sessionStorage.getItem(import.meta.env.VITE_STORAGE_KEY);
+    const raw = sessionStorage.getItem('pedido_temp');
     if (!raw) return;
     const data = JSON.parse(raw);
 
@@ -755,21 +763,29 @@ watch(
                 </q-item-section>
 
                 <q-item-section side>
-                  <div class="row items-center no-wrap">
-                    <div class="qty-control row items-center no-wrap bg-grey-2 q-pa-xs rounded-borders"
-                      style="border-radius: 8px;">
-                      <q-btn icon="remove" flat round dense size="md" color="primary"
-                        @click.stop="updateItemQty(p.productoId, -0.5)" @mousedown.stop @touchstart.stop />
-                      <span class="qty-val text-weight-bolder q-px-sm"
-                        style="min-width: 50px; text-align: center; font-size: 1.1rem;">{{ p.cantidadPedido }}</span>
-                      <q-btn icon="add" flat round dense size="md" color="primary"
-                        @click.stop="updateItemQty(p.productoId, 0.5)" @mousedown.stop @touchstart.stop />
-                    </div>
-                    <span class="unit-label q-ml-md text-caption text-weight-medium" style="min-width: 45px;">{{
-                      p.medida
-                      }}</span>
-                    <q-btn icon="delete" flat round dense color="negative" size="md"
-                      @click.stop="removeItem(p.productoId)" @mousedown.stop @touchstart.stop class="q-ml-sm" />
+                  <div class="row items-center no-wrap" style="gap: 8px;">
+                    <!-- Botones HTML simples para disminuir/aumentar cantidad -->
+                    <button type="button" class="btn-qty-simple" @click="updateItemQty(Number(p.productoId), -0.5)"
+                      title="Disminuir cantidad">
+                      −
+                    </button>
+
+                    <span class="qty-val text-weight-bolder"
+                      style="min-width: 50px; text-align: center; font-size: 1rem;">
+                      {{ p.cantidadPedido }}
+                    </span>
+
+                    <button type="button" class="btn-qty-simple" @click="updateItemQty(Number(p.productoId), 0.5)"
+                      title="Aumentar cantidad">
+                      +
+                    </button>
+
+                    <span class="unit-label text-caption text-weight-medium" style="min-width: 45px;">
+                      {{ p.medida }}
+                    </span>
+
+                    <q-btn icon="delete" flat round dense color="negative" size="sm" @click="removeItem(p.productoId)"
+                      class="q-ml-sm" />
                   </div>
                 </q-item-section>
               </q-item>
@@ -781,7 +797,7 @@ watch(
             <div class="row justify-between items-center q-mb-md">
               <span class="text-subtitle1 text-weight-bold">Total:</span>
               <span class="text-h6 text-primary text-weight-bolder gradient-text">${{ formatNumber(totalPedido)
-                }}</span>
+              }}</span>
             </div>
             <div class="row q-col-gutter-sm no-wrap">
               <div class="col-4">
@@ -855,7 +871,8 @@ watch(
               </div>-->
 
               <!-- Action Buttons (Editar y Eliminar) -->
-              <div class="card-actions" v-if="datos?.rol === 'visor' || datos?.rol === 'asistente' || datos?.rol === 'consultor'">
+              <div class="card-actions"
+                v-if="datos?.rol === 'visor' || datos?.rol === 'asistente' || datos?.rol === 'consultor'">
                 <button @click="abrirEditModal(prod)" class="btn-editar">Editar</button>
                 <button @click="eliminarInventario(prod.id)" class="btn-eliminar">Eliminar</button>
               </div>
@@ -867,7 +884,7 @@ watch(
                   <span class="detail-val">{{ formatNumber(detalle.cantidad) }} {{ prod.medida_ind }}</span>
                   <span class="detail-status" :class="detalle.estado?.toLowerCase()">{{
                     detalle.estado
-                  }}</span>
+                    }}</span>
                 </div>
               </div>
             </div>
@@ -884,6 +901,34 @@ watch(
 </template>
 
 <style scoped>
+/* Botones para cantidad en lista de resumen */
+.btn-qty-simple {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #0d47a1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.btn-qty-simple:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #1e40af;
+}
+
+.btn-qty-simple:active {
+  transform: scale(0.95);
+}
+
 .qt-input {
   width: 100%;
   box-sizing: border-box;

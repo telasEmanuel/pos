@@ -23,6 +23,9 @@ interface DetalleVenta {
   medida?: string;
   producto?: {
     nombre: string;
+    precio_tap?: number;
+    precio?: number;
+    precio_comp?: number;
   };
 }
 
@@ -104,12 +107,20 @@ const statsCalculadas = computed(() => {
       const pTarjeta = parseAmount(/Tarjeta:\s*\$([\d.]+)/);
       const pTransf = parseAmount(/Transf:\s*\$([\d.]+)/);
 
-      // Distribuir el descuento proporcionalmente
-      const descuentoProporcion = total / (Number(venta.total) || 1);
-      efectivo += pPesos * descuentoProporcion;
-      usd += pUSD * descuentoProporcion;
-      debito += pTarjeta * descuentoProporcion;
-      transferencia += pTransf * descuentoProporcion;
+
+      // Para MIXTO, sumar el total al método que tenga mayor monto
+      if (pPesos > 0) {
+        efectivo += total;
+      } else if (pTarjeta > 0) {
+        debito += total;
+      } else if (pTransf > 0) {
+        transferencia += total;
+      }
+
+      // Guardar USD solo para referencia (no para conversión)
+      if (pUSD > 0) {
+        usd += pUSD;
+      }
     } else if (metodoPago === 'EFECTIVO') {
       efectivo += total;
     } else if (metodoPago === 'DEBITO') {
@@ -129,21 +140,13 @@ const statsCalculadas = computed(() => {
     } else if (metodoPago === 'TRANSFERENCIA') {
       transferencia += total;
     }
-
-    // Extraer USD adicional de los comentarios si existen (para pagos no-MIXTO)
-    if (metodoPago !== 'MIXTO') {
-      const usdMatch = comentarios.match(/USD:\s*([\d.]+)/i);
-      if (usdMatch && usdMatch[1]) {
-        usd += parseFloat(usdMatch[1]) * (total / (Number(venta.total) || 1));
-      }
-    }
   });
 
   return {
     efectivo,
     debito,
     credito,
-    tarjeta: debito + credito, // Total de tarjetas
+    tarjeta: debito + credito,
     transferencia,
     usd,
     granTotal: efectivo + debito + credito + transferencia
@@ -280,11 +283,17 @@ const buildLastReceiptFromVenta = (venta: Venta): ReceiptData => {
       ? detalle.cantidad - reembolsoDeste.cantidad
       : detalle.cantidad;
 
+    // 🔧 Si precio_unitario es 0, usar precio del producto
+    let precioUnitario = Number(detalle.precio_unitario || 0);
+    if (precioUnitario === 0 && detalle.producto) {
+      precioUnitario = Number(detalle.producto.precio_tap || detalle.producto.precio || 0);
+    }
+
     return {
       cantidad: cantidadFinal,
       medida: (detalle.medida || getProductoMedida(detalle.producto_id)).trim(),
       nombre: getProductoNombre(detalle.producto_id),
-      precio_unitario: Number(detalle.precio_unitario || 0)
+      precio_unitario: precioUnitario
     };
   });
 
@@ -357,9 +366,39 @@ const loadVentas = async () => {
       return fechaVenta === inicio;
     });
 
-    console.log(`📊 Ventas filtradas para ${inicio}:`, ventasFiltradas);
+    // 🔧 CORRECCIÓN: Recalcular totales si son 0 usando precios del producto
+    const ventasConTotalCorregido = ventasFiltradas.map(venta => {
+      const totalActual = Number(venta.total || 0);
 
-    ventas.value = ventasFiltradas;
+      if (totalActual === 0 && venta.detallesVenta && venta.detallesVenta.length > 0) {
+        // Recalcular el total multiplicando cantidad × precio
+        // Si precio_unitario es 0, usar precio_tap o precio del producto
+        const totalRecalculado = venta.detallesVenta.reduce((sum, detalle) => {
+          const cantidad = Number(detalle.cantidad || 0);
+          let precio = Number(detalle.precio_unitario || 0);
+
+          // Si el precio_unitario está en 0, obtenerlo del producto
+          if (precio === 0 && detalle.producto) {
+            precio = Number(detalle.producto.precio_tap || detalle.producto.precio || 0);
+          }
+
+          return sum + (cantidad * precio);
+        }, 0);
+
+        console.log(`🔧 Venta #${venta.id}: Total recalculado de $0.00 a $${totalRecalculado.toFixed(2)}`);
+
+        return {
+          ...venta,
+          total: totalRecalculado
+        };
+      }
+
+      return venta;
+    });
+
+    console.log(`📊 Ventas filtradas para ${inicio}:`, ventasConTotalCorregido);
+
+    ventas.value = ventasConTotalCorregido;
     stats.value = data.stats;
     updateLastReceipt();
   } catch (error) {
@@ -513,7 +552,38 @@ const generateDailyReportHTML = () => {
     <body>
       <div class="header-section center">
         <div class="header-title">TELAS EMANUEL</div>
-        <div style="font-weight: 700;">AV. JOSÉ LÓPEZ PORTILLO SM 94</div>
+        <div style="font-wei💰 DEBUG statsCalculadas:
+{efectivo: 8030.625, debito: 0, credito: 575, tarjeta: 575, transferencia: 10450.300000000001, …}
+credito
+:
+575
+debito
+:
+0
+efectivo
+:
+8030.625
+granTotal
+:
+19106.925000000003
+tarjeta
+:
+575
+tasaCambioPromedio
+:
+17
+transferencia
+:
+10450.300000000001
+usd
+:
+3
+usdEnPesos
+:
+51
+[[Prototype]]
+:
+Objectght: 700;">AV. JOSÉ LÓPEZ PORTILLO SM 94</div>
         <div style="font-weight: 700;">MZA 101, LT 11, CANCUN, Q. ROO</div>
         <div style="font-weight: 700;">C.P. 77517 RFC LOGS851027BL5</div>
         <div style="font-weight: 700;">Tel: 998 702 2579</div>
@@ -798,17 +868,10 @@ const ventasFiltradas = computed(() => {
 
   // Aplicar filtro de tipo de pago
   if (filtroTipoPago.value) {
-    if (filtroTipoPago.value === 'TARJETA') {
-      resultado = resultado.filter(venta => {
-        const metodoPago = (venta.metodo_pago || 'EFECTIVO').toUpperCase();
-        return metodoPago === 'TARJETA' || metodoPago === 'MIXTO';
-      });
-    } else {
-      resultado = resultado.filter(venta => {
-        const metodoPago = (venta.metodo_pago || 'EFECTIVO').toUpperCase();
-        return metodoPago === filtroTipoPago.value?.toUpperCase();
-      });
-    }
+    resultado = resultado.filter(venta => {
+      const metodoPago = (venta.metodo_pago || 'EFECTIVO').toUpperCase();
+      return metodoPago === filtroTipoPago.value?.toUpperCase();
+    });
   }
 
   // Aplicar filtro de factura
@@ -846,10 +909,23 @@ const ventasFiltradasPorMetodo = computed(() => {
 
     if (metodoPago === 'EFECTIVO') {
       contEfectivo++;
-    } else if (metodoPago === 'TARJETA' || metodoPago === 'DEBITO' || metodoPago === 'CREDITO' || metodoPago === 'MIXTO') {
+    } else if (metodoPago === 'TARJETA' || metodoPago === 'DEBITO' || metodoPago === 'CREDITO') {
       contTarjeta++;
     } else if (metodoPago === 'TRANSFERENCIA') {
       contTransferencia++;
+    } else if (metodoPago === 'MIXTO') {
+      // Para MIXTO, contar según el método principal
+      const pPesos = Number(comentarios.match(/Pesos:\s*\$([\d.]+)/i)?.[1] || 0);
+      const pTarjeta = Number(comentarios.match(/Tarjeta:\s*\$([\d.]+)/i)?.[1] || 0);
+      const pTransf = Number(comentarios.match(/Transf:\s*\$([\d.]+)/i)?.[1] || 0);
+
+      if (pPesos > 0) {
+        contEfectivo++;
+      } else if (pTarjeta > 0) {
+        contTarjeta++;
+      } else if (pTransf > 0) {
+        contTransferencia++;
+      }
     }
 
     const usdMatch = comentarios.match(/USD:\s*([\d.]+)/i);
