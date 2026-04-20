@@ -365,6 +365,8 @@ onUnmounted(() => {
 /* Drawer más claro para contraste */
 .q-drawer {
   background: linear-gradient(180deg, #FFF8E1 0%, #F5E6D6 100%) !important;
+  will-change: transform;
+  contain: layout style paint;
 }
 
 .q-drawer .q-item-label,
@@ -375,5 +377,10 @@ onUnmounted(() => {
 .q-toolbar-title {
   color: #4a2e1a !important;
   font-weight: 800;
+}
+
+/* Optimizaciones de Quasar Drawer */
+.q-drawer--left {
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.12) !important;
 }
 </style>

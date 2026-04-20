@@ -707,20 +707,7 @@ onMounted(() => {
   background:
     radial-gradient(circle at 20% 30%, rgba(255, 235, 153, 0.12) 0%, transparent 50%),
     radial-gradient(circle at 80% 70%, rgba(139, 94, 60, 0.08) 0%, transparent 50%);
-  animation: float 20s ease-in-out infinite;
   pointer-events: none;
-}
-
-@keyframes float {
-
-  0%,
-  100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-
-  50% {
-    transform: translate(30px, 30px) rotate(5deg);
-  }
 }
 
 .pos-layout {
@@ -737,7 +724,7 @@ onMounted(() => {
 /* Panel de búsqueda */
 .search-panel {
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(6px);
   border-radius: 24px;
   padding: 2rem;
   box-shadow:
@@ -842,12 +829,13 @@ onMounted(() => {
   border: 2px solid rgba(139, 94, 60, 0.08);
   border-radius: 16px;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
   position: relative;
+  will-change: transform, box-shadow, border-color;
   overflow: hidden;
 }
 
@@ -953,7 +941,7 @@ onMounted(() => {
 /* Panel del carrito */
 .cart-panel {
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(6px);
   border-radius: 24px;
   padding: 2rem;
   box-shadow:
@@ -992,19 +980,6 @@ onMounted(() => {
   font-weight: 700;
   color: white;
   box-shadow: 0 4px 12px rgba(139, 94, 60, 0.24);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-
-  0%,
-  100% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.05);
-  }
 }
 
 .cart-content {
@@ -1039,9 +1014,10 @@ onMounted(() => {
   background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
   border: 2px solid rgba(139, 94, 60, 0.08);
   border-radius: 20px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  will-change: transform, box-shadow, border-color;
 }
 
 .cart-item::before {
@@ -1116,11 +1092,12 @@ onMounted(() => {
   font-size: 1.25rem;
   font-weight: 700;
   color: white;
-  transition: all 0.3s;
+  transition: all 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(139, 94, 60, 0.24);
+  will-change: transform, box-shadow;
 }
 
 .qty-btn:hover {
@@ -1180,11 +1157,12 @@ onMounted(() => {
   border-radius: 12px;
   cursor: pointer;
   color: white;
-  transition: all 0.3s;
+  transition: all 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(255, 107, 157, 0.3);
+  will-change: transform, box-shadow;
 }
 
 .delete-btn:hover {
@@ -1210,19 +1188,6 @@ onMounted(() => {
 .empty-cart svg {
   opacity: 0.4;
   filter: drop-shadow(0 8px 16px rgba(139, 94, 60, 0.18));
-  animation: float-icon 3s ease-in-out infinite;
-}
-
-@keyframes float-icon {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
 }
 
 .empty-cart h3 {
@@ -1249,7 +1214,7 @@ onMounted(() => {
 
 .summary-card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 249, 255, 0.95) 100%);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(6px);
   border-radius: 24px;
   padding: 2rem;
   box-shadow:
@@ -1292,7 +1257,8 @@ onMounted(() => {
   font-weight: 600;
   padding: 0.5rem;
   border-radius: 10px;
-  transition: all 0.3s;
+  transition: all 0.2s;
+  will-change: transform, background-color;
 }
 
 .summary-row:hover {
@@ -1320,19 +1286,6 @@ onMounted(() => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: gradient-shift 3s ease infinite;
-}
-
-@keyframes gradient-shift {
-
-  0%,
-  100% {
-    filter: hue-rotate(0deg);
-  }
-
-  50% {
-    filter: hue-rotate(10deg);
-  }
 }
 
 .action-buttons {
@@ -1363,7 +1316,8 @@ onMounted(() => {
   border: 1px solid rgba(139, 94, 60, 0.16);
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
   box-shadow: 0 6px 18px rgba(139, 94, 60, 0.08);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  will-change: transform, box-shadow, border-color;
 }
 
 .client-input-wrapper:focus-within {
@@ -1400,13 +1354,14 @@ onMounted(() => {
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
   position: relative;
   overflow: hidden;
+  will-change: transform, box-shadow;
 }
 
 .btn-primary {
@@ -1463,7 +1418,7 @@ onMounted(() => {
 .btn-secondary:hover:not(:disabled) {
   background: linear-gradient(180deg, #FFE8B6 0%, #FFD54F 100%);
   border-color: var(--color-brand-secondary);
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   box-shadow: 0 12px 28px rgba(217, 164, 65, 0.12);
 }
 

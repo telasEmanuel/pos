@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import api from 'src/api/axios'
+import ActualizarPreciosEnLote from 'src/components/ActualizarPreciosEnLote.vue'
 
 interface Producto {
   id: number
@@ -31,6 +32,9 @@ const productos = ref<Producto[]>([])
 const productoSeleccionado = ref<Producto | null>(null)
 const cargandoProductos = ref(false)
 const actualizando = ref(false)
+const busquedaProducto = ref('')
+const mostrarSugerencias = ref(false)
+const mostrarModalCambioMasivo = ref(false)
 
 // IVA fijo
 const IVA_FIJO = 16
@@ -50,7 +54,7 @@ const paso2ConDinamico = computed(() => {
 const paso3ConIncremento1 = computed(() => {
   const paso2 = validarNumero(paso2ConDinamico.value)
   const incremento = validarNumero(incremento1.value)
-  return paso2 * (1 + incremento / 100)
+  return paso2 / (1 - incremento / 100)
 })
 
 const paso4Final = computed(() => {
@@ -135,6 +139,36 @@ const limpiar = () => {
   precioDinamico.value = 0
   incremento1.value = 0
   incremento2.value = 0
+}
+
+// Filtrar productos según búsqueda
+const getProductosFiltrados = computed(() => {
+  if (!busquedaProducto.value || busquedaProducto.value.length < 2) return []
+  const termino = busquedaProducto.value.toLowerCase()
+  return productos.value
+    .filter((p) => p.nombre?.toLowerCase().includes(termino))
+    .slice(0, 10)
+})
+
+const onBusquedaInput = () => {
+  if (busquedaProducto.value.length >= 2) {
+    mostrarSugerencias.value = true
+    productoSeleccionado.value = null
+  } else {
+    mostrarSugerencias.value = false
+  }
+}
+
+const seleccionarProductoDelBuscador = (producto: Producto) => {
+  productoSeleccionado.value = producto
+  busquedaProducto.value = producto.nombre
+  mostrarSugerencias.value = false
+}
+
+const ocultarSugerencias = () => {
+  setTimeout(() => {
+    mostrarSugerencias.value = false
+  }, 200)
 }
 
 onMounted(async () => {
@@ -231,18 +265,39 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- Fila 6: Selector de Producto y Actualizar -->
+      <!-- Fila 6: Buscador de Producto y Actualizar -->
       <div v-if="paso4Final > 0" class="fila-producto"
         style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #e5e7eb;">
         <div class="columna-input">
           <div class="input-group">
-            <label for="producto">Seleccionar Producto</label>
-            <select id="producto" v-model="productoSeleccionado" class="select-producto" :disabled="cargandoProductos">
-              <option :value="null" selected>Elige un producto...</option>
-              <option v-for="prod in productos" :key="prod.id" :value="prod">
-                {{ prod.nombre }} (Precio actual: ${{ parseFloat(String(prod.precio)).toFixed(2) }})
-              </option>
-            </select>
+            <label for="producto">Buscar y seleccionar varios productos</label>
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem">
+              <button type="button" @click="mostrarModalCambioMasivo = true" class="btn-cambio-masivo">
+                📋 Cambio Masivo
+              </button>
+            </div>
+            <label for="producto">Buscar y seleccionar un producto </label>
+            <div class="search-container">
+              <input type="text" id="producto" v-model="busquedaProducto" @input="onBusquedaInput"
+                @focus="onBusquedaInput" @blur="ocultarSugerencias" placeholder="Escribe el nombre del producto..."
+                autocomplete="off" :disabled="cargandoProductos" class="search-input" />
+
+              <!-- Sugerencias -->
+              <div v-if="mostrarSugerencias && getProductosFiltrados.length" class="sugerencias">
+                <div v-for="producto in getProductosFiltrados" :key="producto.id"
+                  @click="seleccionarProductoDelBuscador(producto)" class="sugerencia-item">
+                  <div class="producto-nombre">{{ producto.nombre }}</div>
+                  <div class="producto-precio">Precio actual: ${{ parseFloat(String(producto.precio)).toFixed(2) }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- No resultados -->
+              <div v-if="mostrarSugerencias && busquedaProducto.length >= 2 && !getProductosFiltrados.length"
+                class="no-resultados">
+                No se encontraron productos
+              </div>
+            </div>
           </div>
           <button v-if="productoSeleccionado" type="button" @click="actualizarPrecioProducto" :disabled="actualizando"
             class="btn-actualizar">
@@ -273,6 +328,10 @@ onMounted(async () => {
       </div>
     </div>
   </div>
+
+  <!-- Modal de Cambio Masivo -->
+  <ActualizarPreciosEnLote :show="mostrarModalCambioMasivo" :precioCompra="paso2ConDinamico"
+    :precioTapicero="paso3ConIncremento1" :precioPublico="paso4Final" @close="mostrarModalCambioMasivo = false" />
 </template>
 
 <style scoped>
@@ -283,6 +342,7 @@ onMounted(async () => {
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(60, 60, 90, 0.18);
+  overflow: visible;
 }
 
 .calculadora-container h2 {
@@ -297,6 +357,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  overflow: visible;
 }
 
 .fila-calculo {
@@ -314,6 +375,9 @@ onMounted(async () => {
 
 .columna-input {
   flex: 0 0 350px;
+  overflow: visible;
+  position: relative;
+  z-index: 50;
 }
 
 .columna-paso {
@@ -427,6 +491,7 @@ onMounted(async () => {
   display: flex;
   gap: 2rem;
   align-items: flex-start;
+  overflow: visible;
 }
 
 .columna-infoproducto {
@@ -456,6 +521,108 @@ onMounted(async () => {
   cursor: not-allowed;
 }
 
+.search-container {
+  position: relative;
+  width: 100%;
+  z-index: 100;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #f7fafc;
+  cursor: text;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  border-color: var(--color-brand-primary);
+  outline: none;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(217, 164, 65, 0.1);
+}
+
+.search-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sugerencias {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  top: auto;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1001;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  will-change: contents;
+}
+
+.sugerencias::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sugerencias::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sugerencias::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.sugerencias::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.sugerencia-item {
+  padding: 0.6rem 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  transition: all 0.15s;
+}
+
+.sugerencia-item:hover {
+  background: #fafbfc;
+  padding-left: 1rem;
+}
+
+.sugerencia-item:last-child {
+  border-bottom: none;
+}
+
+.sugerencia-item .producto-nombre {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.125rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sugerencia-item .producto-precio {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.no-resultados {
+  padding: 0.75rem 1rem;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
 .btn-actualizar {
   width: 100%;
   margin-top: 0.5rem;
@@ -479,6 +646,30 @@ onMounted(async () => {
 .btn-actualizar:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-cambio-masivo {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--gradient-brand-90);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-cambio-masivo:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+  background: var(--color-brand-secondary);
+}
+
+.btn-cambio-masivo:active {
+  transform: translateY(0);
 }
 
 .info-producto {
