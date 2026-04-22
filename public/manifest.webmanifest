@@ -1,10 +1,10 @@
 {
-  "name": "Sistema de Punto de Venta",
-  "short_name": "POS",
+  "name": "Telas Emanuel App",
+  "short_name": "TEA",
   "description": "Aplicación de punto de venta",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "var(--gradient-brand-90)",
   "theme_color": "#1976d2",
   "orientation": "portrait-primary",
   "scope": "/",
