@@ -4,7 +4,7 @@
   "description": "Aplicación de punto de venta",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "var(--gradient-brand-90)",
+  "background_color": "#ffd54f",
   "theme_color": "#1976d2",
   "orientation": "portrait-primary",
   "scope": "/",
