@@ -2,6 +2,7 @@
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file
 
 import { defineConfig } from '#q-app/wrappers';
+import type { InjectManifestOptions } from 'workbox-build';
 
 export default defineConfig((/* ctx */) => {
   return {
@@ -106,17 +107,10 @@ export default defineConfig((/* ctx */) => {
     animations: [],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#sourcefiles
-    // sourceFiles: {
-    //   rootComponent: 'src/App.vue',
-    //   router: 'src/router/index',
-    //   store: 'src/store/index',
-    //   pwaRegisterServiceWorker: 'src-pwa/register-service-worker',
-    //   pwaServiceWorker: 'src-pwa/custom-service-worker',
-    //   pwaManifestFile: 'src-pwa/manifest.json',
-    //   electronMain: 'src-electron/electron-main',
-    //   electronPreload: 'src-electron/electron-preload'
-    //   bexManifestFile: 'src-bex/manifest.json
-    // },
+    sourceFiles: {
+      pwaManifestFile: 'public/manifest.webmanifest',
+      pwaServiceWorker: 'src-pwa/custom-service-worker',
+    },
 
     // https://v2.quasar.dev/quasar-cli-vite/developing-ssr/configuring-ssr
     ssr: {
@@ -144,12 +138,15 @@ export default defineConfig((/* ctx */) => {
 
     // https://v2.quasar.dev/quasar-cli-vite/developing-pwa/configuring-pwa
     pwa: {
-      workboxMode: 'GenerateSW',
-      // swFilename: 'sw.js',
-      // manifestFilename: 'manifest.webmanifest',
+      workboxMode: 'InjectManifest',
+      swFilename: 'sw.js',
+      manifestFilename: 'manifest.webmanifest',
       injectPwaMetaTags: true,
-      // extendManifestJson (json) {},
-      // extendGenerateSWOptions (cfg) {},
+      extendInjectManifestOptions(cfg: InjectManifestOptions) {
+        cfg.globPatterns = [
+          '**/*.{js,css,html,ttf,woff,woff2,json,webp,png,jpg,jpeg,svg,gif,webm,mp4}',
+        ];
+      },
     },
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/developing-cordova-apps/configuring-cordova
