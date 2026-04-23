@@ -60,7 +60,7 @@ const paso3ConIncremento1 = computed(() => {
 const paso4Final = computed(() => {
   const paso3 = validarNumero(paso3ConIncremento1.value)
   const incremento = validarNumero(incremento2.value)
-  return paso3 * (1 + incremento / 100)
+  return paso3 / (1 - incremento / 100)
 })
 
 // Cargar productos al montar
