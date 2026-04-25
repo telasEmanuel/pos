@@ -1,6 +1,7 @@
-<script lang="ts">
-import { defineComponent, ref, onMounted } from 'vue';
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
 import api from 'src/api/axios';
+import { useQuasar } from 'quasar';
 
 interface Movimiento {
   id: number;
@@ -23,152 +24,182 @@ interface ApiResponse {
   items?: Transferencia[];
 }
 
-export default defineComponent({
-  name: 'MovimientosInventario',
-  setup() {
-    const loading = ref(true);
-    const error = ref<string | null>(null);
-    const movimientos = ref<Movimiento[]>([]);
+const $q = useQuasar();
+const loading = ref(true);
+const filter = ref('');
+const error = ref<string | null>(null);
+const movimientos = ref<Movimiento[]>([]);
 
-    const cargarMovimientos = async () => {
-      try {
-        loading.value = true;
-        error.value = null;
-
-        const response = await api.get('transferencias');
-        let transferencias: Transferencia[] = [];
-
-        if (Array.isArray(response.data)) {
-          transferencias = response.data as Transferencia[];
-        } else if (response.data && typeof response.data === 'object' && 'items' in response.data) {
-          const apiResp = response.data as ApiResponse;
-          transferencias = apiResp.items || [];
-        }
-
-        // Mapear las transferencias a la interfaz Movimiento
-        movimientos.value = transferencias.map((transferencia: Transferencia) => ({
-          id: transferencia.id,
-          productoNombre: transferencia.producto?.nombre || 'Producto desconocido',
-          cantidad: Number(transferencia.cantidad),
-          tipo: 'Transferencia',
-          fecha: new Date(transferencia.fecha_transferencia)
-        }));
-      } catch (err) {
-        console.error('Error al cargar movimientos:', err);
-        error.value = 'Error al obtener los movimientos de inventario';
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    onMounted(() => {
-      void cargarMovimientos();
-    });
-
-    return {
-      loading,
-      error,
-      movimientos,
-      cargarMovimientos
-    };
+const columns: { 
+  name: string; 
+  align: 'left' | 'center' | 'right'; 
+  label: string; 
+  field: string | ((row: Movimiento) => string | number | Date); 
+  format?: (val: string | number | Date | null | undefined) => string;
+  sortable?: boolean 
+}[] = [
+  { name: 'id', align: 'left', label: 'ID', field: 'id', sortable: true },
+  { name: 'producto', align: 'left', label: 'Producto', field: 'productoNombre', sortable: true },
+  { name: 'cantidad', align: 'center', label: 'Cantidad', field: 'cantidad', sortable: true },
+  { 
+    name: 'tipo', 
+    align: 'center', 
+    label: 'Tipo', 
+    field: 'tipo',
+    sortable: true
   },
+  { 
+    name: 'fecha', 
+    align: 'left', 
+    label: 'Fecha', 
+    field: 'fecha', 
+    format: (val: string | number | Date | null | undefined) => val ? new Date(val).toLocaleString() : '',
+    sortable: true 
+  },
+];
+
+const cargarMovimientos = async () => {
+  try {
+    loading.value = true;
+    error.value = null;
+
+    const response = await api.get('transferencias');
+    let transferencias: Transferencia[] = [];
+
+    if (Array.isArray(response.data)) {
+      transferencias = response.data as Transferencia[];
+    } else if (response.data && typeof response.data === 'object' && 'items' in response.data) {
+      const apiResp = response.data as ApiResponse;
+      transferencias = apiResp.items || [];
+    }
+
+    // Mapear las transferencias a la interfaz Movimiento
+    movimientos.value = transferencias.map((transferencia: Transferencia) => ({
+      id: transferencia.id,
+      productoNombre: transferencia.producto?.nombre || 'Producto desconocido',
+      cantidad: Number(transferencia.cantidad),
+      tipo: 'Transferencia',
+      fecha: new Date(transferencia.fecha_transferencia)
+    }));
+  } catch (err) {
+    console.error('Error al cargar movimientos:', err);
+    error.value = 'Error al obtener los movimientos de inventario';
+    $q.notify({
+      message: 'Error al cargar movimientos',
+      color: 'negative',
+      icon: 'error'
+    });
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  void cargarMovimientos();
 });
 </script>
 
 <template>
-  <div class="movimientos-inventario">
-    <div class="header">
-      <h1>Historial de Movimientos de Inventario</h1>
-      <button @click="cargarMovimientos" class="btn-recargar">🔄 Recargar</button>
-    </div>
-    <p>Aquí puedes ver el historial completo de transferencias de inventario.</p>
-
-    <div v-if="loading" class="loading">
-      <p>Cargando movimientos...</p>
-    </div>
-
-    <div v-else>
-      <!-- Mostrar errores -->
-      <div v-if="error" class="error-message">
-        {{ error }}
-      </div>
-
-      <!-- Tabla de movimientos -->
-      <table v-if="movimientos.length" class="tabla">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Producto</th>
-            <th>Cantidad</th>
-            <th>Tipo</th>
-            <th>Fecha</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="movimiento in movimientos" :key="movimiento.id">
-            <td>{{ movimiento.id }}</td>
-            <td>{{ movimiento.productoNombre }}</td>
-            <td>{{ movimiento.cantidad }}</td>
-            <td><span :class="`tipo-${movimiento.tipo.toLowerCase()}`">{{ movimiento.tipo }}</span></td>
-            <td>{{ new Date(movimiento.fecha).toLocaleString() }}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div v-else class="no-data">
-        <p>No hay movimientos registrados en este momento.</p>
+  <q-page padding class="movimientos-page">
+    <div class="header-section q-mb-lg">
+      <div class="row items-center justify-between q-mb-md">
+        <div>
+          <h1 class="text-h4 text-weight-bold gradient-text q-mb-sm">Historial de Movimientos</h1>
+          <p class="text-subtitle1 text-grey-8 q-my-none">
+            Consulta el historial completo de transferencias de inventario.
+          </p>
+        </div>
+        <q-btn 
+          @click="cargarMovimientos" 
+          label="Recargar" 
+          icon="refresh" 
+          color="amber-8" 
+          :loading="loading"
+          class="btn-recargar"
+        />
       </div>
     </div>
-  </div>
+
+    <!-- Tabla de movimientos con q-table -->
+    <q-table
+      :rows="movimientos"
+      :columns="columns"
+      row-key="id"
+      :loading="loading"
+      :filter="filter"
+      flat
+      bordered
+      class="movimientos-table"
+      :pagination="{ rowsPerPage: 15 }"
+      rows-per-page-label="Registros por página"
+      :pagination-label="(start: number, end: number, total: number) => `${start}-${end} de ${total}`"
+    >
+      <template v-slot:top-right>
+        <q-input borderless dense debounce="300" v-model="filter" placeholder="Buscar movimiento...">
+          <template v-slot:append>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+      </template>
+
+      <template v-slot:body-cell-tipo="props">
+        <q-td :props="props">
+          <q-chip 
+            outline 
+            color="primary" 
+            text-color="primary" 
+            :label="props.value" 
+            size="sm" 
+            class="text-weight-bold"
+          />
+        </q-td>
+      </template>
+
+      <template v-slot:no-data>
+        <div class="full-width row flex-center q-pa-xl text-grey-7">
+          <q-icon name="info" size="md" color="grey-5" class="q-mr-sm" />
+          <span>No hay movimientos registrados en este momento.</span>
+        </div>
+      </template>
+    </q-table>
+
+    <div v-if="error" class="error-message q-mt-md">
+      {{ error }}
+    </div>
+  </q-page>
 </template>
 
 <style scoped>
-h1 {
-  color: #333;
-  font-size: 1.8rem;
-  margin: 0;
+.movimientos-page {
+  background: transparent;
 }
 
-.movimientos-inventario {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+.gradient-text {
+  background: var(--gradient-brand-135);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  gap: 1rem;
+.movimientos-table {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 }
 
-.header h1 {
-  margin: 0;
-  color: #333;
+:deep(.q-table th) {
+  font-weight: 700;
+  color: #5a3f2b;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  padding: 12px 16px;
 }
 
-.btn-recargar {
-  background: var(--gradient-brand-90);
-  color: white;
-  border: none;
-  padding: 0.7rem 1.5rem;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-recargar:hover {
-  background: var(--color-brand-secondary);
-  transform: translateY(-2px);
-}
-
-.loading {
-  text-align: center;
-  padding: 2rem;
-  color: #666;
+:deep(.q-table__bottom) {
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  color: #6d4c41;
+  padding: 8px 16px;
 }
 
 .error-message {
@@ -176,77 +207,11 @@ h1 {
   color: #c33;
   padding: 1rem;
   border-radius: 4px;
-  margin-bottom: 1rem;
   border-left: 4px solid #c33;
 }
 
-.tabla {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-  background: white;
+.btn-recargar {
   border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.tabla thead {
-  background: #f5f5f5;
   font-weight: 600;
-  color: #333;
-}
-
-.tabla th,
-.tabla td {
-  padding: 1rem;
-  text-align: left;
-  border-bottom: 1px solid #eee;
-}
-
-.tabla tbody tr:hover {
-  background: #f9f9f9;
-}
-
-.tipo-transferencia {
-  display: inline-block;
-  background: #e3f2fd;
-  color: var(--color-brand-primary);
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.no-data {
-  text-align: center;
-  padding: 2rem;
-  color: #666;
-  background: #f9f9f9;
-  border-radius: 6px;
-  margin-top: 1rem;
-}
-
-@media (max-width: 768px) {
-  .movimientos-inventario {
-    padding: 1rem;
-  }
-
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .btn-recargar {
-    width: 100%;
-  }
-
-  .tabla {
-    font-size: 0.9rem;
-  }
-
-  .tabla th,
-  .tabla td {
-    padding: 0.75rem 0.5rem;
-  }
 }
 </style>

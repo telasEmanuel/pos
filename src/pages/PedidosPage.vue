@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useQuasar } from 'quasar';
 import { socket } from 'src/boot/socket';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, computed } from 'vue';
 import api from 'src/api/axios';
 import { usePedidosStore, type Pedido, type PedidoBackend, type ProductoPedido } from 'src/stores/pedidos-store';
 import { storeToRefs } from 'pinia';
@@ -42,6 +42,36 @@ const receiptPrinter = ref<InstanceType<typeof ReceiptPrinter> | null>(null);
 const currentReceipt = ref<ReceiptData | null>(null);
 const inventarioMap = ref<Record<number, string>>({});
 const nombreMap = ref<Record<string, string>>({});
+const pagCompletados = ref(1);
+const pagCancelados = ref(1);
+const itemsPerPage = 21;
+
+const pedidosCompletadosList = computed(() => {
+  return pedidos.value.filter((p) => p.estado === 'pagado');
+});
+
+const pedidosCanceladosList = computed(() => {
+  return pedidos.value.filter((p) => p.estado === 'cancelado');
+});
+
+const completadosPaginados = computed(() => {
+  const start = (pagCompletados.value - 1) * itemsPerPage;
+  return pedidosCompletadosList.value.slice(start, start + itemsPerPage);
+});
+
+const canceladosPaginados = computed(() => {
+  const start = (pagCancelados.value - 1) * itemsPerPage;
+  return pedidosCanceladosList.value.slice(start, start + itemsPerPage);
+});
+
+const maxPagCompletados = computed(() => Math.ceil(pedidosCompletadosList.value.length / itemsPerPage));
+const maxPagCancelados = computed(() => Math.ceil(pedidosCanceladosList.value.length / itemsPerPage));
+
+const pedidosPendientesList = computed(() => {
+  return pedidos.value.filter((p) => p.estado === 'pendiente');
+});
+
+
 
 const cargarInventario = async () => {
   try {
@@ -342,17 +372,7 @@ const formatearFecha = (fecha: string) => {
   });
 };
 
-const pedidosPendientes = () => {
-  return pedidos.value.filter((p) => p.estado === 'pendiente');
-};
 
-const pedidosCompletados = () => {
-  return pedidos.value.filter((p) => p.estado === 'pagado');
-};
-
-const pedidosCancelados = () => {
-  return pedidos.value.filter((p) => p.estado === 'cancelado');
-};
 
 onMounted(() => {
   datos.value = authStore.user;
@@ -416,14 +436,14 @@ onUnmounted(() => {
       <!-- Pedidos Pendientes -->
       <section class="pedidos-section">
         <h2 class="section-title">
-          <span class="badge badge-pending">{{ pedidosPendientes().length }}</span>
+          <span class="badge badge-pending">{{ pedidosPendientesList.length }}</span>
           Pedidos Pendientes
         </h2>
-        <div v-if="pedidosPendientes().length === 0" class="empty-state">
+        <div v-if="pedidosPendientesList.length === 0" class="empty-state">
           No hay pedidos pendientes
         </div>
         <div v-else class="pedidos-grid">
-          <div v-for="pedido in pedidosPendientes()" :key="pedido.id" class="pedido-card pending">
+          <div v-for="pedido in pedidosPendientesList" :key="pedido.id" class="pedido-card pending">
             <div class="pedido-header">
               <h3>Pedido #{{ pedido.id }}</h3>
               <span class="pedido-vendedor">{{ pedido.comprador }}</span>
@@ -454,56 +474,82 @@ onUnmounted(() => {
       <!-- Pedidos Completados -->
       <section class="pedidos-section">
         <h2 class="section-title">
-          <span class="badge badge-completed">{{ pedidosCompletados().length }}</span>
+          <span class="badge badge-completed">{{ pedidosCompletadosList.length }}</span>
           Pedidos Completados
         </h2>
-        <div v-if="pedidosCompletados().length === 0" class="empty-state">
+        <div v-if="pedidosCompletadosList.length === 0" class="empty-state">
           No hay pedidos completados
         </div>
-        <div v-else class="pedidos-grid">
-          <div v-for="pedido in pedidosCompletados()" :key="pedido.id" class="pedido-card completed">
-            <div class="pedido-header">
-              <h3>Pedido #{{ pedido.id }}</h3>
-              <span class="pedido-vendedor">{{ pedido.comprador }}</span>
+        <div v-else>
+          <div class="pedidos-grid">
+            <div v-for="pedido in completadosPaginados" :key="pedido.id" class="pedido-card completed">
+              <div class="pedido-header">
+                <h3>Pedido #{{ pedido.id }}</h3>
+                <span class="pedido-vendedor">{{ pedido.comprador }}</span>
+              </div>
+              <div class="pedido-fecha">{{ formatearFecha(pedido.fecha) }}</div>
+              <div class="pedido-productos">
+                <h4>Productos:</h4>
+                <ul>
+                  <li v-for="(prod, idx) in pedido.productos" :key="idx">
+                    <strong>{{ prod.nombre }}</strong>: {{ prod.cantidad }} {{ getMedidaPara(prod) }}
+                  </li>
+                </ul>
+              </div>
+              <p class="pedido-total">Total: ${{ Number(pedido.total || 0).toFixed(2) }}</p>
+              <div class="status-badge completed-badge">✓ Completado</div>
             </div>
-            <div class="pedido-fecha">{{ formatearFecha(pedido.fecha) }}</div>
-            <div class="pedido-productos">
-              <h4>Productos:</h4>
-              <ul>
-                <li v-for="(prod, idx) in pedido.productos" :key="idx">
-                  <strong>{{ prod.nombre }}</strong>: {{ prod.cantidad }} {{ getMedidaPara(prod) }}
-                </li>
-              </ul>
-            </div>
-            <p class="pedido-total">Total: ${{ Number(pedido.total || 0).toFixed(2) }}</p>
-            <div class="status-badge completed-badge">✓ Completado</div>
+          </div>
+          <div class="row justify-center q-mt-lg">
+            <q-pagination
+              v-model="pagCompletados"
+              :max="maxPagCompletados"
+              direction-links
+              flat
+              color="grey"
+              active-color="primary"
+              boundary-links
+            />
           </div>
         </div>
       </section>
 
       <!-- Pedidos Cancelados -->
-      <section v-if="pedidosCancelados().length > 0" class="pedidos-section">
+      <section v-if="pedidosCanceladosList.length > 0" class="pedidos-section">
         <h2 class="section-title">
-          <span class="badge badge-cancelled">{{ pedidosCancelados().length }}</span>
+          <span class="badge badge-cancelled">{{ pedidosCanceladosList.length }}</span>
           Pedidos Cancelados
         </h2>
-        <div class="pedidos-grid">
-          <div v-for="pedido in pedidosCancelados()" :key="pedido.id" class="pedido-card cancelled">
-            <div class="pedido-header">
-              <h3>Pedido #{{ pedido.id }}</h3>
-              <span class="pedido-vendedor">{{ pedido.comprador }}</span>
+        <div>
+          <div class="pedidos-grid">
+            <div v-for="pedido in canceladosPaginados" :key="pedido.id" class="pedido-card cancelled">
+              <div class="pedido-header">
+                <h3>Pedido #{{ pedido.id }}</h3>
+                <span class="pedido-vendedor">{{ pedido.comprador }}</span>
+              </div>
+              <div class="pedido-fecha">{{ formatearFecha(pedido.fecha) }}</div>
+              <div class="pedido-productos">
+                <h4>Productos:</h4>
+                <ul>
+                  <li v-for="(prod, idx) in pedido.productos" :key="idx">
+                    <strong>{{ prod.nombre }}</strong>: {{ prod.cantidad }} {{ getMedidaPara(prod) }}
+                  </li>
+                </ul>
+              </div>
+              <p class="pedido-total">Total: ${{ Number(pedido.total || 0).toFixed(2) }}</p>
+              <div class="status-badge cancelled-badge">✕ Cancelado</div>
             </div>
-            <div class="pedido-fecha">{{ formatearFecha(pedido.fecha) }}</div>
-            <div class="pedido-productos">
-              <h4>Productos:</h4>
-              <ul>
-                <li v-for="(prod, idx) in pedido.productos" :key="idx">
-                  <strong>{{ prod.nombre }}</strong>: {{ prod.cantidad }} {{ getMedidaPara(prod) }}
-                </li>
-              </ul>
-            </div>
-            <p class="pedido-total">Total: ${{ Number(pedido.total || 0).toFixed(2) }}</p>
-            <div class="status-badge cancelled-badge">✕ Cancelado</div>
+          </div>
+          <div class="row justify-center q-mt-lg">
+            <q-pagination
+              v-model="pagCancelados"
+              :max="maxPagCancelados"
+              direction-links
+              flat
+              color="grey"
+              active-color="primary"
+              boundary-links
+            />
           </div>
         </div>
       </section>
