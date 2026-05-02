@@ -61,7 +61,7 @@ export const useAuthStore = defineStore('auth', () => {
       tickets: 'tickets',
       corte: 'corte',
       reporte_existencia: 'reporte_existencia',
-      envios: 'envios'
+      envios: 'envios',
     };
 
     // Get the property name from map, or use permission name directly
