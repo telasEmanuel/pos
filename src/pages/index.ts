@@ -15,7 +15,6 @@ export { default as Proveedores } from './SuppliersPage.vue';
 export { default as UsersPage } from './UsersPage.vue';
 export { default as Ordenes } from './OrdersPage.vue';
 export { default as Ventas } from './HistorialVentas.vue';
-export { default as EnvioMateriales } from './EnvioMateriales.vue';
 export { default as Productos } from './ProductsPage.vue';
 export { default as DetalleInventario } from './DetalleInventarioPage.vue';
 export { default as Historial } from './MovimientosInventario.vue';
