@@ -91,7 +91,7 @@ const formatCurrency = (val: number) => {
 };
 
 onMounted(() => {
-  datos.value = authStore.user as { rol: string };
+  datos.value = authStore.user;
   void cargarCategorias();
   void mostrarExistencias();
 });

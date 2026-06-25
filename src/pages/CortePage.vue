@@ -982,7 +982,7 @@ watch(usuarioSeleccionado, () => {
 });
 
 onMounted(async () => {
-  datos.value = authStore.user as { rol: string };
+  datos.value = authStore.user;
   filtroTipoPago.value = null;
   filtroFactura.value = null;
   await loadUsuarios();

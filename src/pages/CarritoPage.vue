@@ -173,7 +173,7 @@ const agregarAlCarrito = (p: Producto) => {
       precio: parseDecimal(p.precio ?? 0),
       precio_tap: parseDecimal(p.precio_tap ?? 0),
     };
-    carrito.value.push(item as ItemCarrito);
+    carrito.value.push(item);
   }
   term.value = '';
   sugerencias.value = [];
