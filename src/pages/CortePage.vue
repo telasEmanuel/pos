@@ -102,22 +102,25 @@ const statsCalculadas = computed(() => {
 
     // Si es pago MIXTO, parsear el desglose detallado
     if (metodoPago === 'MIXTO' && comentarios.includes('[Detalle Pago:')) {
-      const pPesos = parseAmount(/Pesos:\s*\$([\d.]+)/);
+      // Regex flexible: captura "Pesos: $100" o "Pesos -$100"
+      const pPesos = parseAmount(/Pesos\s*:?\s*\$?([\d.]+)/);
       const pUSD = parseAmount(/USD:\s*([\d.]+)/);
-      const pTarjeta = parseAmount(/Tarjeta:\s*\$([\d.]+)/);
-      const pTransf = parseAmount(/Transf:\s*\$([\d.]+)/);
+      //const tasaCambio = parseAmount(/\(Tasa:\s*([\d.]+)\)/);
+      const pTarjeta = parseAmount(/Tarjeta:\s*\$?([\d.]+)/);
+      const pTransf = parseAmount(/Transf\s*:?\s*\$?([\d.]+)/);
 
-
-      // Para MIXTO, sumar el total al método que tenga mayor monto
+      // Para MIXTO, sumar CADA monto a su categoría correspondiente
       if (pPesos > 0) {
-        efectivo += total;
-      } else if (pTarjeta > 0) {
-        debito += total;
-      } else if (pTransf > 0) {
-        transferencia += total;
+        efectivo += pPesos;
+      }
+      if (pTarjeta > 0) {
+        debito += pTarjeta;
+      }
+      if (pTransf > 0) {
+        transferencia += pTransf;
       }
 
-      // Guardar USD solo para referencia (no para conversión)
+      // Mantener registro de USD para referencia (conversión se hace en granTotal)
       if (pUSD > 0) {
         usd += pUSD;
       }
@@ -149,7 +152,7 @@ const statsCalculadas = computed(() => {
     tarjeta: debito + credito,
     transferencia,
     usd,
-    granTotal: efectivo + debito + credito + transferencia
+    granTotal: efectivo + debito + credito + transferencia + (usd * 16)
   };
 });
 const loading = ref(true);
@@ -219,11 +222,11 @@ const parseDetailedPaymentComment = (rawComment: string | null): {
     return Number.isFinite(value) ? value : 0;
   };
 
-  const efectivo = parseAmount(/Pesos:\s*\$([\d.]+)/i);
+  const efectivo = parseAmount(/Pesos\s*:?\s*\$?([\d.]+)/i);
   const dolares = parseAmount(/USD:\s*([\d.]+)/i);
   const tasaCambio = parseAmount(/\(Tasa:\s*([\d.]+)\)/i);
-  const tarjeta = parseAmount(/Tarjeta:\s*\$([\d.]+)/i);
-  const transferencia = parseAmount(/Transf:\s*\$([\d.]+)/i);
+  const tarjeta = parseAmount(/Tarjeta:\s*\$?([\d.]+)/i);
+  const transferencia = parseAmount(/Transf\s*:?\s*\$?([\d.]+)/i);
   const totalPagado = efectivo + tarjeta + transferencia + (dolares * tasaCambio);
 
   const cleanedComment = comment
@@ -870,6 +873,29 @@ const ventasFiltradas = computed(() => {
   if (filtroTipoPago.value) {
     resultado = resultado.filter(venta => {
       const metodoPago = (venta.metodo_pago || 'EFECTIVO').toUpperCase();
+      const comentarios = venta.comentarios || '';
+
+      // Si busca TARJETA, mostrar ventas con TARJETA o MIXTO que incluya tarjeta
+      if (filtroTipoPago.value === 'TARJETA') {
+        if (metodoPago === 'TARJETA' || metodoPago === 'DEBITO' || metodoPago === 'CREDITO') return true;
+        if (metodoPago === 'MIXTO' && comentarios.match(/Tarjeta:\s*\$?([\d.]+)/i)?.[1]) return true;
+        return false;
+      }
+
+      // Si busca TRANSFERENCIA, mostrar ventas con TRANSFERENCIA o MIXTO que incluya transferencia
+      if (filtroTipoPago.value === 'TRANSFERENCIA') {
+        if (metodoPago === 'TRANSFERENCIA') return true;
+        if (metodoPago === 'MIXTO' && comentarios.match(/Transf\s*:?\s*\$?([\d.]+)/i)?.[1]) return true;
+        return false;
+      }
+
+      // Si busca EFECTIVO, mostrar ventas con EFECTIVO o MIXTO que incluya pesos
+      if (filtroTipoPago.value === 'EFECTIVO') {
+        if (metodoPago === 'EFECTIVO') return true;
+        if (metodoPago === 'MIXTO' && comentarios.match(/Pesos\s*:?\s*\$?([\d.]+)/i)?.[1]) return true;
+        return false;
+      }
+
       return metodoPago === filtroTipoPago.value?.toUpperCase();
     });
   }
@@ -914,18 +940,14 @@ const ventasFiltradasPorMetodo = computed(() => {
     } else if (metodoPago === 'TRANSFERENCIA') {
       contTransferencia++;
     } else if (metodoPago === 'MIXTO') {
-      // Para MIXTO, contar según el método principal
-      const pPesos = Number(comentarios.match(/Pesos:\s*\$([\d.]+)/i)?.[1] || 0);
-      const pTarjeta = Number(comentarios.match(/Tarjeta:\s*\$([\d.]+)/i)?.[1] || 0);
-      const pTransf = Number(comentarios.match(/Transf:\s*\$([\d.]+)/i)?.[1] || 0);
+      // Para MIXTO, contar en CADA categoría que se usó (no else if)
+      const pPesos = Number(comentarios.match(/Pesos\s*:?\s*\$?([\d.]+)/i)?.[1] || 0);
+      const pTarjeta = Number(comentarios.match(/Tarjeta:\s*\$?([\d.]+)/i)?.[1] || 0);
+      const pTransf = Number(comentarios.match(/Transf\s*:?\s*\$?([\d.]+)/i)?.[1] || 0);
 
-      if (pPesos > 0) {
-        contEfectivo++;
-      } else if (pTarjeta > 0) {
-        contTarjeta++;
-      } else if (pTransf > 0) {
-        contTransferencia++;
-      }
+      if (pPesos > 0) contEfectivo++;
+      if (pTarjeta > 0) contTarjeta++;
+      if (pTransf > 0) contTransferencia++;
     }
 
     const usdMatch = comentarios.match(/USD:\s*([\d.]+)/i);

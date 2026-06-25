@@ -50,15 +50,20 @@ const statsCalculadas = computed(() => {
     };
 
     if (metodoPago === 'MIXTO' && comentarios.includes('[Detalle Pago:')) {
-      const pPesos = parseAmount(/Pesos:\s*\$([\d.]+)/);
+      const pPesos = parseAmount(/Pesos\s*:?\s*\$?([\d.]+)/);
       const pUSD = parseAmount(/USD:\s*([\d.]+)/);
-      const pTarjeta = parseAmount(/Tarjeta:\s*\$([\d.]+)/);
-      const pTransf = parseAmount(/Transf:\s*\$([\d.]+)/);
+      const tasaCambio = parseAmount(/\(Tasa:\s*([\d.]+)\)/);
+      const pTarjeta = parseAmount(/Tarjeta:\s*\$?([\d.]+)/);
+      const pTransf = parseAmount(/Transf\s*:?\s*\$?([\d.]+)/);
 
       efectivo += pPesos;
-      usd += pUSD;
       debito += pTarjeta;
       transferencia += pTransf;
+
+      // Mantener registro de USD para referencia
+      if (pUSD > 0 && tasaCambio > 0) {
+        usd += pUSD;
+      }
     } else if (metodoPago === 'EFECTIVO') {
       efectivo += total;
     } else if (metodoPago === 'DEBITO') {
@@ -100,7 +105,7 @@ const statsCalculadas = computed(() => {
     tarjeta: debito + credito,
     transferencia,
     usd,
-    granTotal: efectivo + debito + credito + transferencia,
+    granTotal: efectivo + debito + credito + transferencia + (usd * 16),
     totalVentasSinFactura,
     totalVentasConFactura
   };

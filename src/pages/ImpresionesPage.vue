@@ -154,11 +154,11 @@ const parseDetailedPaymentComment = (rawComment: string | null): {
     return Number.isFinite(value) ? value : 0
   }
 
-  const efectivo = parseAmount(/Pesos:\s*\$([\d.]+)/i)
+  const efectivo = parseAmount(/Pesos\s*:?\s*\$?([\d.]+)/i)
   const dolares = parseAmount(/USD:\s*([\d.]+)/i)
   const tasaCambio = parseAmount(/\(Tasa:\s*([\d.]+)\)/i)
-  const tarjeta = parseAmount(/Tarjeta:\s*\$([\d.]+)/i)
-  const transferencia = parseAmount(/Transf:\s*\$([\d.]+)/i)
+  const tarjeta = parseAmount(/Tarjeta:\s*\$?([\d.]+)/i)
+  const transferencia = parseAmount(/Transf\s*:?\s*\$?([\d.]+)/i)
   const totalPagado = efectivo + tarjeta + transferencia + dolares * tasaCambio
 
   const cleanedComment = comment.replace(detailMatch[0], '').trim()

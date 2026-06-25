@@ -19,7 +19,6 @@ import {
   UsersPage,
   Ordenes,
   Ventas,
-  EnvioMateriales,
   Productos,
   DetalleInventario,
   Historial,
@@ -97,6 +96,7 @@ const routes: RouteRecordRaw[] = [
     component: PedidosPage,
     meta: {
       title: 'Pedidos activos',
+      permiso: 'pedidos',
       layout: MainLayout,
     },
   },
@@ -105,6 +105,7 @@ const routes: RouteRecordRaw[] = [
     component: CarritoPage,
     meta: {
       title: 'Carrito de Compras',
+      permiso: 'carrito',
       layout: MainLayout,
     },
   },
@@ -113,6 +114,7 @@ const routes: RouteRecordRaw[] = [
     component: CortePage,
     meta: {
       title: 'Corte de Caja',
+      permiso: 'corte_caja',
       layout: MainLayout,
     },
   },
@@ -121,6 +123,7 @@ const routes: RouteRecordRaw[] = [
     component: ReporteExistencias,
     meta: {
       title: 'Reporte de Existencias',
+      permiso: 'reporte_existencia',
       layout: MainLayout,
     },
   },
@@ -137,6 +140,7 @@ const routes: RouteRecordRaw[] = [
     component: DetalleInventario,
     meta: {
       title: 'Detalles de Inventario',
+      permiso: 'detalles_inventario',
       layout: MainLayout,
     },
   },
@@ -145,6 +149,7 @@ const routes: RouteRecordRaw[] = [
     component: categoriesPage,
     meta: {
       title: 'Categorías de productos',
+      permiso: 'categorias',
       layout: MainLayout,
     },
   },
@@ -153,6 +158,7 @@ const routes: RouteRecordRaw[] = [
     component: Secciones,
     meta: {
       title: 'Gestión de Secciones',
+      permiso: 'secciones',
       layout: MainLayout,
     },
   },
@@ -161,6 +167,7 @@ const routes: RouteRecordRaw[] = [
     component: Productos,
     meta: {
       title: 'Opciones de Bodega',
+      permiso: 'productos',
       layout: MainLayout,
     },
   },
@@ -169,6 +176,7 @@ const routes: RouteRecordRaw[] = [
     component: UsersPage,
     meta: {
       title: 'Ver usuarios del sistema',
+      permiso: 'usuarios',
       layout: MainLayout,
     },
   },
@@ -177,6 +185,7 @@ const routes: RouteRecordRaw[] = [
     component: Ordenes,
     meta: {
       title: 'Consultar ordenes de compra',
+      permiso: 'ordenes',
       layout: MainLayout,
     },
   },
@@ -185,6 +194,7 @@ const routes: RouteRecordRaw[] = [
     component: Ventas,
     meta: {
       title: 'Salidas de productos',
+      permiso: 'reporte_ventas',
       layout: MainLayout,
     },
   },
@@ -193,6 +203,7 @@ const routes: RouteRecordRaw[] = [
     component: Proveedores,
     meta: {
       title: 'Gestionar proveedores',
+      permiso: 'proveedores',
       layout: MainLayout,
     },
   },
@@ -201,14 +212,7 @@ const routes: RouteRecordRaw[] = [
     component: Calculadora,
     meta: {
       title: 'Calculadora de precios',
-      layout: MainLayout,
-    },
-  },
-  {
-    path: '/transferencias',
-    component: EnvioMateriales,
-    meta: {
-      title: 'Transferencias de inventario',
+      permiso: 'calculadora',
       layout: MainLayout,
     },
   },
@@ -217,6 +221,7 @@ const routes: RouteRecordRaw[] = [
     component: Historial,
     meta: {
       title: 'Historial de movimientos',
+      permiso: 'historial_movimientos',
       layout: MainLayout,
     },
   },
@@ -225,6 +230,7 @@ const routes: RouteRecordRaw[] = [
     component: ImpresionesPage,
     meta: {
       title: 'Autorizaciones del personal',
+      permiso: 'tickets',
       layout: MainLayout,
     },
   },
