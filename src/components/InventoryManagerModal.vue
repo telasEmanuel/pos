@@ -667,7 +667,9 @@ const formatValue = (value: unknown): string => {
                     @click="isPwd = !isPwd" />
                 </template>
               </q-input>
-              <p><a @click.prevent="currentState = 'changePassword'">Cambiar contraseña</a></p>
+              <p v-if="datos?.rol === 'visor'">
+                <a @click.prevent="currentState = 'changePassword'">Cambiar contraseña</a>
+              </p>
               <q-btn label="Entrar" class="full-width rounded-btn shadow-2 btn-gold" @click="checkPassword" />
             </div>
           </div>

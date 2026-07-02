@@ -6,9 +6,9 @@ interface Inventario {
   id: number
   producto_id?: number
   producto?: { nombre: string }
-  //rollos?: number
-  //cantidad?: number
-  //cantidad_piezas?: number
+  rollos?: number
+  cantidad?: number
+  cantidad_piezas?: number
   bodega_id?: number
   medida_gru?: string
   medida_ind?: string
@@ -106,13 +106,13 @@ const actualizarInventario = async () => {
       <form @submit.prevent="actualizarInventario">
         <!-- Fila 1: Control 1 y Tipo 1 -->
         <div class="form-group-row">
-          <!--<div class="form-group">
+          <div class="form-group">
             <label for="rollos">Cantidad:</label>
             <input type="number" id="rollos" v-model.number="form.rollos" min="0" required :disabled="loading" />
-          </div>-->
+          </div>
 
           <div class="form-group">
-            <label for="medida_gru">Presentación del producto como se compra (si son rollos, cajas, latas, piezas)</label>
+            <label for="medida_gru">Presentación:</label>
             <select id="medida_gru" v-model="form.medida_gru" :disabled="loading">
               <option value="Rollos">Rollos</option>
               <option value="Cajas">Cajas</option>
@@ -127,14 +127,14 @@ const actualizarInventario = async () => {
 
         <!-- Fila 2: Control 2 y Tipo 2 -->
         <div class="form-group-row">
-          <!--<div class="form-group">
+          <div class="form-group">
             <label for="cantidad">(mts, lts, pz, kg):</label>
             <input type="number" id="cantidad" v-model.number="form.cantidad" min="0" step="0.01" required
               :disabled="loading" />
-          </div>-->
+          </div>
 
           <div class="form-group">
-            <label for="medida_ind">Presentación del producto como se vende (si son metros, litros, kilos, bolsas)</label>
+            <label for="medida_ind">Presentación</label>
             <select id="medida_ind" v-model="form.medida_ind" :disabled="loading">
               <option value="Metros">Metros</option>
               <option value="Piezas">Piezas</option>
@@ -254,7 +254,7 @@ const actualizarInventario = async () => {
 
 .form-group-row {
   display: grid;
-  grid-template-columns: 3fr 0fr;
+  grid-template-columns: 1fr 1fr;
   gap: 0.8rem;
   margin-bottom: 1rem;
 }
