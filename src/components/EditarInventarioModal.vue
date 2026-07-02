@@ -48,9 +48,9 @@ watch(
   () => props.existencia,
   (newExistencia) => {
     if (newExistencia) {
-      //form.value.rollos = newExistencia.rollos || 0
-      //form.value.cantidad = newExistencia.cantidad || 0
-      //form.value.cantidad_piezas = newExistencia.cantidad_piezas || 0
+      form.value.rollos = newExistencia.rollos || 0
+      form.value.cantidad = newExistencia.cantidad || 0
+      form.value.cantidad_piezas = newExistencia.cantidad_piezas || 0
       // No cargar bodega_id para que muestre "Selecciona una bodega" inicialmente
       // form.value.bodega_id = newExistencia.bodega_id || 0
       form.value.medida_gru = newExistencia.medida_gru || ''
@@ -98,12 +98,13 @@ const actualizarInventario = async () => {
 <template>
   <div v-if="show" class="modal-overlay" @click.self="cerrarModal">
     <div class="modal">
-      <h2>Editando la presentación del producto: <p><strong>{{ existencia?.producto?.nombre || 'Sin nombre' }}</strong></p></h2>
-      <!--<div v-if="existencia" class="producto-info">
-        <p><strong>Producto:</strong> {{ existencia.producto?.nombre || 'Sin nombre' }}</p>
-      </div>-->
+      <h2>Editar Inventario</h2>
 
       <form @submit.prevent="actualizarInventario">
+        <div v-if="existencia" class="producto-info">
+          <p><strong>Producto:</strong> {{ existencia.producto?.nombre || 'Sin nombre' }}</p>
+        </div>
+
         <!-- Fila 1: Control 1 y Tipo 1 -->
         <div class="form-group-row">
           <div class="form-group">
@@ -134,7 +135,7 @@ const actualizarInventario = async () => {
           </div>
 
           <div class="form-group">
-            <label for="medida_ind">Presentación</label>
+            <label for="medida_ind">Presentación:</label>
             <select id="medida_ind" v-model="form.medida_ind" :disabled="loading">
               <option value="Metros">Metros</option>
               <option value="Piezas">Piezas</option>
@@ -271,6 +272,7 @@ const actualizarInventario = async () => {
   font-weight: 500;
 }
 
+.form-group input,
 .form-group select {
   width: 100%;
   padding: 0.45rem 0.6rem;
@@ -282,12 +284,14 @@ const actualizarInventario = async () => {
   box-sizing: border-box;
 }
 
+.form-group input:focus,
 .form-group select:focus {
   border-color: var(--color-brand-primary);
   outline: none;
   background: #fff;
 }
 
+.form-group input:disabled,
 .form-group select:disabled {
   opacity: 0.6;
   cursor: not-allowed;

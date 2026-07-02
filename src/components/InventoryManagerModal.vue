@@ -668,7 +668,7 @@ const formatValue = (value: unknown): string => {
                 </template>
               </q-input>
               <p v-if="datos?.rol === 'visor'">
-                <a @click.prevent="currentState = 'changePassword'">Cambiar contraseña</a>
+                <a @click.prevent="currentState = 'changePassword'" class="change-password">Cambiar contraseña</a>
               </p>
               <q-btn label="Entrar" class="full-width rounded-btn shadow-2 btn-gold" @click="checkPassword" />
             </div>
@@ -917,6 +917,12 @@ const formatValue = (value: unknown): string => {
 </template>
 
 <style scoped>
+.change-password {
+  color: var(--color-brand-primary);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 .inventory-manager-card {
   border-radius: 20px;
   width: 95vw;
