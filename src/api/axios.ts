@@ -39,10 +39,9 @@ api.interceptors.response.use(
       console.error(`📥 Response:`, responseData);
       console.error(`${'='.repeat(60)}\n`);
 
-      if (status === 401) {
+      if (status === 401 && url !== '/appsettings/access') {
         const authStore = useAuthStore();
         authStore.logout();
-        // Redirigir a login cuando el token expira
         window.location.href = '/';
       }
 

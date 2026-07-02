@@ -25,6 +25,7 @@ interface Usuario {
   pedidos?: boolean | number
   carrito?: boolean | number
   tickets?: boolean | number
+  cuentas_bancarias?: boolean | number
 }
 
 const $q = useQuasar()
@@ -53,7 +54,8 @@ const permisos = [
   { key: 'reporte_existencia', label: 'Reporte de Existencias', icon: '📈' },
   { key: 'pedidos', label: 'Consulta de pedidos', icon: '🛍️' },
   { key: 'carrito', label: 'Carrito de compras', icon: '🛒' },
-  { key: 'tickets', label: 'Gestión de tickets', icon: '🎫' }
+  { key: 'tickets', label: 'Gestión de tickets', icon: '🎫' },
+  { key: 'cuentas_bancarias', label: 'Cuentas bancarias', icon: '💳' }
 ]
 
 // Convertir 0/1 a booleano
@@ -97,7 +99,8 @@ const seleccionarUsuario = (usuario: Usuario) => {
     usuarios: convertirABooleano(usuario.usuarios),
     pedidos: convertirABooleano(usuario.pedidos),
     carrito: convertirABooleano(usuario.carrito),
-    tickets: convertirABooleano(usuario.tickets)
+    tickets: convertirABooleano(usuario.tickets),
+    cuentas_bancarias: convertirABooleano(usuario.cuentas_bancarias)
   }
 
   // Copiar permisos a permisosCopia para reactividad
@@ -116,7 +119,8 @@ const seleccionarUsuario = (usuario: Usuario) => {
     corte_caja: convertirABooleano(usuario.corte_caja),
     reporte_existencia: convertirABooleano(usuario.reporte_existencia),
     carrito: convertirABooleano(usuario.carrito),
-    tickets: convertirABooleano(usuario.tickets)
+    tickets: convertirABooleano(usuario.tickets),
+    cuentas_bancarias: convertirABooleano(usuario.cuentas_bancarias)
   }
 }
 
@@ -182,7 +186,6 @@ const cargarUsuarios = async () => {
   try {
     const response = await api.get('usuarios')
     usuarios.value = response.data
-    console.log('✅ Usuarios cargados:', usuarios.value.length)
   } catch (err) {
     console.error('Error cargando usuarios:', err)
     $q.notify({
@@ -217,10 +220,9 @@ const guardarPermisos = async () => {
       usuarios: permisosCopia.value.usuarios ?? false,
       pedidos: permisosCopia.value.pedidos ?? false,
       carrito: permisosCopia.value.carrito ?? false,
-      tickets: permisosCopia.value.tickets ?? false
+      tickets: permisosCopia.value.tickets ?? false,
+      cuentas_bancarias: permisosCopia.value.cuentas_bancarias ?? false
     }
-
-    console.log('📤 Enviando permisos actualizados:', datosActualizados)
 
     await api.put(`usuarios/${usuarioSeleccionado.value.id}`, datosActualizados)
 
@@ -241,6 +243,7 @@ const guardarPermisos = async () => {
       usuarioSeleccionado.value.pedidos = datosActualizados.pedidos
       usuarioSeleccionado.value.carrito = datosActualizados.carrito
       usuarioSeleccionado.value.tickets = datosActualizados.tickets
+      usuarioSeleccionado.value.cuentas_bancarias = datosActualizados.cuentas_bancarias
     }
 
     // Actualizar el usuario en la lista
@@ -262,6 +265,7 @@ const guardarPermisos = async () => {
       usuario.pedidos = datosActualizados.pedidos
       usuario.carrito = datosActualizados.carrito
       usuario.tickets = datosActualizados.tickets
+      usuario.cuentas_bancarias = datosActualizados.cuentas_bancarias
     }
 
     $q.notify({

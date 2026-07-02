@@ -81,12 +81,9 @@ const cargarProductos = async () => {
     try {
       const detallesRes = await api.get('inventarios/detalles')
       detallesDelInventario = detallesRes.data || []
-      console.log('📋 Detalles del inventario cargados:', detallesDelInventario.length)
     } catch (e) {
       console.warn('No se pudo cargar detalles del inventario', e)
     }
-
-    console.log('📦 Inventarios cargados:', items) // DEBUG
 
     productos.value = items.map((p) => {
       const prodObj = p.producto || { precio_comp: 0 }

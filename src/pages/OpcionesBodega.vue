@@ -4,7 +4,7 @@ import { useAuthStore } from 'src/stores/auth';
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router';
 
-const datos = ref<{ nombre?: string, rol?: string, categorias?: boolean, productos?: boolean, detalles_inventario?: boolean, ordenes?: boolean, proveedores?: boolean, historial_movimientos?: boolean, calculadora?: boolean, secciones?: boolean, reporte_ventas?: boolean, usuarios?: boolean, tickets?: boolean } | null>(null);
+const datos = ref<{ nombre?: string, rol?: string, categorias?: boolean, productos?: boolean, detalles_inventario?: boolean, ordenes?: boolean, proveedores?: boolean, historial_movimientos?: boolean, calculadora?: boolean, secciones?: boolean, reporte_ventas?: boolean, usuarios?: boolean, tickets?: boolean, cuentas_bancarias?: boolean } | null>(null);
 const authStore = useAuthStore();
 const $q = useQuasar()
 const router = useRouter();
@@ -185,38 +185,33 @@ const checarPermiso = (seccion: string) => {
         });
       }
       break
+    case 'cuentas_bancarias':
+      if (convertirABooleano(datos.value?.cuentas_bancarias)) {
+        void router.push('/cubancarias');
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break
   }
 }
 
 onMounted(() => {
   // Cargar usuario inicial
   datos.value = authStore.user;
-
-  console.log('%c📍 OpcionesBodega - onMounted', 'background: #222; color: #bada55; font-size: 14px; font-weight: bold;');
-  console.log('authStore.user =', authStore.user);
-  console.log('datos.value =', datos.value);
-  console.log('sessionStorage.user =', JSON.parse(sessionStorage.getItem('user') || 'null'));
-
-  if (datos.value) {
-    console.log('✅ Usuario disponible. Permisos:', {
-      categorias: convertirABooleano(datos.value?.categorias),
-      productos: convertirABooleano(datos.value?.productos),
-      ordenes: convertirABooleano(datos.value?.ordenes),
-      usuarios: convertirABooleano(datos.value?.usuarios)
-    });
-  } else {
-    console.warn('⚠️ No hay usuario en onMounted');
-  }
 })
 
 // Watcher para detectar cambios en authStore.user
 watch(() => authStore.user, (nuevoUsuario) => {
-  console.log('%c👀 OpcionesBodega - watcher triggered', 'background: #ff6b6b; color: white; font-size: 12px');
-  console.log('nuevoUsuario =', nuevoUsuario);
-
   if (nuevoUsuario) {
     datos.value = nuevoUsuario;
-    console.log('✅ Usuario actualizado en OpcionesBodega (watcher):', datos.value);
   } else {
     console.warn('⚠️ Usuario cerró sesión, redirigiendo...');
     void router.push('/');
@@ -297,6 +292,12 @@ watch(() => authStore.user, (nuevoUsuario) => {
         <h3>Consulta de tickets</h3>
         <p>Tickets generados por ventas.</p>
         <button @click="checarPermiso('tickets')" class="btn">Entrar</button>
+      </div>
+      <div class="card">
+        <span class="icon">💳</span>
+        <h3>Cuentas bancarias</h3>
+        <p>Administra las cuentas bancarias de la empresa.</p>
+        <button @click="checarPermiso('cuentas_bancarias')" class="btn">Entrar</button>
       </div>
     </section>
     <footer>

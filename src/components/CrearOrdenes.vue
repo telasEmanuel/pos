@@ -161,7 +161,6 @@ async function submitOrder(): Promise<void> {
     }
 
     success.value = true
-    console.log("Orden creada:", payloadToSend);
     emit('created')
 
     // Generar PDF de la orden - no bloquea si falla
@@ -316,7 +315,6 @@ const fetchInventarios = async (): Promise<void> => {
   try {
     const response = await api.get('inventarios')
     inventarios.value = Array.isArray(response.data) ? response.data : (response.data.items || [])
-    console.log('✅ Inventarios cargados para PDF:', inventarios.value.length)
 
     // Construir mapa de medidas por producto
     medidaProductoMap.clear()

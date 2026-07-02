@@ -1,6 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import api from 'src/api/axios';
 import type { PaymentBreakdown } from './types';
+
+interface Cuenta {
+  id: number;
+  nombre: string;
+}
 
 const props = defineProps<{
   show: boolean;
@@ -11,7 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void;
-  (e: 'confirm', data: { montoPagado: number; comentarios: string; metodoPago: string; pagoDetalle: PaymentBreakdown; requiereFactura: boolean }): void;
+  (e: 'confirm', data: { montoPagado: number; comentarios: string; metodoPago: string; pagoDetalle: PaymentBreakdown; requiereFactura: boolean; cuenta_bancaria_id?: number | null }): void;
 }>();
 
 // Estado granular del pago
@@ -25,6 +31,25 @@ const tipoTarjeta = ref<'DEBITO' | 'CREDITO'>('DEBITO'); // Tipo de tarjeta
 const comentarios = ref('');
 const metodoPago = ref('EFECTIVO');
 const requiereFactura = ref(false);
+const cuentas = ref<Cuenta[]>([]);
+const cuentaFactura = ref<number | null>(null);
+
+const loadCuentas = async () => {
+  try {
+    const res = await api.get('cuentas');
+    const data = Array.isArray(res.data) ? res.data : (res.data.cuentas ?? []);
+    cuentas.value = data.map((c: Record<string, unknown>) => ({
+      id: (c.id ?? c.Id) as number,
+      nombre: (c.nombre ?? c.Nombre) as string
+    }));
+  } catch (error) {
+    console.error('Error al cargar cuentas:', error);
+  }
+};
+
+onMounted(() => {
+  void loadCuentas();
+});
 
 const metodos = [
   { id: 'EFECTIVO', label: 'Efectivo', icon: 'payments' },
@@ -67,6 +92,7 @@ const resetState = () => {
   montoUSD.value = 0;
   montoTarjeta.value = 0;
   montoTransferencia.value = 0;
+  cuentaFactura.value = null;
 };
 
 // Si cambia el método de pago simple, asignamos el total al campo correspondiente
@@ -143,6 +169,7 @@ const handleConfirm = () => {
     metodoPago: metodoPago.value,
     pagoDetalle,
     requiereFactura: requiereFactura.value,
+    cuenta_bancaria_id: requiereFactura.value ? cuentaFactura.value : null,
   });
 };
 </script>
@@ -273,6 +300,18 @@ const handleConfirm = () => {
           <div class="factura-checkbox">
             <input type="checkbox" id="facturaCheck" v-model="requiereFactura" />
             <label for="facturaCheck">¿Requiere factura?</label>
+          </div>
+
+          <div v-if="requiereFactura" class="bankAccounts-box">
+            <label>Cuenta bancaria para la factura</label>
+            <div class="bankAccounts-options">
+              <label v-for="cuenta in cuentas" :key="cuenta.id" class="bankAccounts-radio"
+                :class="{ active: cuentaFactura === cuenta.id }">
+                <input type="radio" v-model="cuentaFactura" :value="cuenta.id" />
+                <span class="material-icons">account_balance</span>
+                {{ cuenta.nombre }}
+              </label>
+            </div>
           </div>
         </div>
 
@@ -702,5 +741,58 @@ const handleConfirm = () => {
   user-select: none;
   font-weight: 500;
   color: #2d3748;
+}
+
+/* Bank Accounts Selector */
+.bankAccounts-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+}
+
+.bankAccounts-box label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.bankAccounts-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bankAccounts-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #f1f5f9;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a5568;
+  background: white;
+  transition: all 0.2s;
+}
+
+.bankAccounts-radio:hover {
+  border-color: #cbd5e0;
+  background: #f7fafc;
+}
+
+.bankAccounts-radio.active {
+  border-color: var(--color-brand-primary);
+  background: linear-gradient(135deg, rgba(217, 164, 65, 0.15) 0%, rgba(139, 94, 60, 0.1) 100%);
+  color: var(--color-brand-secondary);
+}
+
+.bankAccounts-radio input[type="radio"] {
+  accent-color: var(--color-brand-secondary);
 }
 </style>

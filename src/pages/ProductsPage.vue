@@ -69,8 +69,7 @@ const limpiarBusqueda = (): void => {
   void cargarProductos()
 }
 
-const productoCreado = (nuevoProducto: { id: number; nombre: string }): void => {
-  console.log('Producto creado:', nuevoProducto)
+const productoCreado = () => {
   cerrarModalProducto()
   $q.notify({
     message: 'Producto creado correctamente',

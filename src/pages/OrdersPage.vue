@@ -16,7 +16,7 @@ const mostrarOrdenes = async (): Promise<void> => {
     ordenes.value = response.data;
     loading.value = true;
   } catch (error) {
-    console.log("Hubo un error al obtener las ordenes de compra\n" + (error instanceof Error ? error.message : String(error)));
+    console.error("Hubo un error al obtener las ordenes de compra\n" + (error instanceof Error ? error.message : String(error)));
   }
 };
 

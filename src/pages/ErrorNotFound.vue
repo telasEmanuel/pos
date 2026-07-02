@@ -1,7 +1,7 @@
 <template>
   <div class="fullscreen bg-blue text-white text-center q-pa-md flex flex-center">
     <div>
-      <div style="font-size: 30vh">No se encontró lo que buscas</div>
+      <div style="font-size: 10vh">No se encontró lo que buscas</div>
 
       <div class="text-h2" style="opacity: 0.4">Ésta página no existe...</div>
 

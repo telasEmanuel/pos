@@ -199,8 +199,6 @@ const removeItem = (pIdArg: number | string) => {
 };
 
 const updateItemQty = (pIdArg: number | string, delta: number) => {
-  console.log('🔵 updateItemQty called:', { pIdArg, delta, cartLength: cartFromStorage.value.length });
-
   const targetId = Number(pIdArg);
   const prod = productos.value.find(p => {
     const currentId = Number(p.producto_id ?? p.producto?.id);
@@ -208,7 +206,6 @@ const updateItemQty = (pIdArg: number | string, delta: number) => {
   });
 
   if (prod) {
-    console.log('✅ Encontrado en productos.value');
     if (delta > 0) {
       incrementarCantidad(prod);
     } else {
@@ -216,10 +213,8 @@ const updateItemQty = (pIdArg: number | string, delta: number) => {
     }
     productos.value = [...productos.value];
   } else {
-    console.log('🔍 Buscando en cartFromStorage...');
     const item = cartFromStorage.value.find(s => Number(s.productoId) === targetId);
     if (item) {
-      console.log('✅ Encontrado en cartFromStorage:', { oldQty: item.cantidadPedido });
       const step = Math.abs(delta);
       if (delta > 0) {
         const max = Number(item.stock ?? 999999);
@@ -230,7 +225,6 @@ const updateItemQty = (pIdArg: number | string, delta: number) => {
         const actualStep = (item.cantidadPedido <= 0.61 && step === 0.5) ? 0.1 : step;
         item.cantidadPedido = round(Math.max(0, item.cantidadPedido - actualStep));
       }
-      console.log('📝 Nueva cantidad:', item.cantidadPedido);
       cartFromStorage.value = [...cartFromStorage.value];
     } else {
       console.log('❌ No encontrado en ningún lugar:', targetId);
@@ -479,8 +473,6 @@ const enviarPedido = async () => {
         comentarios: esPrecioTap.value ? 'PRECIO TAPICERO' : ''
       });
 
-    console.log('--- PEDIDO PROCESADO ---', created);
-
     // Guardar usuario_username en AMBOS storages para máxima persistencia
     const authStoreInstance = useAuthStore();
     const vendedorUsername = authStoreInstance.user?.username;
@@ -492,7 +484,6 @@ const enviarPedido = async () => {
       const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}');
       pedidosVendedores[created.id] = vendedorUsername;
       localStorage.setItem('pedidos_vendedores', JSON.stringify(pedidosVendedores));
-      console.log(`✅ Pedido #${created.id}: "${vendedorUsername}" → sessionStorage + localStorage`);
     }
 
     // Notificar por socket - INCLUIR usuario_username en el objeto emitido

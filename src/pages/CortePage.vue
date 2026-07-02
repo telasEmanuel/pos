@@ -47,9 +47,15 @@ interface Venta {
   usuario_username?: string | null;
   usuario?: Usuario;
   requiere_factura?: boolean;
+  cuenta_bancaria_id?: number;
   detallesVenta: DetalleVenta[];
   reembolsos?: Reembolso[];
   monto_reembolsado?: number;
+}
+
+interface Cuenta {
+  id: number;
+  nombre: string;
 }
 
 interface CorteResponse {
@@ -69,6 +75,7 @@ const authStore = useAuthStore();
 const datos = ref<{ rol?: string } | null>(null);
 const usuarios = ref<Usuario[]>([]);
 const usuarioSeleccionado = ref<number | null>(null);
+const cuentas = ref<Cuenta[]>([]);
 const stats = ref({
   efectivo: 0,
   tarjeta: 0,
@@ -311,13 +318,6 @@ const buildLastReceiptFromVenta = (venta: Venta): ReceiptData => {
       return Number(reembolsoProducto.cantidad).toFixed(3) === Number(d.cantidad).toFixed(3);
     });
 
-  console.log('🔍 DEBUG buildLastReceiptFromVenta:', {
-    venta_id: venta.id,
-    reembolsos: venta.reembolsos,
-    detalles: venta.detallesVenta,
-    esCancelada
-  });
-
   return {
     cliente: (venta.cliente || 'Cliente General').trim(),
     productos: productosNoDevueltos,
@@ -354,13 +354,7 @@ const loadVentas = async () => {
       params.usuario_id = usuarioSeleccionado.value;
     }
 
-    console.log('🔍 DEBUG CortePage - Parámetros de búsqueda:', params);
-
     const { data } = await api.get<CorteResponse>('ventas/rango', { params });
-
-    console.log('📊 DEBUG CortePage - Respuesta del API:', data);
-    console.log('📊 DEBUG CortePage - Ventas recibidas:', data.ventas);
-    console.log('📊 DEBUG CortePage - Stats:', data.stats);
 
     // Filtrar ventas para mostrar solo las del día seleccionado
     const ventasFiltradas = data.ventas.filter(venta => {
@@ -388,8 +382,6 @@ const loadVentas = async () => {
           return sum + (cantidad * precio);
         }, 0);
 
-        console.log(`🔧 Venta #${venta.id}: Total recalculado de $0.00 a $${totalRecalculado.toFixed(2)}`);
-
         return {
           ...venta,
           total: totalRecalculado
@@ -398,8 +390,6 @@ const loadVentas = async () => {
 
       return venta;
     });
-
-    console.log(`📊 Ventas filtradas para ${inicio}:`, ventasConTotalCorregido);
 
     ventas.value = ventasConTotalCorregido;
     stats.value = data.stats;
@@ -446,13 +436,21 @@ const loadUsuarios = async () => {
       email: (u.email ?? u.Email) as string,
       nombre: (u.nombre ?? u.Nombre) as string
     }));
-
-    console.log('✅ Usuarios cargados:', usuarios.value);
-
-    // No filtrar automáticamente - mostrar todas las ventas por defecto
-    // El usuario puede filtrar manualmente si lo desea
   } catch (error) {
     console.error('Error al cargar usuarios:', error);
+  }
+};
+
+const loadCuentas = async () => {
+  try {
+    const res = await api.get('cuentas');
+    const data = Array.isArray(res.data) ? res.data : (res.data.cuentas ?? []);
+    cuentas.value = data.map((c: Record<string, unknown>) => ({
+      id: (c.id ?? c.Id) as number,
+      nombre: (c.nombre ?? c.Nombre) as string
+    }));
+  } catch (error) {
+    console.error('Error al cargar cuentas:', error);
   }
 };
 
@@ -975,6 +973,15 @@ const ventasFiltradasPorFactura = computed(() => {
   };
 });
 
+// Ventas agrupadas por cuenta bancaria (solo cuando filtroFactura === true)
+const ventasFiltradasPorCuenta = computed(() => {
+  if (filtroFactura.value !== true) return [];
+  return cuentas.value.map(cuenta => ({
+    cuenta,
+    ventas: ventasFiltradas.value.filter(v => (v.cuenta_bancaria_id ?? 1) === cuenta.id)
+  }));
+});
+
 const toggleFiltroTipoPago = (tipo: string) => {
   if (filtroTipoPago.value === tipo.toUpperCase()) {
     filtroTipoPago.value = null; // Deseleccionar si ya está seleccionado
@@ -1008,6 +1015,7 @@ onMounted(async () => {
   filtroTipoPago.value = null;
   filtroFactura.value = null;
   await loadUsuarios();
+  await loadCuentas();
   void loadVentas();
   void loadProductos();
 });
@@ -1193,6 +1201,9 @@ onMounted(async () => {
               {{ filtroFactura ? 'que pidieron factura' : 'que NO pidieron factura' }}
             </template>
           </template>
+          <template v-else-if="filtroFactura === true">
+            No hay ventas con factura registradas
+          </template>
           <template v-else>
             No hay ventas registradas
           </template>
@@ -1342,6 +1353,80 @@ onMounted(async () => {
           <div v-else class="empty-column">
             <q-icon name="credit_card_off" size="3rem" color="grey-4" />
             <p class="text-grey-5">No hay ventas con crédito</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista por cuentas bancarias cuando se filtra por facturación -->
+      <div v-else-if="filtroFactura === true && ventasFiltradasPorCuenta.length > 0" class="cuentas-split-view">
+        <div v-for="{ cuenta, ventas: ventasDeCuenta } in ventasFiltradasPorCuenta" :key="cuenta.id"
+          class="cuenta-column">
+          <h3 class="column-title cuenta-title">
+            <q-icon name="account_balance" />
+            {{ cuenta.nombre }} ({{ ventasDeCuenta.length }})
+          </h3>
+          <q-list v-if="ventasDeCuenta.length > 0" separator
+            class="sales-list bg-white shadow-1 rounded-borders">
+            <q-expansion-item v-for="venta in ventasDeCuenta" :key="venta.id" group="sales"
+              class="sale-item"
+              :class="{ 'refunded-sale': venta.reembolsos && venta.reembolsos.length > 0 }"
+              expand-icon-class="hidden">
+              <template v-slot:header="{ expanded }">
+                <div class="row full-width items-center q-py-xs">
+                  <div class="col-auto q-mr-md">
+                    <div class="time-badge">{{ formatTime(venta.fecha_venta) }}</div>
+                    <div class="text-caption text-grey-5 q-mt-xs">{{ formatDateLong(venta.fecha_venta) }}</div>
+                  </div>
+                  <div class="col">
+                    <div class="text-weight-bold text-grey-9">{{ venta.cliente || 'Cliente General' }}</div>
+                    <div class="text-caption text-grey-6">
+                      <q-icon name="payments" size="xs" /> {{ venta.metodo_pago }}
+                      <span v-if="venta.comentarios" class="q-ml-sm text-italic">"{{ venta.comentarios }}"</span>
+                    </div>
+                    <div v-if="venta.usuario_username || venta.usuario" class="text-caption text-grey-6">
+                      <q-icon name="person" size="xs" /> Atendió: {{ venta.usuario_username || venta.usuario?.username
+                        || venta.usuario?.email }}
+                    </div>
+                  </div>
+                  <div class="col-auto text-right row items-center q-gutter-x-sm">
+                    <q-btn icon="print" flat round dense color="primary" @click.stop="printVenta(venta)">
+                      <q-tooltip>Imprimir esta venta</q-tooltip>
+                    </q-btn>
+                    <q-btn icon="assignment_return" flat round dense color="orange-8"
+                      @click.stop="abrirModalReembolso(venta)">
+                      <q-tooltip>Procesar reembolso</q-tooltip>
+                    </q-btn>
+                    <div>
+                      <div class="text-weight-bolder text-primary text-body1">{{
+                        formatCurrency(venta.total) }}</div>
+                      <div class="text-caption text-grey-5">#{{ venta.id }}</div>
+                    </div>
+                    <q-icon :name="expanded ? 'expand_less' : 'expand_more'" size="sm" color="grey-6" />
+                  </div>
+                </div>
+              </template>
+
+              <q-card>
+                <q-card-section class="bg-grey-1 q-px-md q-py-sm">
+                  <div class="text-caption text-weight-bold text-grey-7 q-mb-xs">PRODUCTOS VENDIDOS:</div>
+                  <div v-for="detalle in venta.detallesVenta" :key="detalle.id"
+                    class="row justify-between q-mb-xs text-body2">
+                    <div>
+                      <span class="text-weight-bold">{{ formatNumber(detalle.cantidad) }}</span>
+                      {{ detalle.medida || getProductoMedida(detalle.producto_id) }} x {{
+                        getProductoNombre(detalle.producto_id) }}
+                    </div>
+                    <div class="text-grey-7">
+                      {{ formatCurrency((detalle.precio_unitario || 0) * (detalle.cantidad || 0)) }}
+                    </div>
+                  </div>
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+          </q-list>
+          <div v-else class="empty-column">
+            <q-icon name="account_balance" size="3rem" color="grey-4" />
+            <p class="text-grey-5">Sin ventas en esta cuenta</p>
           </div>
         </div>
       </div>
@@ -1630,6 +1715,24 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+/* Vista de columnas por cuentas bancarias */
+.cuentas-split-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.cuenta-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cuenta-title {
+  background: var(--gradient-brand-90);
+  color: white;
 }
 
 .column-title {

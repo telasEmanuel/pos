@@ -24,7 +24,6 @@ const generandoPDF = ref(false);
 const productoFiltrado = async (): Promise<void> => {
   const response = await api.get('productos/all')
   filtros.value = response.data
-  console.log(response.data)
 }
 
 const cargarOrdenConProductos = async (nuevaOrden: Record<string, unknown>): Promise<void> => {
@@ -61,7 +60,6 @@ const cargarOrdenConProductos = async (nuevaOrden: Record<string, unknown>): Pro
     try {
       const detallesRes = await api.get('inventarios/detalles');
       detallesDelInventario = (detallesRes.data || []);
-      console.log(`📋 Detalles del inventario cargados: ${detallesDelInventario.length} items`);
     } catch (e) {
       console.warn('No se pudo cargar detalles del inventario', e);
     }
@@ -80,9 +78,6 @@ const cargarOrdenConProductos = async (nuevaOrden: Record<string, unknown>): Pro
 
       // Si es tipo rollos, SIEMPRE asegurar que metros_por_rollo esté inicializado
       const tipo = (d as { tipo?: string }).tipo || 'estandar';
-
-      // DEBUG: Log para entender qué se está recibiendo
-      console.log(`📊 Detalle cargado - Producto: ${d.producto_id}, tipo: ${tipo}, rollos: ${d.rollos}, metadata metros.length: ${metros.length}`);
 
       if (tipo === 'rollos' && d.rollos && d.rollos > 0) {
         if (metros.length === 0) {
@@ -107,8 +102,6 @@ const cargarOrdenConProductos = async (nuevaOrden: Record<string, unknown>): Pro
         // Buscar TODOS los detalles guardados para este producto (sin filtrar por bodega)
         const detallesGuardadosDelProducto = detallesDelInventario.filter(det => det.producto_id === d.producto_id);
 
-        console.log(`📊 Producto ${d.producto_id}: encontrados ${detallesGuardadosDelProducto.length} detalles guardados`);
-
         // Asignar los metros guardados a cada posición
         for (let i = 0; i < detallesGuardadosDelProducto.length && i < metrosGuardados.length; i++) {
           const detalle = detallesGuardadosDelProducto[i];
@@ -121,7 +114,6 @@ const cargarOrdenConProductos = async (nuevaOrden: Record<string, unknown>): Pro
         // Si hay metros guardados y aún no mostramos ninguno en metros, usar los guardados
         if (metros.every(m => m === 0) && metrosGuardados.some(m => m > 0)) {
           metros = [...metrosGuardados];
-          console.log(`✅ Recuperados valores guardados para producto ${d.producto_id}:`, metros);
         }
       }
 
@@ -208,16 +200,11 @@ const actualizarOrden = async (): Promise<void> => {
       detalles: detallesParaGuardar
     };
 
-    console.log("Enviando payload:", payload);
-
     if (!(props.orden as { id?: number })?.id) throw new Error('Orden no válida');
-    const ordenResponse = await api.put(`ordenes/${(props.orden as { id?: number }).id}`, payload);
-    console.log("Orden actualizada:", ordenResponse.data);
+    await api.put(`ordenes/${(props.orden as { id?: number }).id}`, payload);
 
     // Si se está marcando como recibido y hay bodega, guardar metros en InventarioDetalle
     if (estado.value === 'recibido' && primeraBodega) {
-      console.log("📦 Procesando inventario para estado 'recibido'...");
-
       // Primero, cargar inventarios para mapear producto_id → inventario_id
       let inventariosDisponibles: Array<{ id: number; producto_id: number; bodega_id: number }> = [];
       try {
@@ -234,7 +221,6 @@ const actualizarOrden = async (): Promise<void> => {
           // Verificar si ya está guardado
           if (detalle.metros_guardados.length === 0 || (detalle.metros_guardados[0] || 0) === 0) {
             try {
-              console.log(`📊 Guardando producto estándar ${detalle.producto_id}: ${detalle.cantidad}`);
               await api.post('inventarios/detalles', {
                 producto_id: detalle.producto_id,
                 cantidad: Number(detalle.cantidad),
@@ -243,7 +229,6 @@ const actualizarOrden = async (): Promise<void> => {
               });
               // Marcar como guardado
               detalle.metros_guardados = [Number(detalle.cantidad)];
-              console.log(`✅ Guardado: Producto ${detalle.producto_id}`);
             } catch (e) {
               console.warn(`❌ No se pudo guardar detalle de inventario para producto ${detalle.producto_id}:`, e);
             }
@@ -252,24 +237,19 @@ const actualizarOrden = async (): Promise<void> => {
 
         // Caso 2: Producto tipo rollos - guardar solo metros > 0 y que no estén ya guardados
         if (detalle.tipo === 'rollos' && detalle.metros_por_rollo && detalle.metros_por_rollo.length > 0) {
-          console.log(`🎯 Procesando ${detalle.metros_por_rollo.length} rollos para producto ${detalle.producto_id}`);
           for (let i = 0; i < detalle.metros_por_rollo.length; i++) {
             const metros = detalle.metros_por_rollo[i] ?? 0;
             const metrosYaGuardados = detalle.metros_guardados[i] ?? 0;
 
-            console.log(`  Rollo ${i + 1}: ${metros}m (guardado: ${metrosYaGuardados}m)`);
-
             // Solo guardar si: metros > 0 AND no estaba guardado antes (o estaba en 0)
             if (metros > 0 && metrosYaGuardados === 0) {
               try {
-                console.log(`  📌 Guardando rollo ${i + 1} con ${metros}m...`);
-                const detalleResponse = await api.post('inventarios/detalles', {
+                await api.post('inventarios/detalles', {
                   producto_id: detalle.producto_id,
                   cantidad: metros,
                   estado: 'DISPONIBLE',
                   bodega_id: primeraBodega
                 });
-                console.log(`  ✅ Rollo ${i + 1} guardado:`, detalleResponse.data);
                 // Marcar este rollo como guardado
                 if (detalle.metros_guardados.length <= i) {
                   detalle.metros_guardados.push(metros);
@@ -302,7 +282,6 @@ const actualizarOrden = async (): Promise<void> => {
           rollos: rollosData
         };
         sessionStorage.setItem(`orden_${ordenId}_rollos`, JSON.stringify(metadata));
-        console.log(`💾 Metadata de rollos guardada en sessionStorage para orden ${ordenId}`);
       }
     }
 

@@ -311,7 +311,6 @@ const enviarPedido = async () => {
       const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}');
       pedidosVendedores[created.id] = authStoreInstance.user.username;
       localStorage.setItem('pedidos_vendedores', JSON.stringify(pedidosVendedores));
-      console.log('✅ Guardado en localStorage - Pedido ID:', created.id, 'Vendedor:', authStoreInstance.user.username);
     }
 
     socket.emit(isEditing ? 'pedido-actualizado' : 'nuevo-pedido', created);

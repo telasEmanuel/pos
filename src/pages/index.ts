@@ -20,3 +20,4 @@ export { default as DetalleInventario } from './DetalleInventarioPage.vue';
 export { default as Historial } from './MovimientosInventario.vue';
 export { default as Secciones } from './SeccionesPage.vue';
 export { default as ImpresionesPage } from './ImpresionesPage.vue';
+export { default as CuentasBancarias } from './CuentasBancarias.vue';

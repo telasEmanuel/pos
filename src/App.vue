@@ -36,7 +36,6 @@ export default {
 
     // Wrapper para manejar el clic de actualizar
     const handleReloadApp = async () => {
-      console.log('📲 Usuario hizo clic en Actualizar');
       try {
         await originalReloadApp()
       } catch (error) {
@@ -50,13 +49,11 @@ export default {
 
     // Wrapper para cerrar el banner
     const handleDismissUpdate = () => {
-      console.log('❌ Usuario cerró el banner');
       hasUpdate.value = false
     }
 
     // Llamar a checkForUpdates cuando el componente se monta
     onMounted(async () => {
-      console.log('🚀 App montada - ejecutando checkForUpdates()');
       await checkForUpdates();
     })
 

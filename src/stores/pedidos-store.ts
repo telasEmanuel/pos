@@ -186,11 +186,6 @@ export const usePedidosStore = defineStore('pedidos', () => {
     }
   };
 
-  // Debug log to ensure the store is initialized with the expected methods
-  console.log('--- Pedidos Store Initialized ---', {
-    hasActualizarPedido: typeof actualizarPedido === 'function',
-  });
-
   return {
     pedidos,
     loading,

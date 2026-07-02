@@ -144,7 +144,6 @@ onMounted(() => {
   }
 
   datos.value = authStore.user;
-  console.log('✅ Usuario cargado en MainLayout (onMounted):', datos.value);
 
   if (!datos.value) {
     console.warn('⚠️ No hay usuario en onMounted. Esperando...');
@@ -161,8 +160,6 @@ onMounted(() => {
     if (pedidoConUsername.usuario_username && typeof pedidoConUsername.usuario_username === 'string') {
       const key = `pedido_${pedido.id}_usuario_username`;
       localStorage.setItem(key, pedidoConUsername.usuario_username);
-    } else {
-      console.log(`  ⚠️ NO HAY usuario_username en el evento socket. usuario_username =`, pedidoConUsername.usuario_username);
     }
 
     pedidosStore.agregarPedidoLocal(pedido)

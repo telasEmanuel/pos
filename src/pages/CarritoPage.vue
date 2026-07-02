@@ -297,9 +297,9 @@ const abrirModalPago = () => {
   showPagoModal.value = true;
 };
 
-const confirmarPago = async (data: { montoPagado: number; comentarios: string; metodoPago: string; pagoDetalle: PaymentBreakdown; requiereFactura: boolean }) => {
+const confirmarPago = async (data: { montoPagado: number; comentarios: string; metodoPago: string; pagoDetalle: PaymentBreakdown; requiereFactura: boolean; cuenta_bancaria_id?: number | null }) => {
   showPagoModal.value = false;
-  const { montoPagado: mp, comentarios: cs, metodoPago: mpago, pagoDetalle, requiereFactura } = data;
+  const { montoPagado: mp, comentarios: cs, metodoPago: mpago, pagoDetalle, requiereFactura, cuenta_bancaria_id } = data;
   comentarios.value = cs;
   const clienteParaVenta = clienteNombre.value;
 
@@ -375,7 +375,7 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
 
     const payload = {
       cliente: clienteParaVenta,
-      total: totalParaRecibo, // Usar el total capturado ANTES de limpiar, no total.value que puede cambiar
+      total: totalParaRecibo,
       detallesVenta,
       bodega_id: 1,
       comentarios: comentariosConDesglose,
@@ -383,6 +383,7 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
       usuario_id: authStore.user?.id || authStore.user?.usuario_id || null,
       usuario_username: nombreVendedor,
       requiere_factura: requiereFactura,
+      cuenta_bancaria_id: requiereFactura ? cuenta_bancaria_id : null,
       pagoDetalle,
     };
 

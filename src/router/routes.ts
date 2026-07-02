@@ -24,6 +24,7 @@ import {
   Historial,
   Secciones,
   ImpresionesPage,
+  CuentasBancarias,
 } from '../pages/index';
 
 const routes: RouteRecordRaw[] = [
@@ -231,6 +232,15 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: 'Autorizaciones del personal',
       permiso: 'tickets',
+      layout: MainLayout,
+    },
+  },
+  {
+    path: '/cubancarias',
+    component: CuentasBancarias,
+    meta: {
+      title: 'Cuentas bancarias',
+      permiso: 'cuentas_bancarias',
       layout: MainLayout,
     },
   },

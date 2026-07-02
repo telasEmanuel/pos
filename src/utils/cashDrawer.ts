@@ -160,7 +160,4 @@ export function simulateCashDrawer(): void {
 
   oscillator.start(audioContext.currentTime);
   oscillator.stop(audioContext.currentTime + 0.5);
-
-  // Log for debugging
-  console.log('🎵 Simulated cash drawer opening sound');
 }

@@ -34,9 +34,7 @@ const actualizando = ref(false)
 const cargarProductos = async () => {
   try {
     cargando.value = true
-    console.log('📡 Llamando a GET /productos/all')
     const response = await api.get('productos/all')
-    console.log('✅ Respuesta del servidor:', response.data)
 
     // Asegurarse de que es un array
     if (Array.isArray(response.data)) {
@@ -49,7 +47,6 @@ const cargarProductos = async () => {
       productos.value = []
     }
 
-    console.log(`📦 ${productos.value.length} productos cargados`)
     productosFiltrados.value = productos.value
   } catch (error) {
     console.error('❌ Error al cargar productos:', error)
@@ -152,7 +149,6 @@ watch(
   () => props.show,
   async (newVal) => {
     if (newVal) {
-      console.log('🔍 Modal abierto, cargando productos...')
       await cargarProductos()
     }
   }

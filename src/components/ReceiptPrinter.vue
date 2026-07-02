@@ -385,16 +385,13 @@ const printReceiptWindow = async () => {
     if (isElectronApp) {
       // Estamos en Electron - SOLO usar impresora térmica
       await window.pos.printTicket(html)
-      console.log('✅ Ticket enviado a impresora térmica (Electron)')
     } else {
       // Estamos en SPA/PWA - abrir navegador para imprimir
-      console.log('📄 Abriendo navegador para imprimir (SPA/PWA)')
       const printWindow = window.open('', '_blank')
       if (printWindow) {
         printWindow.document.write(html)
         printWindow.document.close()
         printWindow.print()
-        console.log('✅ Ventana de impresión abierta')
       }
     }
   } catch (error) {

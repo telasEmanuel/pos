@@ -20,22 +20,19 @@ export function useAppUpdate() {
       // Limpia TODOS los service workers registrados
       if ('serviceWorker' in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
-        console.log(`🔧 Encontrados ${registrations.length} service workers`);
 
         for (const registration of registrations) {
           // Intenta actualizar primero
           try {
             await registration.update();
-            console.log('✅ Service worker actualizado');
           } catch {
-            console.log('⚠️ No se pudo actualizar SW');
+            console.error('⚠️ No se pudo actualizar SW');
           }
 
           // Luego desregistra versiones obsoletas
           const isActive = registration === (await navigator.serviceWorker.ready);
           if (!isActive) {
             await registration.unregister();
-            console.log('🗑️ Service worker obsoleto desregistrado');
           }
         }
       }
@@ -43,11 +40,9 @@ export function useAppUpdate() {
       // Limpia TODOS los caches
       if ('caches' in window) {
         const cacheNames = await caches.keys();
-        console.log(`🗑️ Limpiando ${cacheNames.length} caches...`);
         await Promise.all(
           cacheNames.map(async (name) => {
             await caches.delete(name);
-            console.log(`  ✅ Cache "${name}" eliminado`);
           }),
         );
       }
@@ -58,7 +53,6 @@ export function useAppUpdate() {
 
   const checkForUpdates = async () => {
     try {
-      console.log('🔍 Verificando actualizaciones...');
       // Agrega timestamp al URL para evitar cache del navegador
       const response = await axios.get<VersionData>(`/version.json?t=${Date.now()}`, {
         timeout: 5000,
@@ -70,11 +64,8 @@ export function useAppUpdate() {
       const serverVersion = response.data.version;
       const localVersion = localStorage.getItem('appVersion');
 
-      console.log(`📱 PWA Version Check: Local=${localVersion}, Server=${serverVersion}`);
-
       // Primera visita: inicializar con la versión del servidor
       if (!localVersion) {
-        console.log('📦 Primera vez: inicializando versión');
         localStorage.setItem('appVersion', serverVersion);
         // Limpia SWs obsoletos de instalación anterior
         await cleanupServiceWorkers();
@@ -83,11 +74,9 @@ export function useAppUpdate() {
 
       // Si hay una nueva versión diferente
       if (serverVersion !== localVersion) {
-        console.log('🆕 Nueva versión disponible');
         hasUpdate.value = true;
         updateAvailable.value = true;
       } else {
-        console.log('✅ Usando la última versión');
         hasUpdate.value = false;
       }
     } catch (error) {
@@ -96,8 +85,6 @@ export function useAppUpdate() {
   };
 
   const reloadApp = async () => {
-    console.log('🔄 Recargando app con nueva versión...');
-
     // Oculta el banner INMEDIATAMENTE
     hasUpdate.value = false;
     updateAvailable.value = false;
@@ -108,7 +95,6 @@ export function useAppUpdate() {
       const data = (await versionResponse.json()) as VersionData;
       localStorage.setItem('appVersion', data.version);
       localStorage.setItem('lastUpdateTime', new Date().toISOString());
-      console.log('✅ Versión actualizada en localStorage');
     } catch (err) {
       console.error('Error actualizando versión:', err);
     }
@@ -119,8 +105,6 @@ export function useAppUpdate() {
     // Limpia sessionStorage pero mantiene localStorage
     sessionStorage.clear();
 
-    // Recarga después de un delay para asegurar que se vea que el banner desapareció
-    console.log('♻️ Recargando página en 1 segundo...');
     setTimeout(() => {
       window.location.reload();
     }, 1000);
@@ -129,8 +113,6 @@ export function useAppUpdate() {
   // Inicia el chequeo de actualizaciones
   if (typeof window !== 'undefined') {
     onMounted(async () => {
-      console.log('🚀 App montada - ejecutando chequeo de actualizaciones');
-
       // Primer chequeo inmediato
       await checkForUpdates();
 
@@ -143,7 +125,6 @@ export function useAppUpdate() {
       // Escucha cuando el usuario vuelve a la app (visibilidad)
       const handleVisibilityChange = () => {
         if (!document.hidden) {
-          console.log('📱 App recuperó el foco - verificando actualizaciones');
           void checkForUpdates().catch((err) => console.error('Error en visibilitychange:', err));
         }
       };

@@ -24,7 +24,6 @@ try {
 
   // Escribir version.json
   fs.writeFileSync(versionPath, JSON.stringify(versionData, null, 2) + '\n', 'utf-8');
-  console.log(`✅ version.json actualizado con versión ${version}`);
 } catch (error) {
   console.error('❌ Error actualizando version.json:', error.message);
   process.exit(1);

@@ -137,7 +137,6 @@ const cargarPedidos = async () => {
 
 const completarPedido = (pedido: Pedido) => {
   if (!pedido.id) return;
-  console.log('🔵 [PedidosPage] COMPLETAR PEDIDO CLICKEADO', { id: pedido.id, usuario_username: pedido.usuario_username, usuario_id: pedido.usuario_id, allKeys: Object.keys(pedido) });
   pedidoParaCompletar.value = pedido;
   showPagoModal.value = true;
 };
@@ -164,7 +163,7 @@ const editPedido = (pedido: Pedido) => {
   void router.push('/tienda');
 };
 
-const confirmarPago = async (data: { montoPagado: number; comentarios: string; metodoPago: string; pagoDetalle: PaymentBreakdown; requiereFactura: boolean }) => {
+const confirmarPago = async (data: { montoPagado: number; comentarios: string; metodoPago: string; pagoDetalle: PaymentBreakdown; requiereFactura: boolean; cuenta_bancaria_id?: number | null }) => {
   if (!pedidoParaCompletar.value || !pedidoParaCompletar.value.id) {
     console.error('No hay pedido para completar seleccionado');
     return;
@@ -172,8 +171,6 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
 
   const pedido = pedidoParaCompletar.value;
   showPagoModal.value = false;
-
-  console.log('🔴 [PedidosPage] CONFIRMANDO PAGO - Datos del pedido recibido:', { id: pedido.id, usuario_username: pedido.usuario_username, productos: pedido.productos?.length });
 
   try {
     const detallesVenta = (pedido.productos || []).map((p) => {
@@ -207,40 +204,27 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
     // PRIORIDAD 0: Clave específica por pedido - sessionStorage PRIMERO
     const keyEspecifica = `pedido_${pedido.id}_usuario_username`;
     nombreVendedor = sessionStorage.getItem(keyEspecifica);
-    if (nombreVendedor) {
-      console.log(`✅ SessionStorage: "${nombreVendedor}"`);
-    }
 
     // PRIORIDAD 1: localStorage
     if (!nombreVendedor) {
       nombreVendedor = localStorage.getItem(keyEspecifica);
-      if (nombreVendedor) {
-        console.log(`✅ LocalStorage: "${nombreVendedor}"`);
-      }
     }
 
     // PRIORIDAD 2: Usuario del pedido (si backend lo devuelve)
     if (!nombreVendedor && pedido.usuario_username) {
       nombreVendedor = pedido.usuario_username;
-      console.log('✅ Del pedido:', nombreVendedor);
     }
 
     // PRIORIDAD 3: localStorage histórica
     if (!nombreVendedor) {
       const pedidosVendedores = JSON.parse(localStorage.getItem('pedidos_vendedores') || '{}') as Record<string, unknown>;
       nombreVendedor = (pedidosVendedores[pedido.id!] as string) || null;
-      if (nombreVendedor) {
-        console.log('✅ Histórica:', nombreVendedor);
-      }
     }
 
     // PRIORIDAD 4: Usuario actual (fallback)
     if (!nombreVendedor) {
       nombreVendedor = authStore.user?.username || authStore.user?.email || 'MOSTRADOR';
-      console.log('⚠️ FALLBACK:', nombreVendedor);
     }
-
-    console.log(`→ Pedido #${pedido.id}: usuario_username="${nombreVendedor}"`);
 
     // Construir comentario con desglose de pago para pagos MIXTOS
     let comentariosConDesglose = data.comentarios;
@@ -260,6 +244,7 @@ const confirmarPago = async (data: { montoPagado: number; comentarios: string; m
       metodo_pago: data.metodoPago,
       usuario_username: nombreVendedor,
       requiere_factura: data.requiereFactura,
+      cuenta_bancaria_id: data.requiereFactura ? data.cuenta_bancaria_id : null,
       pagoDetalle: data.pagoDetalle,
     };
 
@@ -383,7 +368,6 @@ onMounted(() => {
 
   // Escuchar nuevos pedidos por socket
   socket.on('nuevo-pedido', (pedido: Pedido | PedidoBackend) => {
-    console.log('Nuevo pedido recibido en PedidosPage:', pedido);
     pedidosStore.agregarPedidoLocal(pedido);
     $q.notify({
       message: `¡Nuevo pedido de ${pedido.comprador}!`,

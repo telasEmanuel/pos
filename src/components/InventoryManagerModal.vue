@@ -42,13 +42,17 @@ const $q = useQuasar();
 const datos = ref<{ rol?: string } | null>(null);
 const authStore = useAuthStore();
 
-// States: 'auth' | 'search' | 'update' | 'create'
-const currentState = ref<'auth' | 'search' | 'update' | 'create'>('auth');
+// States: 'auth' | 'search' | 'update' | 'create' | 'changePassword'
+const currentState = ref<'auth' | 'search' | 'update' | 'create' | 'changePassword'>('auth');
 const editMode = ref<'quantity' | 'product' | 'prices' | 'inv_min' | null>(null);
 
 // Auth State
 const password = ref('');
 const isPwd = ref(true);
+
+// Change Password State
+const newPassword = ref('');
+const changePasswordLoading = ref(false);
 
 // Search State
 const searchQuery = ref('');
@@ -83,16 +87,50 @@ const createForm = ref({
   categoria_id: null as number | null,
   cantidad: 1
 });
+
 const createLoading = ref(false);
 
-const selectItem = (item: InventarioItem) => {
-  console.log('📦 Item seleccionado:', {
-    id: item.id,
-    cantidad: item.cantidad,
-    inv_min: item.inv_min,
-    producto: item.producto?.nombre
-  });
+const access = async (password: string): Promise<boolean> => {
+  try {
+    await api.post('/appsettings/access', { password });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
+const confirmChangePassword = async () => {
+  if (!newPassword.value.trim()) {
+    $q.notify({
+      message: 'Ingresa una nueva contraseña',
+      color: 'warning',
+      icon: 'warning'
+    });
+    return;
+  }
+  changePasswordLoading.value = true;
+  try {
+    await api.patch('/appsettings', { newPassword: newPassword.value });
+    $q.notify({
+      message: 'Contraseña cambiada correctamente',
+      color: 'positive',
+      icon: 'check'
+    });
+    newPassword.value = '';
+    currentState.value = 'auth';
+  } catch (err) {
+    console.error('Error changing password:', err);
+    $q.notify({
+      message: 'Error al cambiar la contraseña',
+      color: 'negative',
+      icon: 'error'
+    });
+  } finally {
+    changePasswordLoading.value = false;
+  }
+}
+
+const selectItem = (item: InventarioItem) => {
   selectedItem.value = item;
   newQuantity.value = item.cantidad;
   newProductName.value = item.producto?.nombre || '';
@@ -104,16 +142,15 @@ const selectItem = (item: InventarioItem) => {
   showPreview.value = false;
   currentState.value = 'update';
 
-  console.log('✅ Valores inicializados - newInvMin:', newInvMin.value);
-
   // Cargar inventario de bodega 2 para el mismo producto
   if (item.producto_id || item.producto?.id) {
     void cargarInventarioBodega2(item.producto_id || item.producto?.id || 0);
   }
 };
 
-const checkPassword = () => {
-  if (password.value === import.meta.env.VITE_PASSWORD) {
+const checkPassword = async () => {
+  const ok = await access(password.value);
+  if (ok) {
     if (props.initialItem) {
       selectItem(props.initialItem);
     } else {
@@ -210,8 +247,6 @@ const updateStock = async () => {
 };
 
 const updateProduct = async () => {
-  console.log('🔄 updateProduct llamada con editMode:', editMode.value);
-
   if (!selectedItem.value?.producto?.id) return;
 
   // Validaciones
@@ -246,12 +281,6 @@ const updateProduct = async () => {
       updateData.precio_tap = parseFloat(newPrecioTap.value.toString());
       updateData.precio_comp = parseFloat(newPrecioComp.value.toString());
     } else if (editMode.value === 'inv_min') {
-      console.log('🔧 Actualizando inv_min:', {
-        inventarioId: selectedItem.value.id,
-        valorAnterior: selectedItem.value.inv_min,
-        valorNuevo: newInvMin.value
-      });
-
       if (newInvMin.value < 0 || newInvMinBodega2.value < 0) {
         $q.notify({
           message: 'La cantidad mínima no puede ser negativa',
@@ -267,14 +296,12 @@ const updateProduct = async () => {
         await api.put(`inventarios/${selectedItem.value.id}`, {
           inv_min: newInvMin.value
         });
-        console.log('✅ Bodega 1 actualizada');
 
         // Actualizar bodega 2 si existe
         if (selectedItemBodega2.value) {
           await api.put(`inventarios/${selectedItemBodega2.value.id}`, {
             inv_min: newInvMinBodega2.value
           });
-          console.log('✅ Bodega 2 actualizada');
         }
 
         $q.notify({
@@ -384,14 +411,6 @@ const updateProduct = async () => {
 };*/
 
 const generatePreview = () => {
-  console.log('🔍 Generando preview, editMode:', editMode.value);
-  console.log('📊 Valores actuales:', {
-    cantidad: selectedItem.value?.cantidad,
-    inv_min: selectedItem.value?.inv_min,
-    newQuantity: newQuantity.value,
-    newInvMin: newInvMin.value
-  });
-
   previewChanges.value = {};
 
   if (editMode.value === 'quantity') {
@@ -436,7 +455,6 @@ const generatePreview = () => {
     }
   }
 
-  console.log('✨ Preview generado:', previewChanges.value);
   showPreview.value = true;
 };
 
@@ -554,10 +572,6 @@ const backToSearch = () => {
   editMode.value = null;
 };
 
-/*const goToCreate = () => {
-  currentState.value = 'create';
-};*/
-
 const backFromCreate = () => {
   currentState.value = 'search';
   createForm.value = {
@@ -586,7 +600,6 @@ onMounted(async () => {
 watch(() => props.show, (newValue, oldValue) => {
   // Cuando el modal se abre (cambia de false a true)
   if (newValue && !oldValue) {
-    console.log('🔓 Modal abierto - reseteando a estado de autenticación');
     currentState.value = 'auth';
     password.value = '';
     searchQuery.value = '';
@@ -654,7 +667,27 @@ const formatValue = (value: unknown): string => {
                     @click="isPwd = !isPwd" />
                 </template>
               </q-input>
+              <p><a @click.prevent="currentState = 'changePassword'">Cambiar contraseña</a></p>
               <q-btn label="Entrar" class="full-width rounded-btn shadow-2 btn-gold" @click="checkPassword" />
+            </div>
+          </div>
+
+          <!-- CHANGE PASSWORD STATE -->
+          <div v-if="currentState === 'changePassword'" class="column items-center q-gutter-md">
+            <div class="text-subtitle1 text-grey-8 q-mb-sm">Cambiar Contraseña</div>
+            <div class="full-width column items-center" style="max-width: 320px;">
+              <q-input v-model="newPassword" filled :type="isPwd ? 'password' : 'text'" label="Nueva Contraseña"
+                class="full-width q-mb-md" color="brown-5" autofocus @keyup.enter="confirmChangePassword">
+                <template v-slot:append>
+                  <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer"
+                    @click="isPwd = !isPwd" />
+                </template>
+              </q-input>
+              <div class="row full-width q-gutter-sm">
+                <q-btn label="Cancelar" flat color="grey" class="col rounded-btn" @click="currentState = 'auth'" />
+                <q-btn label="Confirmar" class="col rounded-btn btn-gold" :loading="changePasswordLoading"
+                  @click="confirmChangePassword" />
+              </div>
             </div>
           </div>
 
@@ -715,7 +748,7 @@ const formatValue = (value: unknown): string => {
               <q-btn label="Editar Precios" icon="price_change" color="positive" outline class="rounded-btn"
                 @click="editMode = 'prices'" />
               <q-btn label="Editar Mín. de Inventario" icon="low_priority" color="purple" outline class="rounded-btn"
-                @click="() => { console.log('🎯 Click en Editar Mín. Inventario'); editMode = 'inv_min'; console.log('✅ editMode ahora es:', editMode); }" />
+                @click="() => { editMode = 'inv_min'; }" />
 
               <q-separator class="q-my-sm" />
 
@@ -832,10 +865,10 @@ const formatValue = (value: unknown): string => {
               <div class="row q-gutter-md q-mt-md">
                 <q-btn label="Atrás" flat color="grey" class="col rounded-btn" @click="showPreview = false" />
                 <q-btn label="Guardar Cambios" color="positive" class="col rounded-btn" :loading="updateLoading"
-                  @click="() => { console.log('💾 Guardando cambios - editMode:', editMode); updateStock(); }"
+                  @click="() => { updateStock(); }"
                   v-if="editMode === 'quantity'" />
                 <q-btn label="Guardar Cambios" color="positive" class="col rounded-btn" :loading="updateLoading"
-                  @click="() => { console.log('💾 Guardando cambios (else) - editMode:', editMode); updateProduct(); }"
+                  @click="() => { updateProduct(); }"
                   v-else />
               </div>
             </div>

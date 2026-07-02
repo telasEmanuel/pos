@@ -69,7 +69,6 @@ const cargarCategorias = async () => {
     secciones.value = response.data;
     // Flatten todas las categorías de todas las secciones para mantener compatibilidad
     categorias.value = secciones.value.flatMap(s => s.categorias || []);
-    console.log(secciones.value)
   } catch (err) {
     console.error('Error al cargar secciones', err);
   }

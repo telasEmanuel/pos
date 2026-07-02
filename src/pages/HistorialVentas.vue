@@ -360,12 +360,8 @@ const eliminarVenta = async (ventaId: number): Promise<void> => {
   cargando.value = true;
   error.value = '';
   try {
-    console.log(`🔴 Eliminando venta ${ventaId}...`);
-
     // Eliminar la venta - el backend debe tener cascades configurados
     await api.delete(`ventas/${ventaId}`);
-
-    console.log(`✅ Venta ${ventaId} y detalles eliminados correctamente`);
 
     // Actualizar la lista local
     ventas.value = ventas.value.filter(v => v.id !== ventaId);
