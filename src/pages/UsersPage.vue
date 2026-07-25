@@ -26,6 +26,7 @@ interface Usuario {
   carrito?: boolean | number
   tickets?: boolean | number
   cuentas_bancarias?: boolean | number
+  cambiar_inventario?: boolean | number
 }
 
 const $q = useQuasar()
@@ -55,7 +56,8 @@ const permisos = [
   { key: 'pedidos', label: 'Consulta de pedidos', icon: '🛍️' },
   { key: 'carrito', label: 'Carrito de compras', icon: '🛒' },
   { key: 'tickets', label: 'Gestión de tickets', icon: '🎫' },
-  { key: 'cuentas_bancarias', label: 'Cuentas bancarias', icon: '💳' }
+  { key: 'cuentas_bancarias', label: 'Cuentas bancarias', icon: '💳' },
+  { key: 'cambiar_inventario', label: 'Agregar inventario', icon: '🔄' }
 ]
 
 // Convertir 0/1 a booleano
@@ -100,7 +102,8 @@ const seleccionarUsuario = (usuario: Usuario) => {
     pedidos: convertirABooleano(usuario.pedidos),
     carrito: convertirABooleano(usuario.carrito),
     tickets: convertirABooleano(usuario.tickets),
-    cuentas_bancarias: convertirABooleano(usuario.cuentas_bancarias)
+    cuentas_bancarias: convertirABooleano(usuario.cuentas_bancarias),
+    cambiar_inventario: convertirABooleano(usuario.cambiar_inventario)
   }
 
   // Copiar permisos a permisosCopia para reactividad
@@ -120,7 +123,8 @@ const seleccionarUsuario = (usuario: Usuario) => {
     reporte_existencia: convertirABooleano(usuario.reporte_existencia),
     carrito: convertirABooleano(usuario.carrito),
     tickets: convertirABooleano(usuario.tickets),
-    cuentas_bancarias: convertirABooleano(usuario.cuentas_bancarias)
+    cuentas_bancarias: convertirABooleano(usuario.cuentas_bancarias),
+    cambiar_inventario: convertirABooleano(usuario.cambiar_inventario)
   }
 }
 
@@ -221,7 +225,8 @@ const guardarPermisos = async () => {
       pedidos: permisosCopia.value.pedidos ?? false,
       carrito: permisosCopia.value.carrito ?? false,
       tickets: permisosCopia.value.tickets ?? false,
-      cuentas_bancarias: permisosCopia.value.cuentas_bancarias ?? false
+      cuentas_bancarias: permisosCopia.value.cuentas_bancarias ?? false,
+      cambiar_inventario: permisosCopia.value.cambiar_inventario ?? false
     }
 
     await api.put(`usuarios/${usuarioSeleccionado.value.id}`, datosActualizados)
@@ -244,6 +249,7 @@ const guardarPermisos = async () => {
       usuarioSeleccionado.value.carrito = datosActualizados.carrito
       usuarioSeleccionado.value.tickets = datosActualizados.tickets
       usuarioSeleccionado.value.cuentas_bancarias = datosActualizados.cuentas_bancarias
+      usuarioSeleccionado.value.cambiar_inventario = datosActualizados.cambiar_inventario
     }
 
     // Actualizar el usuario en la lista
@@ -266,6 +272,7 @@ const guardarPermisos = async () => {
       usuario.carrito = datosActualizados.carrito
       usuario.tickets = datosActualizados.tickets
       usuario.cuentas_bancarias = datosActualizados.cuentas_bancarias
+      usuario.cambiar_inventario = datosActualizados.cambiar_inventario
     }
 
     $q.notify({

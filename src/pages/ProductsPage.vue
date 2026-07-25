@@ -3,13 +3,13 @@ import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import api from '../api/axios'
 import { useQuasar } from 'quasar'
 import CrearProducto from '../components/CrearProducto.vue'
-import CrearInventario from '../components/CrearInventario.vue';
+//import CrearInventario from '../components/CrearInventario.vue';
 import UpdateProd from '../components/ActualizarProd.vue';
 
 const productos = ref<Array<{ id: number; nombre: string; descripcion?: string; precio?: number; precio_tap?: number; precio_comp?: number; categoria_id?: number }>>([])
 const error = ref<string | null>(null)
 const mostrarModal = ref(false)
-const mostrarInventarioModal = ref(false)
+//const mostrarInventarioModal = ref(false)
 const loading = ref(true)
 const loadingMore = ref(false)
 const showEditModal = ref(false)
@@ -23,7 +23,7 @@ const categorias = ref<Array<{ id: number; nombre: string }>>([])
 const categoriaSeleccionada = ref('')
 const terminoBusqueda = ref('')
 
-const onInventarioCreado = (): void => {
+/*const onInventarioCreado = (): void => {
   $q.notify({
     message: 'Inventario creado exitosamente',
     color: 'positive',
@@ -34,7 +34,7 @@ const onInventarioCreado = (): void => {
   cursor.value = null
   hasMore.value = true
   void cargarProductos()
-};
+};*/
 
 const debounce = (fn: (...args: unknown[]) => void, delay = 300): ((...args: unknown[]) => void) => {
   let timeout: ReturnType<typeof setTimeout>
@@ -90,13 +90,13 @@ const cerrarModalProducto = (): void => {
   mostrarModal.value = false
 }
 
-const abrirModalInventario = (): void => {
+/*const abrirModalInventario = (): void => {
   mostrarInventarioModal.value = true
-}
+}*/
 
-const cerrarModalInventario = (): void => {
+/*const cerrarModalInventario = (): void => {
   mostrarInventarioModal.value = false
-}
+}*/
 
 const abrirEditModal = (producto: { id: number; nombre: string; descripcion?: string; precio?: number; precio_tap?: number; categoria_id?: number }): void => {
   productoSeleccionado.value = producto
@@ -265,8 +265,8 @@ onBeforeUnmount(() => {
       </div>
       <button @click="abrirModalProducto()" id="boton">Crear Producto</button>
       <CrearProducto :visible="mostrarModal" @close="cerrarModalProducto()" @productoCreado="productoCreado" />
-      <button @click="abrirModalInventario()" id="boton">Agregar Inventario</button>
-      <CrearInventario :show="mostrarInventarioModal" @close="cerrarModalInventario()" @creado="onInventarioCreado" />
+      <!--<button @click="abrirModalInventario()" id="boton">Agregar Inventario</button>
+      <CrearInventario :show="mostrarInventarioModal" @close="cerrarModalInventario()" @creado="onInventarioCreado" />-->
       <table v-if="productos.length" class="tabla">
         <thead>
           <tr>

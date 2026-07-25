@@ -6,21 +6,93 @@ import { socket } from 'src/boot/socket'
 import { useQuasar } from 'quasar'
 import { usePedidosStore, type Pedido, type PedidoBackend } from 'src/stores/pedidos-store'
 import { storeToRefs } from 'pinia'
+import api from '../api/axios'
 import InventoryManagerModal from 'src/components/InventoryManagerModal.vue';
+import CrearInventario from '../components/CrearInventario.vue';
 
 const showInventoryManager = ref(false);
 const showPasswordDialog = ref(false);
 const passwordInput = ref('');
 const passwordError = ref('');
 const currentPasswordContext = ref<'carrito' | 'corte' | 'reporte'>('carrito');
-
+const loading = ref(true)
+const loadingMore = ref(false)
+const cursor = ref<string | null>(null)
+const hasMore = ref(true)
+const error = ref<string | null>(null)
+const productos = ref<Array<{ id: number; nombre: string; descripcion?: string; precio?: number; precio_tap?: number; precio_comp?: number; categoria_id?: number }>>([])
+const LIMIT = 10
+const categoriaSeleccionada = ref('')
+const terminoBusqueda = ref('')
 const $q = useQuasar()
 const pedidosStore = usePedidosStore()
 const { pedidos } = storeToRefs(pedidosStore)
 const router = useRouter();
 const leftDrawerOpen = ref(false);
-const datos = ref<{ nombre?: string, rol?: string, corte_caja?: boolean, reporte_existencia?: boolean, carrito?: boolean, pedidos?: boolean } | null>(null);
+const datos = ref<{ nombre?: string, rol?: string, corte_caja?: boolean, reporte_existencia?: boolean, carrito?: boolean, pedidos?: boolean, cambiar_inventario?: boolean } | null>(null);
 const authStore = useAuthStore();
+const mostrarInventarioModal = ref(false)
+
+const onInventarioCreado = (): void => {
+  $q.notify({
+    message: 'Inventario creado exitosamente',
+    color: 'positive',
+    icon: 'add_circle',
+    position: 'top',
+  })
+  cerrarModalInventario()
+  cursor.value = null
+  hasMore.value = true
+  void cargarProductos()
+};
+
+const abrirModalInventario = (): void => {
+  mostrarInventarioModal.value = true
+}
+
+const cerrarModalInventario = (): void => {
+  mostrarInventarioModal.value = false
+}
+
+const cargarProductos = async (): Promise<void> => {
+  if (!hasMore.value || loadingMore.value) return
+  loadingMore.value = true
+
+  try {
+    const params = {
+      limit: LIMIT,
+      ...(cursor.value ? { cursor: cursor.value } : {}),
+      ...(categoriaSeleccionada.value && { categoriaId: categoriaSeleccionada.value }),
+      ...(terminoBusqueda.value && { busqueda: terminoBusqueda.value }),
+    }
+
+    // Si quieres cancelar llamadas anteriores (opcional)
+    // if (cancelTokenSource.value) cancelTokenSource.value.cancel()
+    // cancelTokenSource.value = axios.CancelToken.source()
+
+    const response = await api.get('productos', {
+      params
+      // , cancelToken: cancelTokenSource.value.token
+    })
+
+    // Si es cursor null (primera página), reemplazamos productos, sino concatenamos
+    if (!cursor.value) {
+      productos.value = response.data.items
+    } else {
+      productos.value.push(...response.data.items)
+    }
+
+    hasMore.value = response.data.hasMore
+    cursor.value = response.data.nextCursor
+  } catch (err) {
+    // Handle error silently for cancelled requests
+    error.value = 'Error al obtener productos'
+    console.error(err)
+  } finally {
+    loading.value = false
+    loadingMore.value = false
+  }
+}
 
 // Helper para convertir 0/1 o true/false a booleano
 const convertirABooleano = (valor: unknown): boolean => {
@@ -133,7 +205,21 @@ const checarPermiso = (seccion: string) => {
         });
       }
       break;
-
+    case 'inventario':
+      if (convertirABooleano(datos.value?.cambiar_inventario)) {
+        abrirModalInventario();
+      } else {
+        $q.dialog({
+          title: 'Acceso denegado',
+          message: 'No tienes permiso para acceder a esta sección.',
+          color: 'warning',
+          ok: {
+            text: 'Aceptar',
+            color: 'yellow'
+          }
+        });
+      }
+      break;
   }
 }
 
@@ -296,6 +382,17 @@ onUnmounted(() => {
         </q-item>
 
         <InventoryManagerModal :show="showInventoryManager" @close="showInventoryManager = false" />
+
+        <q-item clickable @click="checarPermiso('inventario')" id="boton">
+          <q-item-section avatar>
+            <q-icon name="shopping_bag" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>Agregar Inventario</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <CrearInventario :show="mostrarInventarioModal" @close="cerrarModalInventario()" @creado="onInventarioCreado" />
 
         <q-item clickable to="/moresettings">
           <q-item-section avatar>
