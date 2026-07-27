@@ -169,97 +169,103 @@ onMounted(async () => {
       <h2>Nuevo Inventario</h2>
       <form @submit.prevent="crearInventario">
 
-        <!-- Buscador de productos -->
-        <div class="producto-search">
-          <label>Buscar Producto:</label>
-          <div class="search-container">
-            <input type="text" v-model="busquedaProducto" @input="onBusquedaInput" @focus="onBusquedaInput"
-              @blur="ocultarSugerencias" placeholder="Escribe el nombre del producto..." autocomplete="off" required />
+        <!-- Única zona con scroll: el encabezado y los botones quedan fijos -->
+        <div class="form-body">
 
-            <!-- Lista de sugerencias -->
-            <div v-if="mostrarSugerencias && productosFiltrados.length" class="sugerencias">
-              <div v-for="producto in productosFiltrados" :key="producto.id"
-                @mousedown.prevent="seleccionarProducto(producto)" class="sugerencia-item">
-                <div class="producto-nombre">{{ producto.nombre }}</div>
-                <div class="producto-descripcion">{{ producto.descripcion || 'Sin ficha técnica' }}</div>
+          <!-- Buscador de productos -->
+          <div class="producto-search">
+            <label>Buscar Producto:</label>
+            <div class="search-container">
+              <input type="text" v-model="busquedaProducto" @input="onBusquedaInput" @focus="onBusquedaInput"
+                @blur="ocultarSugerencias" placeholder="Escribe el nombre del producto..." autocomplete="off"
+                required />
+
+              <!-- Lista de sugerencias -->
+              <div v-if="mostrarSugerencias && productosFiltrados.length" class="sugerencias">
+                <div v-for="producto in productosFiltrados" :key="producto.id"
+                  @mousedown.prevent="seleccionarProducto(producto)" class="sugerencia-item">
+                  <div class="producto-nombre">{{ producto.nombre }}</div>
+                  <div class="producto-descripcion">{{ producto.descripcion || 'Sin ficha técnica' }}</div>
+                </div>
+              </div>
+
+              <!-- Mensaje cuando no hay resultados -->
+              <div v-if="mostrarSugerencias && busquedaProducto.length >= 2 && !productosFiltrados.length"
+                class="no-resultados">
+                No se encontraron productos
               </div>
             </div>
 
-            <!-- Mensaje cuando no hay resultados -->
-            <div v-if="mostrarSugerencias && busquedaProducto.length >= 2 && !productosFiltrados.length"
-              class="no-resultados">
-              No se encontraron productos
+            <!-- Producto seleccionado -->
+            <div v-if="productoSeleccionado" class="producto-seleccionado">
+              <span class="check-icon">✓</span>
+              <strong>Seleccionado:</strong> {{ productoSeleccionado.nombre }}
             </div>
           </div>
 
-          <!-- Producto seleccionado -->
-          <div v-if="productoSeleccionado" class="producto-seleccionado">
-            <span class="check-icon">✓</span>
-            <strong>Seleccionado:</strong> {{ productoSeleccionado.nombre }}
-          </div>
-        </div>
-
-        <div>
-          <label>Ubicación:</label>
-          <select v-model.number="bodega_id" required>
-            <option value="1">Tienda</option>
-            <option value="2">Bodega</option>
-          </select>
-        </div>
-
-        <div class="tipo-entrada-selector">
-          <label>Tipo de Entrada:</label>
-          <div class="radio-group">
-            <label class="radio-label">
-              <input type="radio" v-model="tipoEntrada" value="estandar"> Por unidad
-            </label>
-            <label class="radio-label">
-              <input type="radio" v-model="tipoEntrada" value="rollos"> Por agrupación
-            </label>
-          </div>
-        </div>
-
-        <div class="input-row" v-if="tipoEntrada === 'estandar'">
-          <div class="input-half">
-            <label>Cantidad:</label>
-            <input type="number" min="0" step="0.01" v-model.number="cantidad" placeholder="0.00" required />
-          </div>
-
-          <div class="input-half">
-            <label>Unidad de Medida:</label>
-            <select v-model="medida_ind" required>
-              <option value="" disabled>Seleccione unidad</option>
-              <option value="Metros">Metros</option>
-              <option value="Piezas">Piezas</option>
-              <option value="Litros">Litros</option>
-              <option value="Kilos">Kilos</option>
-              <option value="Bolsas">Bolsas</option>
-              <option value="Planchas">Planchas</option>
+          <div>
+            <label>Ubicación:</label>
+            <select v-model.number="bodega_id" required>
+              <option value="1">Tienda</option>
+              <option value="2">Bodega</option>
             </select>
           </div>
-        </div>
 
-        <!-- UI para Rollos de Tela -->
-        <div v-else-if="tipoEntrada === 'rollos'">
-          <div class="input-row">
-            <div class="input-half">
-              <label>Cantidad de Rollos:</label>
-              <input type="number" min="1" step="1" v-model.number="cantidadRollosInput" @input="generarInputsRollos"
-                placeholder="Ej: 3" required />
-            </div>
-            <div class="input-half">
-              <label>Total Metros (Calculado):</label>
-              <div class="readonly-value">{{ totalMetrosRollos }} m</div>
+          <div class="tipo-entrada-selector">
+            <label>Tipo de Entrada:</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" v-model="tipoEntrada" value="estandar"> Por unidad
+              </label>
+              <label class="radio-label">
+                <input type="radio" v-model="tipoEntrada" value="rollos"> Por agrupación
+              </label>
             </div>
           </div>
 
-          <div class="rollos-inputs-grid" v-if="detallesRollos.length > 0">
-            <div v-for="(rollo, index) in detallesRollos" :key="index" class="rollo-input-item">
-              <label>Rollo {{ index + 1 }} (m):</label>
-              <input type="number" step="0.01" min="0" v-model.number="detallesRollos[index]" placeholder="0.00"
-                required />
+          <div class="input-row" v-if="tipoEntrada === 'estandar'">
+            <div class="input-half">
+              <label>Cantidad:</label>
+              <input type="number" min="0" step="0.01" v-model.number="cantidad" placeholder="0.00" required />
+            </div>
+
+            <div class="input-half">
+              <label>Unidad de Medida:</label>
+              <select v-model="medida_ind" required>
+                <option value="" disabled>Seleccione unidad</option>
+                <option value="Metros">Metros</option>
+                <option value="Piezas">Piezas</option>
+                <option value="Litros">Litros</option>
+                <option value="Kilos">Kilos</option>
+                <option value="Bolsas">Bolsas</option>
+                <option value="Planchas">Planchas</option>
+              </select>
             </div>
           </div>
+
+          <!-- UI para Rollos de Tela -->
+          <div v-else-if="tipoEntrada === 'rollos'">
+            <div class="input-row">
+              <div class="input-half">
+                <label>Cantidad de Rollos:</label>
+                <input type="number" min="1" step="1" v-model.number="cantidadRollosInput" @input="generarInputsRollos"
+                  placeholder="Ej: 3" required />
+              </div>
+              <div class="input-half">
+                <label>Total Metros (Calculado):</label>
+                <div class="readonly-value">{{ totalMetrosRollos }} m</div>
+              </div>
+            </div>
+
+            <div class="rollos-inputs-grid" v-if="detallesRollos.length > 0">
+              <div v-for="(rollo, index) in detallesRollos" :key="index" class="rollo-input-item">
+                <label>Rollo {{ index + 1 }} (m):</label>
+                <input type="number" step="0.01" min="0" v-model.number="detallesRollos[index]" placeholder="0.00"
+                  required />
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <div class="buttons">
@@ -298,10 +304,14 @@ h2 {
 
 .modal {
   background: #fff;
-  padding: 2.5rem 2rem 2rem 2rem;
   border-radius: 18px;
   width: 420px;
   max-width: 95vw;
+  /* Tope de altura: si el formulario crece (varios rollos) el desbordamiento lo
+     resuelve .form-body por dentro, no la ventana. Sin esto el centrado del
+     overlay recorta el modal por arriba y por abajo a la vez. */
+  max-height: 90vh;
+  overflow: hidden;
   box-shadow: 0 8px 32px rgba(60, 60, 90, 0.18);
   display: flex;
   flex-direction: column;
@@ -322,13 +332,30 @@ h2 {
 }
 
 .modal h2 {
-  margin-bottom: 1.2rem;
+  flex-shrink: 0;
+  padding: 2rem 2rem 1.2rem;
+  margin-bottom: 0;
   color: var(--color-brand-primary);
   font-weight: 600;
   text-align: center;
 }
 
-form>div {
+.modal form {
+  display: flex;
+  flex-direction: column;
+  /* min-height:0 es lo que permite a .form-body encoger por debajo de su
+     contenido y activar su propio scroll en vez de estirar el modal. */
+  min-height: 0;
+}
+
+.form-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 2rem 1rem;
+}
+
+.form-body>div {
   margin-bottom: 1rem;
 }
 
@@ -454,7 +481,11 @@ select:focus {
   display: flex;
   justify-content: center;
   gap: 12px;
-  margin-top: 1rem;
+  /* Pie fijo: nunca entra en el área con scroll. */
+  flex-shrink: 0;
+  padding: 1rem 2rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
 }
 
 button[type="submit"] {
@@ -496,24 +527,44 @@ button[type="button"]:hover {
   background: #e5e7eb;
 }
 
-.mensaje {
-  margin-top: 1rem;
+.mensaje,
+.error {
+  /* Fuera del área con scroll, para que un error siempre se vea. */
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0 2rem 1rem;
   text-align: center;
   font-weight: 500;
+}
+
+.mensaje {
   color: green;
 }
 
 .error {
-  margin-top: 1rem;
-  text-align: center;
-  font-weight: 500;
   color: red;
 }
 
 @media (max-width: 480px) {
   .modal {
     width: 95vw;
-    padding: 1.5rem 1rem;
+  }
+
+  .modal h2 {
+    padding: 1.5rem 1rem 1rem;
+  }
+
+  .form-body {
+    padding: 0 1rem 1rem;
+  }
+
+  .buttons {
+    padding: 1rem;
+  }
+
+  .mensaje,
+  .error {
+    padding: 0 1rem 1rem;
   }
 
   .input-row {
