@@ -392,7 +392,13 @@ onUnmounted(() => {
           </q-item-section>
         </q-item>
 
-        <CrearInventario :show="mostrarInventarioModal" @close="cerrarModalInventario()" @creado="onInventarioCreado" />
+        <!-- Teleport a body: el overlay del modal es position:fixed y el q-drawer
+             actúa como bloque contenedor (transform/contain), lo que lo descuadra
+             y lo recorta si se renderiza aquí dentro. -->
+        <Teleport to="body">
+          <CrearInventario :show="mostrarInventarioModal" @close="cerrarModalInventario()"
+            @creado="onInventarioCreado" />
+        </Teleport>
 
         <q-item clickable to="/moresettings">
           <q-item-section avatar>

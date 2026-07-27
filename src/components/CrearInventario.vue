@@ -98,11 +98,11 @@ const onBusquedaInput = (): void => {
   }
 };
 
-// Función para ocultar sugerencias cuando se hace clic fuera
+// Función para ocultar sugerencias cuando se hace clic fuera.
+// Las sugerencias usan @mousedown.prevent, así que seleccionar una no quita el
+// foco del input y este blur no se dispara: no hace falta ningún delay.
 const ocultarSugerencias = (): void => {
-  setTimeout(() => {
-    mostrarSugerencias.value = false;
-  }, 200); // Delay para permitir clicks en sugerencias
+  mostrarSugerencias.value = false;
 };
 
 const crearInventario = async (): Promise<void> => {
@@ -178,8 +178,8 @@ onMounted(async () => {
 
             <!-- Lista de sugerencias -->
             <div v-if="mostrarSugerencias && productosFiltrados.length" class="sugerencias">
-              <div v-for="producto in productosFiltrados" :key="producto.id" @click="seleccionarProducto(producto)"
-                class="sugerencia-item">
+              <div v-for="producto in productosFiltrados" :key="producto.id"
+                @mousedown.prevent="seleccionarProducto(producto)" class="sugerencia-item">
                 <div class="producto-nombre">{{ producto.nombre }}</div>
                 <div class="producto-descripcion">{{ producto.descripcion || 'Sin ficha técnica' }}</div>
               </div>
@@ -291,7 +291,9 @@ h2 {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  /* Mismo nivel que los q-dialog de Quasar, para quedar por encima
+     del header (2000) y del drawer (3000) desde donde se abre. */
+  z-index: 6000;
 }
 
 .modal {
